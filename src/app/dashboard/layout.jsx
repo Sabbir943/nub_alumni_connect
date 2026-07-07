@@ -1,12 +1,14 @@
+ // Checked spelling context for 'components'
 import DashboardLayout from '@/component/DashboardLayout';
 import React from 'react';
 
-const DashBoardLayout = () => {
-    return (
-        <div>
-           <DashboardLayout/> 
-        </div>
-    );
+const BaseDashboardLayoutWrapper = ({ children }) => {
+  return (
+    // We pass children directly inside the dynamic role-based layout sidebar system
+    <DashboardLayout>
+      {children}
+    </DashboardLayout>
+  );
 };
 
-export default DashBoardLayout;
+export default BaseDashboardLayoutWrapper;

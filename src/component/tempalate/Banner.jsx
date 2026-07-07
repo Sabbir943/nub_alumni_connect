@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi';
 
-const HeroSlider = () => {
+const Banner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
@@ -142,4 +142,4 @@ const HeroSlider = () => {
   );
 };
 
-export default HeroSlider;
+export default Banner;

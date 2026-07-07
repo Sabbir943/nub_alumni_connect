@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/component/Navbar";
 
 import { Toaster } from "react-hot-toast";
+// import Footer from "@/component/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -7,34 +7,33 @@ import {
   FiFileText, FiCheckSquare, FiShield, FiAlertTriangle, 
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen 
 } from 'react-icons/fi';
+import { authClient } from '@/lib/auth-client';
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  /* Better Auth / Role Context Simulation:
-    Toggle between 'alumni' | 'student' | 'admin' to inspect structural changes.
-  */
-  const [userSession, setUserSession] = useState({
-    email: "admin@nub.edu", // Fixed admin email rule validator
-    role: "alumni", 
-    name: "Sabbir Ahmad"
-  });
+  const { 
+    data: session, 
+    isPending, 
+    error, 
+    refetch 
+  } = authClient.useSession();
+
+  const user = session?.user;
 
   // ==========================================
   // NAVIGATION ROLE MAP DEFINITIONS
   // ==========================================
-  
   const alumniLinks = [
-    { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
-    { label: 'Create Profile', href: '/dashboard/alumni/create', icon: <FiUserPlus /> },
-    { label: 'Edit Profile', href: '/dashboard/alumni/edit', icon: <FiEdit /> },
-    { label: 'My Connections', href: '/dashboard/alumni/connections', icon: <FiUsers /> },
-    { label: 'Post Jobs/Internships', href: '/dashboard/alumni/post-job', icon: <FiBriefcase /> },
-    { label: 'Messages', href: '/dashboard/alumni/messages', icon: <FiMessageSquare />, badge: 2 },
-    /* Suggestion Add: */
-    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorship', icon: <FiBookOpen /> }
+    { label: 'Overview', href: '/dashboard/alumni/overview', icon: <FiGrid /> },
+    { label: 'Create Profile', href: '/dashboard/alumni/Profile', icon: <FiUserPlus /> },
+    { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
+    { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
+    { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
+    { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare />, badge: 2 },
+    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> }
   ];
 
   const studentLinks = [
@@ -53,16 +52,28 @@ const DashboardLayout = ({ children }) => {
     { label: 'Reunion & Events', href: '/dashboard/admin/reunion', icon: <FiCalendar /> }
   ];
 
-  // Pick the correct nav links group
-  const currentLinks = 
-    userSession.role === 'admin' ? adminLinks : 
-    userSession.role === 'alumni' ? alumniLinks : studentLinks;
+  const getNavLinks = () => {
+    const role = user?.role?.toLowerCase();
+    if (role === 'admin') return adminLinks;
+    if (role === 'alumni') return alumniLinks;
+    return studentLinks;
+  };
 
-  const handleLogout = () => {
+  const currentLinks = getNavLinks();
+
+  const handleLogout = async () => {
     router.push('/signin');
   };
 
   const isActive = (path) => pathname === path;
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 flex flex-col md:flex-row transition-colors duration-300">
@@ -70,7 +81,7 @@ const DashboardLayout = ({ children }) => {
       {/* MOBILE RESPONSIVE TOP HEADER */}
       <div className="md:hidden flex items-center justify-between bg-white dark:bg-zinc-900 px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 z-50">
         <span className="text-sm font-black tracking-wider uppercase bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          {userSession.role} Workspace
+          {user?.role || 'User'} Workspace
         </span>
         <button 
           onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -80,22 +91,22 @@ const DashboardLayout = ({ children }) => {
         </button>
       </div>
 
-      {/* DETACHABLE SIDE NAVIGATION WORKSPACE BAR */}
+      {/* FIXED SIDE NAVIGATION WORKSPACE BAR */}
       <aside className={`
         fixed inset-y-0 left-0 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 md:relative md:flex flex-col w-64 lg:w-72 bg-white dark:bg-zinc-900 
+        md:translate-x-0 md:sticky md:top-0 md:h-screen md:flex flex-col w-64 lg:w-72 bg-white dark:bg-zinc-900 
         border-r border-zinc-200 dark:border-zinc-800 p-5 z-40 transition-transform duration-300 ease-in-out
       `}>
         {/* Profile Card Header Segment */}
         <div className="pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center shadow-md">
-              {userSession.name.charAt(0)}
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden">
-              <h3 className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">{userSession.name}</h3>
+              <h3 className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">{user?.name || 'Anonymous'}</h3>
               <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                {userSession.role}
+                {user?.role || 'Guest'}
               </span>
             </div>
           </div>
