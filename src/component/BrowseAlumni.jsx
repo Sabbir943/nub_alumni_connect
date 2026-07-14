@@ -1,30 +1,47 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 
-const BrowseAlumni = () => {
-  const [alumniList, setAlumniList] = useState([]);
+const BrowseAlumni = ({ initialAlumniData }) => {
+  // 1. Initialize state directly with Server-Side rendered data
+  const [alumniList, setAlumniList] = useState(initialAlumniData?.data || []);
+  const [totalPages, setTotalPages] = useState(initialAlumniData?.pagination?.totalPages || 1);
+  const [totalCount, setTotalCount] = useState(initialAlumniData?.pagination?.total || 0);
+  
+  // 2. Filter States
   const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('');
+  const [location, setLocation] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Backend API Call Handler
-  const fetchAlumni = useCallback(async (search, page) => {
+  // 3. Ref to track initial mount and prevent double-fetching
+  const isInitialMount = useRef(true);
+
+  const fetchAlumni = useCallback(async (search, cat, locVal, sort, page) => {
     setLoading(true);
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(
-        `${API_URL}/api/alumni-directory?search=${encodeURIComponent(search)}&page=${page}&limit=6`
-      );
+      
+      const queryParams = new URLSearchParams({
+        search: search || '',
+        category: cat || '',
+        location: locVal || '',
+        sort: sort || 'newest',
+        page: page,
+        limit: 6,
+      });
+
+      // FIXED: Added '/api/' to the route to match backend
+      const res = await fetch(`${API_URL}/api/alumni-directory?${queryParams.toString()}`);
       const result = await res.json();
 
       if (result.success) {
-        setAlumniList(result.data);
-        setTotalPages(result.pagination.totalPages);
-        setTotalCount(result.pagination.total);
+        setAlumniList(result.data || []);
+        setTotalPages(result.pagination?.totalPages || 1);
+        setTotalCount(result.pagination?.total || 0);
       }
     } catch (error) {
       console.error('Error fetching alumni:', error);
@@ -33,14 +50,20 @@ const BrowseAlumni = () => {
     }
   }, []);
 
-  // Debounce technique for search performance
+  // 4. Debounced Effect for Search & Filters
   useEffect(() => {
+    // Skip the very first render since we already have server data
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
-      fetchAlumni(searchQuery, currentPage);
+      fetchAlumni(searchQuery, category, location, sortBy, currentPage);
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, currentPage, fetchAlumni]);
+  }, [searchQuery, category, location, sortBy, currentPage, fetchAlumni]);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -48,43 +71,108 @@ const BrowseAlumni = () => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Search Bar Header */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
+    <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      {/* Title Header */}
+      <div className="space-y-1">
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           Alumni Directory
         </h1>
-        
-        <div className="relative mt-4">
-          <input
-            type="text"
-            placeholder="Search by name, department, or company..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full px-5 py-3.5 pl-11 text-slate-800 bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-          />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-            🔍
-          </span>
-        </div>
-
         <p className="text-xs text-slate-500">
-          Total Found: <strong className="text-slate-800">{totalCount}</strong> alumni
+          Showing <strong className="text-slate-800">{totalCount}</strong> active alumni profiles
         </p>
       </div>
 
-      {/* Loading Skeleton / Grid Container */}
+      {/* SEARCH & FILTER BAR */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 md:p-5 shadow-xs transition-all">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 tracking-wider uppercase">
+              Search Keywords
+            </label>
+            <input
+              type="text"
+              placeholder="Type name or keyword..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 tracking-wider uppercase">
+              Degree
+            </label>
+            <select
+              value={category}
+              onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}
+              className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
+            >
+              <option value="">All Degrees</option>
+              <option value="B.Sc. in CSE">B.Sc. in CSE</option>
+              <option value="Bachelor of BBA">Bachelor of BBA</option>
+              <option value="B.Sc. in EEE">B.Sc. in EEE</option>
+              <option value="Master of Computer Application (MCA)">MCA</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 tracking-wider uppercase">
+              Location
+            </label>
+            <select
+              value={location}
+              onChange={(e) => { setLocation(e.target.value); setCurrentPage(1); }}
+              className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
+            >
+              <option value="">All Locations</option>
+              <option value="Dhaka">Dhaka</option>
+              <option value="Chittagong">Chittagong</option>
+              <option value="Sylhet">Sylhet</option>
+              <option value="International">International</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 tracking-wider uppercase">
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+              className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
+            >
+              <option value="newest">Newest Added</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name_asc">Name (A-Z)</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Grid Container */}
       {loading ? (
-        <div className="text-center py-12 text-slate-500 font-medium">
-          Loading alumni...
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <div key={idx} className="bg-white rounded-2xl p-6 border border-slate-100 animate-pulse space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-slate-200 rounded-full"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : alumniList.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {alumniList.map((alumnus) => {
-            const hasCustomImage = alumnus.profilePicture?.data;
-            const imgSrc = hasCustomImage
-              ? `data:${alumnus.profilePicture.contentType};base64,${alumnus.profilePicture.data}`
-              : null;
+            // FIXED: Using profilePictureUrl based on your POST request logic
+            const avatarUrl = alumnus.profilePictureUrl || 
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(alumnus.fullName || 'Alumni')}&background=4f46e5&color=fff`;
 
             return (
               <div
@@ -93,17 +181,12 @@ const BrowseAlumni = () => {
               >
                 <div className="p-6 space-y-4">
                   <div className="flex items-center gap-4">
-                    {imgSrc ? (
-                      <img
-                        src={imgSrc}
-                        alt={alumnus.fullName}
-                        className="w-14 h-14 rounded-full object-cover border border-slate-100 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-xl flex items-center justify-center shrink-0">
-                        {alumnus.fullName ? alumnus.fullName.charAt(0).toUpperCase() : 'A'}
-                      </div>
-                    )}
+                    <img
+                      src={avatarUrl}
+                      alt={alumnus.fullName}
+                      loading="lazy"
+                      className="w-14 h-14 rounded-full object-cover border border-slate-100 shrink-0"
+                    />
 
                     <div className="min-w-0">
                       <h3 className="text-base font-bold text-slate-900 truncate">
@@ -152,7 +235,7 @@ const BrowseAlumni = () => {
       ) : (
         <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
           <p className="text-slate-500 text-sm">
-            No alumni found matching <strong className="text-slate-800">"{searchQuery}"</strong>
+            No alumni profiles found matching your search criteria.
           </p>
         </div>
       )}
@@ -193,6 +276,7 @@ const BrowseAlumni = () => {
           </button>
         </div>
       )}
+
     </div>
   );
 };

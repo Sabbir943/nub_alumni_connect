@@ -36,7 +36,7 @@ const Navbar = () => {
   const publicLinks = [
     { label: 'Home', href: '/', icon: <FiCompass /> },
     { label: 'Alumni Directory', href: '/alumni-directory', icon: <FiUsers /> },
-    { label: 'Contact Us', href: '/contact', icon: <FiMail /> },
+    { label: 'Contact Us', href: '/Contact-us', icon: <FiMail /> },
   ];
 
   // 2. PRIVATE LINKS (Visible ONLY to logged-in students/alumni/admins)
