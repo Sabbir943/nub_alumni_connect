@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FiUser, FiMail, FiCalendar, FiBookOpen, FiHash, 
   FiMapPin, FiBriefcase, FiLinkedin, FiFileText, FiPhone, 
-  FiGlobe, FiCpu, FiCamera, FiCheckCircle, FiAlertTriangle, FiEdit3
+  FiGlobe, FiCpu, FiCamera, FiCheckCircle, FiAlertTriangle, FiEdit3,FiShield
 } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import { authClient } from '@/lib/auth-client';
@@ -205,6 +205,14 @@ const CreateProfile = () => {
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-zinc-400"><FiMail /></span>
               <input type="email" disabled value={user?.email || ''} className="w-full pl-10 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-500 cursor-not-allowed outline-none" />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Account Role</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-blue-500"><FiShield /></span>
+              <input type="text" disabled value={user?.role || 'Alumni'} className="w-full pl-10 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-semibold text-blue-600 dark:text-blue-400 capitalize cursor-not-allowed outline-none" />
             </div>
           </div>
 

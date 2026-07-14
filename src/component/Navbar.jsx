@@ -35,7 +35,7 @@ const Navbar = () => {
   // 1. PUBLIC LINKS (Visible to all visitors)
   const publicLinks = [
     { label: 'Home', href: '/', icon: <FiCompass /> },
-    { label: 'Alumni Directory', href: '/directory', icon: <FiUsers /> },
+    { label: 'Alumni Directory', href: '/alumni-directory', icon: <FiUsers /> },
     { label: 'Contact Us', href: '/contact', icon: <FiMail /> },
   ];
 
