@@ -46,10 +46,10 @@ const SignIn = () => {
   const handleGoogleLogin = async () => {
     try {
       toast.loading('Connecting to Google...');
-      /*
-        Better Auth Social Login Hook:
+      
+        
         await authClient.signIn.social({ provider: "google" });
-      */
+      
     } catch (err) {
       toast.error('Google authentication failed.');
     }

@@ -66,7 +66,17 @@ const SignUpPage = () => {
       setLoading(false);
     }
   };
-
+    const handleGoogleLogin = async () => {
+    try {
+      toast.loading('Connecting to Google...');
+      
+        
+        await authClient.signIn.social({ provider: "google" });
+      
+    } catch (err) {
+      toast.error('Google authentication failed.');
+    }
+  }; 
   return (
     <div className="min-h-[90vh] flex items-center justify-center bg-white dark:bg-zinc-950 px-4 py-8">
       <Toaster position="top-center" reverseOrder={false} />
@@ -161,7 +171,7 @@ const SignUpPage = () => {
         </div>
 
         <button 
-          onClick={() => toast.loading('Connecting Google Account Setup...')}
+         onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 font-semibold py-2.5 rounded-xl transition-all"
         >
           <FcGoogle className="w-5 h-5" /> Join with Google
