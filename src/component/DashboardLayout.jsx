@@ -37,11 +37,11 @@ const DashboardLayout = ({ children }) => {
   ];
 
   const studentLinks = [
-    { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
-    { label: 'Talk to Alumni (Chat)', href: '/dashboard/student/chat', icon: <FiMessageSquare />, badge: 5 },
-    { label: 'Upload Resume', href: '/dashboard/student/resume', icon: <FiFileText /> },
-    { label: 'Apply for Jobs', href: '/dashboard/student/jobs', icon: <FiBriefcase /> },
-    { label: 'My Applications', href: '/dashboard/student/applications', icon: <FiCheckSquare /> }
+    { label: 'Overview', href: '/dashboard/students/overview', icon: <FiGrid /> },
+    { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare />, badge: 5 },
+    { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
+    { label: 'Upload Cv', href: '/dashboard/students/upload-cv', icon: <FiBriefcase /> },
+    { label: 'My Applications', href: '/dashboard/students/my-application', icon: <FiCheckSquare /> }
   ];
 
   const adminLinks = [
