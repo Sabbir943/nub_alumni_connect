@@ -27,7 +27,7 @@ const DashboardLayout = ({ children }) => {
   // NAVIGATION ROLE MAP DEFINITIONS
   // ==========================================
   const alumniLinks = [
-    { label: 'Overview', href: '/dashboard/alumni/overview', icon: <FiGrid /> },
+    { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Create Profile', href: '/dashboard/alumni/Profile', icon: <FiUserPlus /> },
     { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
@@ -37,7 +37,7 @@ const DashboardLayout = ({ children }) => {
   ];
 
   const studentLinks = [
-    { label: 'Overview', href: '/dashboard/students/overview', icon: <FiGrid /> },
+    { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare />, badge: 5 },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
     { label: 'Upload Cv', href: '/dashboard/students/upload-cv', icon: <FiBriefcase /> },
