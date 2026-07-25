@@ -41,8 +41,8 @@ const Navbar = () => {
 
   // 2. PRIVATE LINKS (Visible ONLY to logged-in students/alumni/admins)
   const privateLinks = [
-    { label: 'Job Board', href: '/jobs', icon: <FiBriefcase /> },
-    { label: 'Notice Board', href: '/notices', icon: <FiBookOpen /> },
+    { label: 'Job Board', href: '/job-portal', icon: <FiBriefcase /> },
+    { label: 'Notice Board', href: '/notice', icon: <FiBookOpen /> },
   ];
 
   // Utility to match styling on active links

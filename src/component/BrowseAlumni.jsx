@@ -19,7 +19,7 @@ import {
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const DEGREE_OPTIONS = [
   "B.Sc. in CSE",

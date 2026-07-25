@@ -14,8 +14,14 @@ import {
   FiCheckCircle, 
   FiAlertCircle 
 } from 'react-icons/fi';
+import { authClient } from '@/lib/auth-client';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const JobPost = () => {
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
+
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -63,12 +69,11 @@ const JobPost = () => {
     const jobPayload = {
       ...formData,
       skills,
-      postedBy: 'Alumni Network',
+      postedBy: user?.name || 'Anonymous Alumni',
       createdAt: new Date().toISOString(),
     };
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_URL}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

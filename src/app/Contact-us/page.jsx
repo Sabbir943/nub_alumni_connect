@@ -20,7 +20,7 @@ const ContactUs = () => {
     setStatus({ loading: true, success: false, error: '' });
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       
       const res = await fetch(`${API_URL}/api/contact`, {
         method: 'POST',
