@@ -32,7 +32,7 @@ const DashboardLayout = ({ children }) => {
     { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
-    { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare />, badge: 2 },
+    { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
     { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> }
   ];
 
