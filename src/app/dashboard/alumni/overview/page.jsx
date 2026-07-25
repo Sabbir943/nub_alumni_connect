@@ -283,10 +283,12 @@ export default function AlumniOverviewPage() {
     const fetchData = async () => {
       try {
         const profileRes = await fetch(`${API_URL}/api/alumni-directory/check/${user.email}`);
+        if (!profileRes.ok) throw new Error(`Server error ${profileRes.status}`);
         const profileData = await profileRes.json();
         setHasProfile(profileData.exists);
 
         const alumniRes = await fetch(`${API_URL}/api/alumni-directory?limit=6&sortBy=newest`);
+        if (!alumniRes.ok) throw new Error(`Server error ${alumniRes.status}`);
         const alumniData = await alumniRes.json();
         const others = (alumniData.profiles || alumniData.data || []).filter(
           (p) => p.email !== user.email

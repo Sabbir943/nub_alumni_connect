@@ -104,6 +104,7 @@ export default function MessengerPage() {
 
         try {
           const resUnread = await fetch(`${API_BASE_URL}/api/messages/unread-summary/${encodeURIComponent(currentUserEmail)}`);
+          if (!resUnread.ok) throw new Error('Unread fetch failed');
           const unreadData = await resUnread.json();
           if (isMounted && unreadData.success) {
             setUnreadCounts(unreadData.unreadCounts || {});

@@ -33,7 +33,7 @@ const DashboardLayout = ({ children }) => {
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
     { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
-    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> }
+    { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> }
   ];
 
   const studentLinks = [

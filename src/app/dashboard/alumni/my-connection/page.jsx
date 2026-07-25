@@ -44,7 +44,7 @@ export default function MyConnectionsPage() {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/follow/following/${encodeURIComponent(currentUserEmail)}`
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/follow/following/${encodeURIComponent(currentUserEmail)}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch connections');
@@ -95,7 +95,7 @@ export default function MyConnectionsPage() {
 
     setUnfollowing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/follow', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/follow`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
