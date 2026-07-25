@@ -40,8 +40,8 @@ const DashboardLayout = ({ children }) => {
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare />, badge: 5 },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
-    { label: 'Upload Cv', href: '/dashboard/students/upload-cv', icon: <FiBriefcase /> },
-    { label: 'My Applications', href: '/dashboard/students/my-application', icon: <FiCheckSquare /> }
+    { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiBriefcase /> },
+    { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> }
   ];
 
   const adminLinks = [

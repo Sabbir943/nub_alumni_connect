@@ -1,11 +1,14 @@
 import React from 'react';
 
-const myConnection = () => {
+const myApplication = () => {
     return (
         <div>
-            <h1>My connection</h1>
+            <h1>
+
+                this is my Application
+            </h1>
         </div>
     );
 };
 
-export default myConnection;
+export default myApplication;
