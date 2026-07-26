@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "server": "node server.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.23",
     "@heroui/react": "^3.2.1",
     "@heroui/styles": "^3.2.1",
     "better-auth": "^1.6.23",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "framer-motion": "^12.42.2",
     "kysely": "^0.29.2",
     "lucide-react": "^1.26.0",

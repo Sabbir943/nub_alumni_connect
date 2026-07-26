@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
@@ -23,20 +23,19 @@ import {
   FiUser,
   FiHash,
   FiExternalLink,
+  FiGithub,
 } from "react-icons/fi";
 import { GraduationCap } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const DEGREE_OPTIONS = [
-  "B.Sc. in CSE",
-  "B.Sc. in EEE",
+const DEPARTMENT_OPTIONS = [
+  "CSE",
+  "EEE",
   "BBA",
-  "B.A. in English",
+  "English",
   "MBA",
-  "M.Sc. in CSE",
-  "MBA (Executive)",
 ];
 
 const LOCATION_OPTIONS = [
@@ -61,8 +60,6 @@ const SORT_OPTIONS = [
   { value: "oldest", label: "Oldest First" },
   { value: "name_asc", label: "Name (A-Z)" },
   { value: "name_desc", label: "Name (Z-A)" },
-  { value: "year_asc", label: "Year (Oldest)" },
-  { value: "year_desc", label: "Year (Newest)" },
 ];
 
 const containerVariants = {
@@ -162,36 +159,47 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                {profile.degree && (
+                {profile.department && (
                   <div className="flex items-center gap-2.5 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
                     <div className="p-2 bg-emerald-100 rounded-lg">
                       <FiBookOpen className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-emerald-400 font-semibold uppercase">Degree</p>
-                      <p className="text-sm font-bold text-emerald-700">{profile.degree}</p>
+                      <p className="text-[10px] text-emerald-400 font-semibold uppercase">Department</p>
+                      <p className="text-sm font-bold text-emerald-700">{profile.department}</p>
                     </div>
                   </div>
                 )}
-                {profile.currentYear && (
+                {profile.semester && (
                   <div className="flex items-center gap-2.5 p-3 bg-teal-50 rounded-xl border border-teal-100">
                     <div className="p-2 bg-teal-100 rounded-lg">
                       <GraduationCap className="w-4 h-4 text-teal-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-teal-400 font-semibold uppercase">Year</p>
-                      <p className="text-sm font-bold text-teal-700">{profile.currentYear}</p>
+                      <p className="text-[10px] text-teal-400 font-semibold uppercase">Semester</p>
+                      <p className="text-sm font-bold text-teal-700">{profile.semester}</p>
                     </div>
                   </div>
                 )}
-                {profile.currentLocation && (
+                {profile.location && (
                   <div className="flex items-center gap-2.5 p-3 bg-cyan-50 rounded-xl border border-cyan-100">
                     <div className="p-2 bg-cyan-100 rounded-lg">
                       <FiMapPin className="w-4 h-4 text-cyan-600" />
                     </div>
                     <div>
                       <p className="text-[10px] text-cyan-400 font-semibold uppercase">Location</p>
-                      <p className="text-sm font-bold text-cyan-700">{profile.currentLocation}</p>
+                      <p className="text-sm font-bold text-cyan-700">{profile.location}</p>
+                    </div>
+                  </div>
+                )}
+                {profile.batch && (
+                  <div className="flex items-center gap-2.5 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FiUsers className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-purple-400 font-semibold uppercase">Batch</p>
+                      <p className="text-sm font-bold text-purple-700">{profile.batch}</p>
                     </div>
                   </div>
                 )}
@@ -238,13 +246,25 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                       <FiExternalLink className="w-3 h-3 text-[#0A66C2]/50 ml-auto group-hover:text-[#0A66C2] transition-colors" />
                     </a>
                   )}
-                  {profile.contactNumber && (
+                  {profile.githubUrl && (
                     <a
-                      href={`tel:${profile.contactNumber}`}
+                      href={profile.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors group"
+                    >
+                      <FiGithub className="w-4 h-4 text-slate-700" />
+                      <span className="text-sm font-medium text-slate-700">GitHub Profile</span>
+                      <FiExternalLink className="w-3 h-3 text-slate-400 ml-auto group-hover:text-slate-700 transition-colors" />
+                    </a>
+                  )}
+                  {profile.phone && (
+                    <a
+                      href={`tel:${profile.phone}`}
                       className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-100 transition-colors group"
                     >
                       <FiPhone className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-700">{profile.contactNumber}</span>
+                      <span className="text-sm font-medium text-emerald-700">{profile.phone}</span>
                       <FiExternalLink className="w-3 h-3 text-emerald-400 ml-auto group-hover:text-emerald-600 transition-colors" />
                     </a>
                   )}
@@ -256,18 +276,6 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                       <FiMail className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-medium text-blue-700">{profile.email}</span>
                       <FiExternalLink className="w-3 h-3 text-blue-400 ml-auto group-hover:text-blue-600 transition-colors" />
-                    </a>
-                  )}
-                  {profile.facebookUrl && (
-                    <a
-                      href={profile.facebookUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-2.5 bg-[#1877F2]/5 hover:bg-[#1877F2]/10 rounded-xl border border-[#1877F2]/10 transition-colors group"
-                    >
-                      <FiGlobe className="w-4 h-4 text-[#1877F2]" />
-                      <span className="text-sm font-medium text-[#1877F2]">Facebook</span>
-                      <FiExternalLink className="w-3 h-3 text-[#1877F2]/50 ml-auto group-hover:text-[#1877F2] transition-colors" />
                     </a>
                   )}
                 </div>
@@ -379,34 +387,35 @@ function FilterDropdown({ label, icon, options, value, onChange, placeholder }) 
 }
 
 function FollowButton({ targetEmail, currentUserEmail }) {
+  const isOwnProfile = currentUserEmail && targetEmail === currentUserEmail;
+  const shouldFetch = currentUserEmail && targetEmail && !isOwnProfile;
+
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-
-  const isOwnProfile = currentUserEmail && targetEmail === currentUserEmail;
+  const [checking, setChecking] = useState(shouldFetch);
 
   useEffect(() => {
-    if (!currentUserEmail || !targetEmail || isOwnProfile) {
-      setChecking(false);
-      return;
-    }
+    if (!shouldFetch) return;
+
+    let cancelled = false;
     async function checkStatus() {
       try {
         const res = await fetch(
           `${API_BASE}/api/follow/status?followerEmail=${encodeURIComponent(currentUserEmail)}&targetEmail=${encodeURIComponent(targetEmail)}`
         );
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json();
           setIsFollowing(data.isFollowing);
         }
       } catch {
         // ignore
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
     }
     checkStatus();
-  }, [currentUserEmail, targetEmail, isOwnProfile]);
+    return () => { cancelled = true; };
+  }, [currentUserEmail, targetEmail, shouldFetch]);
 
   const toggleFollow = async () => {
     if (!currentUserEmail || loading) return;
@@ -491,7 +500,7 @@ export default function BrowseStudents() {
   const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [degree, setDegree] = useState("");
+  const [department, setDepartment] = useState("");
   const [graduationYear, setGraduationYear] = useState("");
   const [location, setLocation] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -507,6 +516,7 @@ export default function BrowseStudents() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const prevFiltersRef = useRef({ search, department, graduationYear, location, sortBy });
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
@@ -514,7 +524,7 @@ export default function BrowseStudents() {
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
-      if (degree) params.set("degree", degree);
+      if (department) params.set("degree", department);
       if (graduationYear) params.set("graduationYear", graduationYear);
       if (location) params.set("location", location);
       params.set("sortBy", sortBy);
@@ -531,32 +541,68 @@ export default function BrowseStudents() {
     } finally {
       setLoading(false);
     }
-  }, [search, degree, graduationYear, location, sortBy, page]);
+  }, [search, department, graduationYear, location, sortBy, page]);
 
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
+    const prev = prevFiltersRef.current;
+    const filtersChanged = prev.search !== undefined && (
+      prev.search !== search || prev.department !== department ||
+      prev.graduationYear !== graduationYear || prev.location !== location || prev.sortBy !== sortBy
+    );
+    prevFiltersRef.current = { search, department, graduationYear, location, sortBy };
+
+    if (filtersChanged) {
+      setPage(1);
+    }
+  }, [search, department, graduationYear, location, sortBy]);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, degree, graduationYear, location, sortBy]);
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (department) params.set("degree", department);
+        if (graduationYear) params.set("graduationYear", graduationYear);
+        if (location) params.set("location", location);
+        params.set("sortBy", sortBy);
+        params.set("page", String(page));
+        params.set("limit", "6");
+
+        const res = await fetch(`${API_BASE}/api/student-directory?${params.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch students");
+        const data = await res.json();
+        if (!cancelled) {
+          setProfiles(data.profiles || []);
+          setPagination(data.pagination);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [search, department, graduationYear, location, sortBy, page]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchProfiles();
   };
 
   const clearFilters = () => {
     setSearch("");
-    setDegree("");
+    setDepartment("");
     setGraduationYear("");
     setLocation("");
     setSortBy("newest");
     setPage(1);
   };
 
-  const hasActiveFilters = degree || graduationYear || location || sortBy !== "newest";
+  const hasActiveFilters = department || graduationYear || location || sortBy !== "newest";
 
   const yearOptions = [];
   for (let y = new Date().getFullYear(); y >= 2000; y--) {
@@ -645,7 +691,7 @@ export default function BrowseStudents() {
             Filters
             {hasActiveFilters && (
               <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center">
-                {[degree, graduationYear, location].filter(Boolean).length}
+                {[department, graduationYear, location].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -678,12 +724,12 @@ export default function BrowseStudents() {
               <div className="mt-4 p-4 bg-white border border-zinc-200 rounded-2xl shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                   <FilterDropdown
-                    label="Degree"
+                    label="Department"
                     icon={<FiBookOpen className="w-4 h-4" />}
-                    options={DEGREE_OPTIONS}
-                    value={degree}
-                    onChange={setDegree}
-                    placeholder="Degree"
+                    options={DEPARTMENT_OPTIONS}
+                    value={department}
+                    onChange={setDepartment}
+                    placeholder="Department"
                   />
 
                   <FilterDropdown
@@ -789,7 +835,7 @@ export default function BrowseStudents() {
 
       {!loading && profiles.length > 0 && (
         <motion.div
-          key={`${page}-${sortBy}-${degree}-${graduationYear}-${location}-${search}`}
+          key={`${page}-${sortBy}-${department}-${graduationYear}-${location}-${search}`}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -808,7 +854,7 @@ export default function BrowseStudents() {
                   <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
                   <div className="absolute top-3 right-3">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/20 backdrop-blur-sm text-white uppercase tracking-wider">
-                      {profile.currentYear || "N/A"}
+                      {profile.semester || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -843,15 +889,15 @@ export default function BrowseStudents() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                    {profile.degree && (
+                    {profile.department && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-100">
-                        {profile.degree}
+                        {profile.department}
                       </span>
                     )}
-                    {profile.currentLocation && (
+                    {profile.location && (
                       <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 text-[10px] font-semibold border border-teal-100">
                         <FiMapPin className="w-2.5 h-2.5" />
-                        {profile.currentLocation}
+                        {profile.location}
                       </span>
                     )}
                   </div>
