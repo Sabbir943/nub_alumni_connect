@@ -188,7 +188,7 @@ export default function ManageJobsPage() {
           </div>
 
           <Link
-            href="/dashboard/alumni/add-job"
+            href="/dashboard/alumni/jobPost"
             className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shadow-sm"
           >
             <Plus className="w-4 h-4" />

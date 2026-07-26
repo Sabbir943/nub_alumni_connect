@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
@@ -415,34 +415,34 @@ function FilterDropdown({ label, icon, options, value, onChange, placeholder }) 
 }
 
 function FollowButton({ targetEmail, currentUserEmail }) {
+  const isOwnProfile = currentUserEmail && targetEmail === currentUserEmail;
+  const shouldFetch = currentUserEmail && targetEmail && !isOwnProfile;
+
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-
-  const isOwnProfile = currentUserEmail && targetEmail === currentUserEmail;
+  const [checking, setChecking] = useState(shouldFetch);
 
   useEffect(() => {
-    if (!currentUserEmail || !targetEmail || isOwnProfile) {
-      setChecking(false);
-      return;
-    }
+    if (!shouldFetch) return;
+    let cancelled = false;
     async function checkStatus() {
       try {
         const res = await fetch(
           `${API_BASE}/api/follow/status?followerEmail=${encodeURIComponent(currentUserEmail)}&targetEmail=${encodeURIComponent(targetEmail)}`
         );
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json();
           setIsFollowing(data.isFollowing);
         }
       } catch {
         // ignore
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
     }
     checkStatus();
-  }, [currentUserEmail, targetEmail, isOwnProfile]);
+    return () => { cancelled = true; };
+  }, [currentUserEmail, targetEmail, shouldFetch]);
 
   const toggleFollow = async () => {
     if (!currentUserEmail || loading) return;
@@ -543,44 +543,53 @@ export default function BrowseAlumni() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
-
-  const fetchProfiles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (degree) params.set("degree", degree);
-      if (graduationYear) params.set("graduationYear", graduationYear);
-      if (location) params.set("location", location);
-      params.set("sortBy", sortBy);
-      params.set("page", String(page));
-      params.set("limit", "6");
-
-      const res = await fetch(`${API_BASE}/api/alumni-directory?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch alumni");
-      const data = await res.json();
-      setProfiles(data.profiles || []);
-      setPagination(data.pagination);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, degree, graduationYear, location, sortBy, page]);
+  const prevFiltersRef = useRef({ search, degree, graduationYear, location, sortBy });
 
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
-
-  useEffect(() => {
-    setPage(1);
+    const prev = prevFiltersRef.current;
+    const filtersChanged = prev.search !== undefined && (
+      prev.search !== search || prev.degree !== degree ||
+      prev.graduationYear !== graduationYear || prev.location !== location || prev.sortBy !== sortBy
+    );
+    prevFiltersRef.current = { search, degree, graduationYear, location, sortBy };
+    if (filtersChanged) setPage(1);
   }, [search, degree, graduationYear, location, sortBy]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (degree) params.set("degree", degree);
+        if (graduationYear) params.set("graduationYear", graduationYear);
+        if (location) params.set("location", location);
+        params.set("sortBy", sortBy);
+        params.set("page", String(page));
+        params.set("limit", "6");
+
+        const res = await fetch(`${API_BASE}/api/alumni-directory?${params.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch alumni");
+        const data = await res.json();
+        if (!cancelled) {
+          setProfiles(data.profiles || []);
+          setPagination(data.pagination);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [search, degree, graduationYear, location, sortBy, page]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchProfiles();
   };
 
   const clearFilters = () => {
@@ -789,7 +798,7 @@ export default function BrowseAlumni() {
           >
             <p className="text-red-600 font-medium">{error}</p>
             <button
-              onClick={fetchProfiles}
+              onClick={() => window.location.reload()}
               className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors"
             >
               Try Again

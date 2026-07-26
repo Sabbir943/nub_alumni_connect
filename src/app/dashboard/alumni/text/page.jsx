@@ -16,7 +16,6 @@ import {
   Phone,
   Video,
   MoreVertical,
-  Image,
   Smile,
   Paperclip,
   ChevronLeft,
@@ -154,36 +153,14 @@ export default function MessengerPage() {
     }
   }, [currentUserEmail]);
 
-  useEffect(() => {
-    if (!activeFriend?.email || !currentUserEmail) return;
-    let cancelled = false;
-    const friendEmail = activeFriend.email;
-    (async () => {
-      try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/messages/conversation?user1=${encodeURIComponent(currentUserEmail)}&user2=${encodeURIComponent(friendEmail)}`
-        );
-        if (!res.ok) throw new Error('fail');
-        const data = await res.json();
-        if (!cancelled && data.success) {
-          setMessages(data.messages || []);
-          setUnreadCounts((prev) => ({ ...prev, [friendEmail]: 0 }));
-          setFetchError(null);
-        }
-      } catch {
-        if (!cancelled) setFetchError('Could not load messages. Retrying...');
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [activeFriend?.email, currentUserEmail]);
-
-  // Polling - stops on error or no active friend
+  // Fetch conversation + set up polling when active friend changes
   useEffect(() => {
     const friendEmail = activeFriend?.email;
-    if (!friendEmail) return;
+    if (!friendEmail || !currentUserEmail) return;
+
+    fetchConversation(friendEmail, true);
 
     if (pollingRef.current) clearInterval(pollingRef.current);
-
     pollingRef.current = setInterval(() => {
       fetchConversation(friendEmail, false);
     }, 5000);
@@ -191,7 +168,7 @@ export default function MessengerPage() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [activeFriend?.email, fetchConversation]);
+  }, [activeFriend?.email, currentUserEmail, fetchConversation]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
