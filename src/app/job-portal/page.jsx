@@ -226,7 +226,7 @@ function JobCard({ job }) {
           </div>
           <Link
             
-            href={`/job-portal/${job._id}`}
+            href={`/job-portal/${job?._id}`}
             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
           >
             Apply <FiExternalLink className="w-3 h-3" />

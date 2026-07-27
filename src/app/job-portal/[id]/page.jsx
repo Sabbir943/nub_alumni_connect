@@ -1,92 +1,52 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FiBriefcase,
-  FiMapPin,
-  FiDollarSign,
-  FiCalendar,
-  FiClock,
-  FiGlobe,
-  FiExternalLink,
-  FiArrowLeft,
-  FiShare2,
-  FiCopy,
-  FiCheck,
-  FiUsers,
-  FiBookOpen,
-  FiSend,
-  FiAlertCircle,
-  FiLoader,
-  FiLinkedin,
-  FiHome,
-  FiLink,
-  FiChevronRight,
-} from "react-icons/fi";
+'use client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
-  }),
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 25 },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-};
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 260, damping: 20 },
-  },
-};
-
-function DetailSkeleton() {
+function Skeleton() {
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="animate-pulse">
-        <div className="h-64 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100" />
-        <div className="max-w-5xl mx-auto px-4 -mt-20">
-          <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl p-8">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-20 h-20 rounded-2xl bg-zinc-200" />
-              <div className="space-y-3 flex-1">
-                <div className="h-6 bg-zinc-200 rounded w-3/4" />
-                <div className="h-4 bg-zinc-100 rounded w-1/2" />
+    <div className="min-h-screen bg-[#f3f2ef]">
+      <div className="max-w-[1000px] mx-auto px-4 py-6 animate-pulse">
+        <div className="h-4 bg-white rounded w-48 mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+          <div className="space-y-2">
+            <div className="bg-white rounded-lg p-6 space-y-4">
+              <div className="flex gap-4">
+                <div className="w-16 h-16 bg-[#e0dfdc] rounded" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-6 bg-[#e0dfdc] rounded w-3/4" />
+                  <div className="h-4 bg-[#e0dfdc] rounded w-1/2" />
+                  <div className="h-4 bg-[#e0dfdc] rounded w-1/3" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="h-8 bg-[#e0dfdc] rounded w-24" />
+                <div className="h-8 bg-[#e0dfdc] rounded w-24" />
+              </div>
+              <div className="space-y-2 pt-4">
+                <div className="h-4 bg-[#e0dfdc] rounded w-full" />
+                <div className="h-4 bg-[#e0dfdc] rounded w-5/6" />
+                <div className="h-4 bg-[#e0dfdc] rounded w-4/6" />
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-24 bg-zinc-100 rounded-2xl" />
-              ))}
-            </div>
-            <div className="space-y-3">
-              <div className="h-4 bg-zinc-100 rounded w-full" />
-              <div className="h-4 bg-zinc-100 rounded w-5/6" />
-              <div className="h-4 bg-zinc-100 rounded w-4/6" />
-              <div className="h-4 bg-zinc-100 rounded w-full" />
-              <div className="h-4 bg-zinc-100 rounded w-3/4" />
+          </div>
+          <div className="space-y-2">
+            <div className="bg-white rounded-lg p-6 space-y-4">
+              <div className="h-5 bg-[#e0dfdc] rounded w-24" />
+              <div className="h-12 bg-[#0a66c2]/10 rounded w-full" />
+              <div className="space-y-3 pt-2">
+                <div className="h-4 bg-[#e0dfdc] rounded" />
+                <div className="h-4 bg-[#e0dfdc] rounded" />
+              </div>
             </div>
           </div>
         </div>
@@ -95,64 +55,39 @@ function DetailSkeleton() {
   );
 }
 
-function NotFoundState() {
+function NotFound() {
   const router = useRouter();
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center max-w-md"
-      >
-        <div className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-6">
-          <FiBriefcase className="w-12 h-12 text-zinc-300" />
+    <div className="min-h-screen bg-[#f3f2ef] flex items-center justify-center px-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-sm">
+        <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto mb-5">
+          <svg className="w-10 h-10 text-[#666]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          </svg>
         </div>
-        <h1 className="text-2xl font-extrabold text-zinc-900 mb-2">Job Not Found</h1>
-        <p className="text-zinc-500 text-sm mb-6">
-          The job posting you&apos;re looking for doesn&apos;t exist or has been removed.
-        </p>
-        <button
-          onClick={() => router.push("/job-portal")}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-lg shadow-blue-600/20"
-        >
-          <FiArrowLeft className="w-4 h-4" />
-          Back to Job Portal
+        <h1 className="text-xl font-bold text-[#191919] mb-1">Job not found</h1>
+        <p className="text-sm text-[#666] mb-6">This position may have been filled or removed.</p>
+        <button onClick={() => router.push('/job-portal')} className="px-5 py-2.5 bg-[#0a66c2] hover:bg-[#004182] text-white text-sm font-semibold rounded-full transition-colors">
+          Browse all jobs
         </button>
       </motion.div>
     </div>
   );
 }
 
-function ErrorState({ message, onRetry }) {
+function JobTag({ children, variant = 'default' }) {
+  const variants = {
+    default: 'bg-[#eaf3fd] text-[#0a66c2]',
+    green: 'bg-[#e4f5e4] text-[#057642]',
+    amber: 'bg-[#fff7e5] text-[#b65700]',
+    purple: 'bg-[#f0e8ff] text-[#6f42c1]',
+    rose: 'bg-[#ffe8e8] text-[#d11124]',
+    teal: 'bg-[#e0f5f4] text-[#008a7a]',
+  };
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center max-w-md"
-      >
-        <div className="w-24 h-24 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-6">
-          <FiAlertCircle className="w-12 h-12 text-rose-400" />
-        </div>
-        <h1 className="text-2xl font-extrabold text-zinc-900 mb-2">Something Went Wrong</h1>
-        <p className="text-zinc-500 text-sm mb-6">{message}</p>
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={onRetry}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors"
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-semibold text-sm rounded-xl transition-colors"
-          >
-            <FiArrowLeft className="w-4 h-4" />
-            Go Back
-          </button>
-        </div>
-      </motion.div>
-    </div>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded text-[11px] font-semibold ${variants[variant] || variants.default}`}>
+      {children}
+    </span>
   );
 }
 
@@ -162,510 +97,350 @@ export default function JobDetailPage() {
   const jobId = params?.id;
 
   const [job, setJob] = useState(null);
+  const [similarJobs, setSimilarJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [copied, setCopied] = useState(false);
-
-  const fetchJob = async () => {
+  const fetchJob = useCallback(async () => {
     if (!jobId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/jobs/${jobId}`);
-      const data = await res.json();
-      if (data.success && data.job) {
-        setJob(data.job);
+      const [jobRes, similarRes] = await Promise.all([
+        fetch(`${API_URL}/api/jobs/${jobId}`),
+        fetch(`${API_URL}/api/jobs?limit=6`),
+      ]);
+      const jobData = await jobRes.json();
+      const similarData = await similarRes.json();
+
+      if (jobData.success && jobData.job) {
+        setJob(jobData.job);
+        if (similarData.success) {
+
+          const currentId = String(jobId);
+    setSimilarJobs(similarData.jobs.filter((j) => String(j._id) !== currentId).slice(0, 4));
+  }
       } else {
-        setError(data.message || "Job not found");
+        setError(jobData.message || 'Job not found');
       }
-    } catch (err) {
-      setError("Failed to connect to server. Please make sure the backend is running.");
+    } catch {
+      setError('Failed to connect to server.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobId]);
 
   useEffect(() => {
     fetchJob();
-  }, [jobId]);
+  }, [fetchJob]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Not specified";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const formatDate = (d) => {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const timeAgo = (dateString) => {
-    if (!dateString) return "";
-    const diff = Date.now() - new Date(dateString).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    if (days === 1) return "Yesterday";
+  const timeAgo = (d) => {
+    if (!d) return '';
+    const diff = Date.now() - new Date(d).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const days = Math.floor(h / 24);
+    if (days === 1) return 'Yesterday';
     if (days < 7) return `${days}d ago`;
     if (days < 30) return `${Math.floor(days / 7)}w ago`;
-    return formatDate(dateString);
+    return formatDate(d);
   };
 
-  const daysUntilDeadline = (dateString) => {
-    if (!dateString) return null;
-    const diff = new Date(dateString).getTime() - Date.now();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    return days;
+  const daysUntil = (d) => {
+    if (!d) return null;
+    return Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
 
-  const isApplicationUrl = (val) => {
-    if (!val) return false;
-    return val.startsWith("http://") || val.startsWith("https://");
+  const isUrl = (v) => v && (v.startsWith('http://') || v.startsWith('https://'));
+
+  if (loading) return <Skeleton />;
+  if (error || !job) return <NotFound />;
+
+  const deadlineDays = daysUntil(job.applicationDeadline);
+  const expired = deadlineDays !== null && deadlineDays < 0;
+  const urgent = deadlineDays !== null && deadlineDays >= 0 && deadlineDays <= 7;
+
+  const jobTypeColor = {
+    'Full-time': 'green',
+    'Part-time': 'purple',
+    'Contract': 'amber',
+    'Internship': 'teal',
+    'On-site': 'rose',
+    'Remote': 'teal',
+    'Hybrid': 'purple',
   };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShareLinkedIn = () => {
-    const url = window.location.href;
-    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-    window.open(linkedinUrl, "_blank", "noopener,noreferrer");
-  };
-
-  if (loading) return <DetailSkeleton />;
-  if (error || !job) return <NotFoundState />;
-
-  const deadlineDays = daysUntilDeadline(job.applicationDeadline);
-  const isDeadlinePassed = deadlineDays !== null && deadlineDays < 0;
-  const isDeadlineSoon = deadlineDays !== null && deadlineDays >= 0 && deadlineDays <= 7;
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      {/* Hero Banner */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative h-72 sm:h-80 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.08),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.06),transparent)]" />
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-purple-400/10 blur-2xl" />
-
-        {/* Floating shapes */}
-        <motion.div
-          animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-16 right-[15%] w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10"
-        />
-        <motion.div
-          animate={{ y: [0, 10, 0], rotate: [0, -8, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute top-24 left-[10%] w-12 h-12 rounded-xl bg-white/5 border border-white/5"
-        />
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute bottom-20 right-[30%] w-6 h-6 rounded-full bg-white/10"
-        />
-
-        {/* Back Button */}
-        <div className="absolute top-6 left-6 z-10">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/job-portal")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/15 backdrop-blur-md border border-white/20 text-white text-sm font-medium rounded-xl hover:bg-white/25 transition-all"
-          >
-            <FiArrowLeft className="w-4 h-4" />
-            Back
-          </motion.button>
-        </div>
-
-        {/* Share Buttons */}
-        <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleShareLinkedIn}
-            className="p-2.5 bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-[#0A66C2]/40 transition-all"
-            title="Share on LinkedIn"
-          >
-            <FiLinkedin className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCopyLink}
-            className="p-2.5 bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-white/25 transition-all"
-            title="Copy link"
-          >
-            {copied ? <FiCheck className="w-4 h-4 text-emerald-300" /> : <FiShare2 className="w-4 h-4" />}
-          </motion.button>
-        </div>
-
-        {/* Hero Content */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 sm:px-10 pb-8">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="flex items-end gap-5"
-            >
-              {/* Company Icon */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white shadow-xl flex items-center justify-center shrink-0">
-                <span className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-br from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {job.company?.charAt(0) || "C"}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <motion.h1
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight"
-                >
-                  {job.title}
-                </motion.h1>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex items-center gap-3 mt-2 text-blue-100"
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <FiHome className="w-3.5 h-3.5" />
-                    {job.company}
-                  </span>
-                  <span className="w-1 h-1 rounded-full bg-blue-300" />
-                  <span className="flex items-center gap-1.5 text-sm">
-                    <FiMapPin className="w-3.5 h-3.5" />
-                    {job.location}
-                  </span>
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
+    <div className="min-h-screen bg-[#f3f2ef]">
+      {/* Top banner bar */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border-b border-[#e0dfdc] sticky top-0 z-20">
+        <div className="max-w-[1000px] mx-auto px-4 h-14 flex items-center justify-between">
+          <button onClick={() => router.push('/job-portal')} className="flex items-center gap-2 text-sm font-semibold text-[#666] hover:text-[#191919] transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            Back to jobs
+          </button>
         </div>
       </motion.div>
 
-      {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-6 relative z-10 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Quick Info Cards */}
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-            >
-              <motion.div
-                variants={staggerItem}
-                className="bg-white rounded-2xl border border-zinc-200 p-4 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-2">
-                  <FiBriefcase className="w-5 h-5 text-blue-600" />
-                </div>
-                <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Type</p>
-                <p className="text-sm font-bold text-zinc-900 mt-0.5">{job.jobType}</p>
-              </motion.div>
+      <div className="max-w-[1000px] mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
 
-              <motion.div
-                variants={staggerItem}
-                className="bg-white rounded-2xl border border-zinc-200 p-4 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2">
-                  <FiGlobe className="w-5 h-5 text-emerald-600" />
-                </div>
-                <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Workplace</p>
-                <p className="text-sm font-bold text-zinc-900 mt-0.5">{job.workplaceType}</p>
-              </motion.div>
+          {/* LEFT COLUMN */}
+          <div className="space-y-2">
 
-              <motion.div
-                variants={staggerItem}
-                className="bg-white rounded-2xl border border-zinc-200 p-4 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-2">
-                  <FiDollarSign className="w-5 h-5 text-amber-600" />
+            {/* Job Header Card */}
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-[#e0dfdc] p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-[#0a66c2] to-[#004182] flex items-center justify-center text-white text-xl font-bold shrink-0 shadow-sm">
+                  {job.company?.charAt(0) || 'C'}
                 </div>
-                <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Salary</p>
-                <p className="text-sm font-bold text-zinc-900 mt-0.5 truncate">{job.salaryRange || "Negotiable"}</p>
-              </motion.div>
-
-              <motion.div
-                variants={staggerItem}
-                className="bg-white rounded-2xl border border-zinc-200 p-4 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center mx-auto mb-2">
-                  <FiClock className="w-5 h-5 text-violet-600" />
-                </div>
-                <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Posted</p>
-                <p className="text-sm font-bold text-zinc-900 mt-0.5">{timeAgo(job.createdAt)}</p>
-              </motion.div>
-            </motion.div>
-
-            {/* Job Description */}
-            <motion.div
-              variants={fadeInUp}
-              custom={1}
-              initial="hidden"
-              animate="visible"
-              className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden"
-            >
-              <div className="px-6 sm:px-8 py-5 border-b border-zinc-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-xl">
-                    <FiBookOpen className="w-5 h-5 text-blue-600" />
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#191919] leading-tight">{job.title}</h1>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-sm text-[#666]">
+                    <span className="font-semibold text-[#191919] hover:text-[#0a66c2] cursor-pointer">{job.company}</span>
+                    <span className="hidden sm:inline text-[#bfbfbf]">&middot;</span>
+                    <span>{job.location}</span>
+                    <span className="hidden sm:inline text-[#bfbfbf]">&middot;</span>
+                    <span>{timeAgo(job.createdAt)}</span>
                   </div>
-                  <h2 className="text-lg font-extrabold text-zinc-900">Job Description</h2>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <JobTag variant={jobTypeColor[job.jobType] || 'default'}>{job.jobType}</JobTag>
+                    <JobTag variant={jobTypeColor[job.workplaceType] || 'default'}>{job.workplaceType}</JobTag>
+                    {job.salary && <JobTag variant="amber">{job.salary}</JobTag>}
+                  </div>
                 </div>
               </div>
-              <div className="px-6 sm:px-8 py-6">
-                <div className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                  {job.description || "No description provided."}
+            </motion.div>
+
+            {/* Quick Stats Bar */}
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-[#e0dfdc] p-4">
+              <div className="flex flex-wrap gap-6 text-sm">
+                <div>
+                  <span className="text-[#666] text-xs">Employment</span>
+                  <p className="font-semibold text-[#191919]">{job.jobType}</p>
+                </div>
+                <div>
+                  <span className="text-[#666] text-xs">Workplace</span>
+                  <p className="font-semibold text-[#191919]">{job.workplaceType}</p>
+                </div>
+                <div>
+                  <span className="text-[#666] text-xs">Location</span>
+                  <p className="font-semibold text-[#191919]">{job.location}</p>
+                </div>
+                {job.salary && (
+                  <div>
+                    <span className="text-[#666] text-xs">Salary</span>
+                    <p className="font-semibold text-[#191919]">{job.salary}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Company Section */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0a66c2] to-[#004182] flex items-center justify-center text-white text-sm font-bold">
+                    {job.company?.charAt(0) || 'C'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#191919] text-sm">About the company</h3>
+                    <p className="text-xs text-[#666]">{job.company} &middot; Alumni Network</p>
+                  </div>
+                </div>
+                <p className="text-sm text-[#666] leading-relaxed">
+                  {job.company} is looking for talented professionals through the NUB Alumni Connect network.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Description */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+              <div className="p-5">
+                <h3 className="font-bold text-[#191919] mb-3">About the job</h3>
+                <div className="text-sm text-[#666] leading-[1.7] whitespace-pre-wrap">
+                  {job.description || 'No description provided.'}
                 </div>
               </div>
             </motion.div>
 
             {/* Requirements */}
             {job.requirements && (
-              <motion.div
-                variants={fadeInUp}
-                custom={2}
-                initial="hidden"
-                animate="visible"
-                className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden"
-              >
-                <div className="px-6 sm:px-8 py-5 border-b border-zinc-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-violet-50 rounded-xl">
-                      <FiCheck className="w-5 h-5 text-violet-600" />
-                    </div>
-                    <h2 className="text-lg font-extrabold text-zinc-900">Requirements & Qualifications</h2>
-                  </div>
-                </div>
-                <div className="px-6 sm:px-8 py-6">
-                  <div className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                    {job.requirements}
-                  </div>
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+                <div className="p-5">
+                  <h3 className="font-bold text-[#191919] mb-3">Qualifications</h3>
+                  <div className="text-sm text-[#666] leading-[1.7] whitespace-pre-wrap">{job.requirements}</div>
                 </div>
               </motion.div>
             )}
 
             {/* Skills */}
             {job.skills && job.skills.length > 0 && (
-              <motion.div
-                variants={fadeInUp}
-                custom={3}
-                initial="hidden"
-                animate="visible"
-                className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden"
-              >
-                <div className="px-6 sm:px-8 py-5 border-b border-zinc-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-50 rounded-xl">
-                      <FiLink className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <h2 className="text-lg font-extrabold text-zinc-900">Required Skills</h2>
-                    <span className="ml-auto px-2.5 py-0.5 bg-zinc-100 text-zinc-500 text-xs font-semibold rounded-full">
-                      {job.skills.length} skill{job.skills.length !== 1 ? "s" : ""}
-                    </span>
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-[#191919]">Skills</h3>
+                    <span className="text-xs text-[#666]">{job.skills.length} skill{job.skills.length !== 1 ? 's' : ''}</span>
                   </div>
-                </div>
-                <div className="px-6 sm:px-8 py-6">
-                  <motion.div
-                    variants={staggerContainer}
-                    initial="hidden"
-                    animate="visible"
-                    className="flex flex-wrap gap-2"
-                  >
+                  <div className="flex flex-wrap gap-2">
                     {job.skills.map((skill, i) => (
                       <motion.span
                         key={i}
-                        variants={staggerItem}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-semibold border border-blue-100 hover:shadow-md hover:shadow-blue-100/50 transition-shadow cursor-default"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.04 }}
+                        whileHover={{ scale: 1.05 }}
+                        className="px-3 py-1.5 rounded-full bg-[#eaf3fd] text-[#0a66c2] text-xs font-semibold hover:shadow-sm transition-shadow cursor-default"
                       >
                         {skill}
                       </motion.span>
                     ))}
-                  </motion.div>
+                  </div>
                 </div>
               </motion.div>
             )}
+
+            {/* Similar Jobs */}
+            {similarJobs.length > 0 && (
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+                <div className="p-5">
+                  <h3 className="font-bold text-[#191919] mb-4">Similar jobs</h3>
+                  <div className="space-y-3">
+                    {similarJobs.map((sj, i) => (
+                      <motion.div key={sj._id} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
+                        <Link href={`/job-portal/${sj._id}`} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#f3f2ef] transition-colors group">
+                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#0a66c2] to-[#004182] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {sj.company?.charAt(0) || 'C'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-[#191919] group-hover:text-[#0a66c2] transition-colors truncate">{sj.title}</p>
+                            <p className="text-xs text-[#666] truncate">{sj.company} &middot; {sj.location}</p>
+                            <div className="flex gap-1.5 mt-1">
+                              {sj.jobType && <span className="text-[10px] font-semibold text-[#666]">{sj.jobType}</span>}
+                              {sj.workplaceType && <><span className="text-[#bfbfbf] text-[10px]">&middot;</span><span className="text-[10px] font-semibold text-[#666]">{sj.workplaceType}</span></>}
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-[#bfbfbf] mt-1 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                          </svg>
+                        </Link>
+                        {i < similarJobs.length - 1 && <div className="h-px bg-[#e0dfdc] ml-12" />}
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
           </div>
 
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            {/* Apply Card */}
-            <motion.div
-              variants={fadeInUp}
-              custom={1}
-              initial="hidden"
-              animate="visible"
-              className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden sticky top-6"
-            >
-              <div className="p-6">
-                <h3 className="text-sm font-extrabold text-zinc-900 uppercase tracking-wider mb-4">Apply Now</h3>
+          {/* RIGHT COLUMN */}
+          <div className="space-y-2">
 
-                {/* Deadline */}
+            {/* Apply Card */}
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+              <div className="p-5">
+                <h3 className="font-bold text-[#191919] text-sm mb-4">Apply now</h3>
+
                 {job.applicationDeadline && (
-                  <div className={`mb-4 p-3.5 rounded-2xl border ${
-                    isDeadlinePassed
-                      ? "bg-rose-50 border-rose-200"
-                      : isDeadlineSoon
-                      ? "bg-amber-50 border-amber-200"
-                      : "bg-blue-50 border-blue-100"
+                  <div className={`mb-4 p-3 rounded-lg border text-sm ${
+                    expired ? 'bg-[#fff5f5] border-[#ffd5d5]' : urgent ? 'bg-[#fffdf5] border-[#ffe6a8]' : 'bg-[#fafafa] border-[#e0dfdc]'
                   }`}>
                     <div className="flex items-center gap-2">
-                      <FiCalendar className={`w-4 h-4 ${
-                        isDeadlinePassed ? "text-rose-500" : isDeadlineSoon ? "text-amber-600" : "text-blue-600"
-                      }`} />
-                      <span className={`text-xs font-bold uppercase tracking-wider ${
-                        isDeadlinePassed ? "text-rose-600" : isDeadlineSoon ? "text-amber-700" : "text-blue-600"
-                      }`}>
-                        {isDeadlinePassed ? "Deadline Passed" : isDeadlineSoon ? `${deadlineDays} day${deadlineDays !== 1 ? "s" : ""} left` : "Application Deadline"}
+                      <svg className={`w-4 h-4 ${expired ? 'text-[#d11124]' : urgent ? 'text-[#b65700]' : 'text-[#666]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                      <span className={`font-semibold text-xs ${expired ? 'text-[#d11124]' : urgent ? 'text-[#b65700]' : 'text-[#666]'}`}>
+                        {expired ? 'Deadline passed' : urgent ? `${deadlineDays} day${deadlineDays !== 1 ? 's' : ''} left to apply` : formatDate(job.applicationDeadline)}
                       </span>
                     </div>
-                    <p className={`text-sm font-semibold mt-1 ${
-                      isDeadlinePassed ? "text-rose-700" : isDeadlineSoon ? "text-amber-800" : "text-blue-800"
-                    }`}>
-                      {formatDate(job.applicationDeadline)}
-                    </p>
                   </div>
                 )}
 
-                {/* Apply Button */}
-                {job.applicationUrlOrEmail ? (
-                  isApplicationUrl(job.applicationUrlOrEmail) ? (
-                    <motion.a
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      href={job.applicationUrlOrEmail}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-bold shadow-lg transition-all duration-200 ${
-                        isDeadlinePassed
-                          ? "bg-zinc-300 text-zinc-500 cursor-not-allowed shadow-none"
-                          : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/25 hover:shadow-blue-500/40"
-                      }`}
-                      onClick={(e) => isDeadlinePassed && e.preventDefault()}
-                    >
-                      <FiSend className="w-4 h-4" />
-                      {isDeadlinePassed ? "Deadline Passed" : "Apply Now"}
-                      {!isDeadlinePassed && <FiExternalLink className="w-3.5 h-3.5" />}
-                    </motion.a>
-                  ) : (
-                    <motion.a
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      href={`mailto:${job.applicationUrlOrEmail}?subject=Application for ${encodeURIComponent(job.title)} at ${encodeURIComponent(job.company)}`}
-                      className={`w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-bold shadow-lg transition-all duration-200 ${
-                        isDeadlinePassed
-                          ? "bg-zinc-300 text-zinc-500 cursor-not-allowed shadow-none"
-                          : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/25 hover:shadow-blue-500/40"
-                      }`}
-                      onClick={(e) => isDeadlinePassed && e.preventDefault()}
-                    >
-                      <FiSend className="w-4 h-4" />
-                      {isDeadlinePassed ? "Deadline Passed" : "Apply via Email"}
-                    </motion.a>
-                  )
+                {job.applicationUrlOrEmail ? (isUrl(job.applicationUrlOrEmail) ? (
+                  <motion.a whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                    href={job.applicationUrlOrEmail} target="_blank" rel="noopener noreferrer"
+                    onClick={(e) => expired && e.preventDefault()}
+                    className={`w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                      expired ? 'bg-[#e0dfdc] text-[#999] cursor-not-allowed' : 'bg-[#0a66c2] hover:bg-[#004182] text-white shadow-sm'
+                    }`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                    </svg>
+                    {expired ? 'No longer accepting' : 'Apply on external site'}
+                  </motion.a>
                 ) : (
-                  <button
-                    disabled
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-zinc-100 text-zinc-400 rounded-xl text-sm font-bold cursor-not-allowed"
-                  >
-                    <FiAlertCircle className="w-4 h-4" />
-                    No Application Link Provided
+                  <motion.a whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                    href={`mailto:${job.applicationUrlOrEmail}?subject=Application for ${encodeURIComponent(job.title)} at ${encodeURIComponent(job.company)}`}
+                    onClick={(e) => expired && e.preventDefault()}
+                    className={`w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                      expired ? 'bg-[#e0dfdc] text-[#999] cursor-not-allowed' : 'bg-[#0a66c2] hover:bg-[#004182] text-white shadow-sm'
+                    }`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                    {expired ? 'No longer accepting' : 'Apply via email'}
+                  </motion.a>
+                )) : (
+                  <button disabled className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#e0dfdc] text-[#999] text-sm font-bold cursor-not-allowed">
+                    No application link
                   </button>
                 )}
 
-                {/* Application Contact */}
                 {job.applicationUrlOrEmail && (
-                  <div className="mt-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                    <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider mb-1">Contact</p>
-                    <p className="text-xs text-zinc-700 font-medium break-all">{job.applicationUrlOrEmail}</p>
+                  <div className="mt-3 p-3 bg-[#fafafa] rounded-lg border border-[#e0dfdc]">
+                    <p className="text-[10px] text-[#666] font-semibold uppercase tracking-wider">Contact</p>
+                    <p className="text-xs text-[#191919] font-medium break-all">{job.applicationUrlOrEmail}</p>
                   </div>
                 )}
               </div>
+            </motion.div>
 
-              {/* Divider */}
-              <div className="h-px bg-zinc-100 mx-6" />
-
-              {/* Job Meta */}
-              <div className="p-6 space-y-4">
-                <h3 className="text-sm font-extrabold text-zinc-900 uppercase tracking-wider">Job Details</h3>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                      <FiBriefcase className="w-3.5 h-3.5" />
-                      Employment
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-700">{job.jobType}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                      <FiGlobe className="w-3.5 h-3.5" />
-                      Workplace
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-700">{job.workplaceType}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                      <FiMapPin className="w-3.5 h-3.5" />
-                      Location
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-700 text-right max-w-[180px] truncate">{job.location}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                      <FiDollarSign className="w-3.5 h-3.5" />
-                      Salary
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-700">{job.salaryRange || "Negotiable"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                      <FiCalendar className="w-3.5 h-3.5" />
-                      Deadline
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-700">
-                      {job.applicationDeadline ? formatDate(job.applicationDeadline) : "Open"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="h-px bg-zinc-100 mx-6" />
-
-              {/* Posted By */}
-              <div className="p-6">
-                <h3 className="text-sm font-extrabold text-zinc-900 uppercase tracking-wider mb-3">Posted By</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
-                    <FiUsers className="w-5 h-5 text-white" />
+            {/* Company Card */}
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+              <div className="p-5">
+                <h3 className="font-bold text-[#191919] text-sm mb-4">About the company</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#0a66c2] to-[#004182] flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                    {job.company?.charAt(0) || 'C'}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-zinc-900 truncate">{job.postedBy || "Anonymous Alumni"}</p>
-                    <p className="text-[11px] text-zinc-400">Alumni Network</p>
+                    <p className="font-bold text-[#191919] text-sm truncate">{job.company}</p>
+                    <p className="text-xs text-[#666]">Alumni Network</p>
                   </div>
                 </div>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#666] text-xs">Industry</span>
+                    <span className="font-semibold text-[#191919] text-xs">Technology</span>
+                  </div>
+                  <div className="h-px bg-[#e0dfdc]" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#666] text-xs">Company size</span>
+                    <span className="font-semibold text-[#191919] text-xs">NUB Alumni</span>
+                  </div>
+                  <div className="h-px bg-[#e0dfdc]" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#666] text-xs">Posted by</span>
+                    <span className="font-semibold text-[#191919] text-xs truncate max-w-[140px]">{job.postedBy || 'Anonymous'}</span>
+                  </div>
+                </div>
+                <Link href="/job-portal" className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#0a66c2] text-[#0a66c2] text-sm font-semibold hover:bg-[#eaf3fd] transition-colors">
+                  View all jobs
+                </Link>
               </div>
             </motion.div>
+
           </div>
         </div>
       </div>

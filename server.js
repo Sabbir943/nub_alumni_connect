@@ -11,6 +11,12 @@ app.use(express.json());
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Nub_alumni_connect:ssCAhZQN7ow18mER@cluster0.pf04c6g.mongodb.net/?appName=Cluster0';
 const DB_NAME = process.env.DB_NAME || 'nub_alumni';
 
+function serializeId(doc) {
+  if (!doc) return doc;
+  if (Array.isArray(doc)) return doc.map(serializeId);
+  return { ...doc, _id: doc._id?.toString?.() || doc._id };
+}
+
 let studentsCollection;
 let alumniCollection;
 let jobsCollection;
@@ -601,9 +607,27 @@ app.get('/api/jobs', async (req, res) => {
       .limit(limitNum)
       .toArray();
 
-    res.json({ success: true, jobs, total: jobs.length });
+    res.json({ success: true, jobs: serializeId(jobs), total: jobs.length });
   } catch (error) {
     console.error("Error fetching jobs:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET /api/jobs/:id (Get single job by ID)
+app.get('/api/jobs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid job ID" });
+    }
+    const job = await jobsCollection.findOne({ _id: new ObjectId(id) });
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+    res.json({ success: true, job: serializeId(job) });
+  } catch (error) {
+    console.error("Error fetching job:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
@@ -639,17 +663,24 @@ app.post('/api/jobs', async (req, res) => {
     };
 
     const result = await jobsCollection.insertOne(newJob);
-    res.status(201).json({ success: true, message: "Job posted successfully", job: { ...newJob, _id: result.insertedId } });
+    res.status(201).json({ success: true, message: "Job posted successfully", job: { ...newJob, _id: result.insertedId.toString() } });
   } catch (error) {
     console.error("Error creating job:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
+
 // PATCH /api/jobs/:id (Update a job)
 app.patch('/api/jobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // ✅ Fix: Validate ID format first
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid job ID" });
+    }
+
     let updateData = { ...req.body };
 
     delete updateData._id;
@@ -661,17 +692,20 @@ app.patch('/api/jobs/:id', async (req, res) => {
       delete updateData.salaryRange;
     }
 
-    const result = await jobsCollection.findOneAndUpdate(
+    const updatedResult = await jobsCollection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateData },
       { returnDocument: 'after' }
     );
 
-    if (!result) {
+    // ✅ Fix: Safely handle both MongoDB Driver v5 (updatedResult.value) and v6 (updatedResult)
+    const jobData = updatedResult?.value || updatedResult;
+
+    if (!jobData) {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    res.json({ success: true, message: "Job updated successfully", job: result });
+    res.json({ success: true, message: "Job updated successfully", job: serializeId(jobData) });
   } catch (error) {
     console.error("Error updating job:", error);
     res.status(500).json({ success: false, message: "Internal server error" });

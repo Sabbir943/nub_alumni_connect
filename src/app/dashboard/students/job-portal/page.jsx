@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
@@ -163,18 +164,12 @@ function JobCard({ job }) {
             <FiClock className="w-3 h-3" />
             <span>{timeAgo(job.createdAt)}</span>
           </div>
-          <a
-            href={
-              job.applicationUrlOrEmail?.includes("@")
-                ? `mailto:${job.applicationUrlOrEmail}`
-                : job.applicationUrlOrEmail
-            }
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/job-portal/${job._id}`}
             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
           >
             Apply <FiExternalLink className="w-3 h-3" />
-          </a>
+          </Link>
         </div>
       </div>
     </motion.div>
