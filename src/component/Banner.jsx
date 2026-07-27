@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiArrowRight, FiUsers, FiBriefcase, FiUserPlus } from 'react-icons/fi';
 
 const Banner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [hoveredBtn, setHoveredBtn] = useState(null);
 
   const slides = [
     {
@@ -13,9 +14,15 @@ const Banner = () => {
       title: "Bridging the Gap Between Students & Alumni",
       description: "Unlock professional growth, direct mentorship opportunities, and a powerful network built exclusively for the Northern University Bangladesh community.",
       ctaText: "Explore Platform",
-      ctaLink: "/directory",
-      imageUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80",
+      ctaLink: "/student-directory",
+      ctaIcon: <FiUsers className="w-4 h-4" />,
+      secondaryText: "Join Network",
+      secondaryLink: "/signup",
+      secondaryIcon: <FiUserPlus className="w-4 h-4" />,
+      imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
       bgGradient: "from-blue-600 via-indigo-900 to-zinc-950",
+      btnStyle: { background: "linear-gradient(to right, #3b82f6, #6366f1, #a855f7)" },
+      btnHoverStyle: { background: "linear-gradient(to right, #2563eb, #4f46e5, #9333ea)" },
     },
     {
       id: 2,
@@ -23,19 +30,31 @@ const Banner = () => {
       title: "Land Internships & Verified Tech Jobs",
       description: "Browse curated job postings, entry-level roles, and freelancing tracks submitted straight from established NUB graduates working across major tech firms.",
       ctaText: "Browse Listings",
-      ctaLink: "/jobs",
-      imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+      ctaLink: "/job-portal",
+      ctaIcon: <FiBriefcase className="w-4 h-4" />,
+      secondaryText: "Post Opportunity",
+      secondaryLink: "/dashboard/alumni/jobPost",
+      secondaryIcon: <FiArrowRight className="w-4 h-4" />,
+      imageUrl: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=800&q=80",
       bgGradient: "from-indigo-800 via-purple-950 to-zinc-950",
+      btnStyle: { background: "linear-gradient(to right, #8b5cf6, #a855f7, #d946ef)" },
+      btnHoverStyle: { background: "linear-gradient(to right, #7c3aed, #9333ea, #c026d3)" },
     },
     {
       id: 3,
       tagline: "Knowledge Sharing",
       title: "1-on-1 Strategic Mentorship Network",
       description: "Accelerate your software engineering or technical track. Book review sessions with seniors who navigated your exact courses and cracked industry interviews.",
-      ctaText: "Get Mentored",
-      ctaLink: "/directory",
-      imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80",
+      ctaText: "Find Mentors",
+      ctaLink: "/alumni-directory",
+      ctaIcon: <FiUsers className="w-4 h-4" />,
+      secondaryText: "Become a Mentor",
+      secondaryLink: "/signup",
+      secondaryIcon: <FiUserPlus className="w-4 h-4" />,
+      imageUrl: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80",
       bgGradient: "from-slate-900 via-blue-950 to-zinc-950",
+      btnStyle: { background: "linear-gradient(to right, #10b981, #14b8a6, #06b6d4)" },
+      btnHoverStyle: { background: "linear-gradient(to right, #059669, #0d9488, #0891b2)" },
     },
   ];
 
@@ -81,13 +100,25 @@ const Banner = () => {
                   {slide.description}
                 </p>
 
-                <div className="pt-2">
+                <div className="pt-2 flex flex-wrap items-center gap-3">
                   <Link 
                     href={slide.ctaLink} 
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-blue-600/10 hover:-translate-y-0.5"
+                    onMouseEnter={() => setHoveredBtn(`primary-${slide.id}`)}
+                    onMouseLeave={() => setHoveredBtn(null)}
+                    className="group relative inline-flex items-center gap-2.5 text-white text-sm font-bold px-7 py-3.5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+                    style={hoveredBtn === `primary-${slide.id}` ? slide.btnHoverStyle : slide.btnStyle}
                   >
-                    {slide.ctaText}
-                    <FiArrowRight className="w-4 h-4" />
+                    <span className="relative z-10">{slide.ctaIcon}</span>
+                    <span className="relative z-10">{slide.ctaText}</span>
+                    <FiArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+                  </Link>
+                  <Link 
+                    href={slide.secondaryLink} 
+                    className="group relative inline-flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white px-6 py-3.5 rounded-2xl border border-white/15 hover:border-white/30 bg-white/[0.05] hover:bg-white/[0.1] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5"
+                  >
+                    <span className="group-hover:scale-110 transition-transform duration-300">{slide.secondaryIcon}</span>
+                    <span>{slide.secondaryText}</span>
                   </Link>
                 </div>
               </div>
