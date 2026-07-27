@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { apiFetch } from '@/lib/api';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -20,17 +21,13 @@ const ContactUs = () => {
     setStatus({ loading: true, success: false, error: '' });
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      
-      const res = await fetch(`${API_URL}/api/contact`, {
+      const data = await apiFetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
-
-      const data = await res.json();
 
       if (data.success) {
         setStatus({ loading: false, success: true, error: '' });

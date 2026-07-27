@@ -16,8 +16,7 @@ import {
   FiChevronDown,
   FiBookOpen,
 } from "react-icons/fi";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { apiFetch } from "@/lib/api";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -196,8 +195,7 @@ export default function StudentJobPortalPage() {
       if (workplaceType !== "All") params.set("workplaceType", workplaceType);
       params.set("limit", "50");
 
-      const res = await fetch(`${API_URL}/api/jobs?${params.toString()}`);
-      const data = await res.json();
+      const data = await apiFetch(`/api/jobs?${params.toString()}`);
       if (data.success) {
         setJobs(data.jobs);
       }

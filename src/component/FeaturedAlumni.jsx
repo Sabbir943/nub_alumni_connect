@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FiUsers, FiMapPin, FiBriefcase, FiCalendar, FiArrowRight, FiAward } from 'react-icons/fi';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiFetch } from '@/lib/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -60,8 +59,7 @@ export default function FeaturedAlumni() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/alumni-directory?limit=8`);
-      const data = await res.json();
+      const data = await apiFetch('/api/alumni-directory?limit=8');
       if (data.profiles) {
         setAlumni(data.profiles);
       } else {

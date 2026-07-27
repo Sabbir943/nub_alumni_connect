@@ -20,8 +20,7 @@ import {
 } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { apiFetch } from "@/lib/api";
 
 const INITIAL_FORM = {
   profilePictureUrl: "",
@@ -83,8 +82,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user?.email || isPending) return;
 
-    fetch(`${API_URL}/api/alumni-directory/check/${user.email}`)
-      .then((r) => r.json())
+    apiFetch(`/api/alumni-directory/check/${user.email}`)
       .then((res) => {
         if (res.exists && res.profile) {
           setFormData((prev) => ({ ...prev, ...res.profile }));
@@ -109,23 +107,18 @@ export default function ProfilePage() {
     const payload = { ...formData, fullName: user.name, email: user.email };
     const isEdit = view === "edit";
     const endpoint = isEdit
-      ? `${API_URL}/api/alumni-directory/${user.email}`
-      : `${API_URL}/api/alumni-directory`;
+      ? `/api/alumni-directory/${user.email}`
+      : `/api/alumni-directory`;
 
     try {
-      const res = await fetch(endpoint, {
+      const data = await apiFetch(endpoint, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
 
-      if (res.ok) {
-        toast.success(isEdit ? "Profile updated!" : "Profile created!");
-        setView("view");
-      } else {
-        toast.error(data.message || "Something went wrong.");
-      }
+      toast.success(isEdit ? "Profile updated!" : "Profile created!");
+      setView("view");
     } catch {
       toast.error("Could not connect to server.");
     } finally {

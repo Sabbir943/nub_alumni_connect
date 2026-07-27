@@ -8,16 +8,16 @@ const Footer = () => {
 
   const platformLinks = [
     { label: 'Home / Feed', href: '/' },
-    { label: 'Alumni Directory', href: '/directory' },
-    { label: 'Job Board', href: '/jobs' },
-    { label: 'Notice Board', href: '/notices' },
+    { label: 'Alumni Directory', href: '/alumni-directory' },
+    { label: 'Job Board', href: '/job-portal' },
+    { label: 'Notice Board', href: '/notice' },
   ];
 
   const communityLinks = [
     { label: 'Mentorship Program', href: '/mentorship' },
     { label: 'Discussion Forums', href: '/forums' },
     { label: 'Success Stories', href: '/stories' },
-    { label: 'Contact Us', href: '/contact' },
+    { label: 'Contact Us', href: '/contact-us' },
   ];
 
   return (

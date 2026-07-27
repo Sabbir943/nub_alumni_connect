@@ -15,8 +15,7 @@ import {
   FiAlertCircle 
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiFetch } from '@/lib/api';
 
 const JobPost = () => {
   const { data: session } = authClient.useSession();
@@ -74,15 +73,13 @@ const JobPost = () => {
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/jobs`, {
+      const result = await apiFetch(`/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobPayload),
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (result.success) {
         setStatusMessage({ type: 'success', text: 'Job circular published successfully! 🎉' });
         // Reset form
         setFormData({

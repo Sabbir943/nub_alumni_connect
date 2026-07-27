@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 // Custom SVG for LinkedIn to avoid icon package version mismatches
 const LinkedinIcon = ({ className = "w-4 h-4" }) => (
@@ -43,13 +44,9 @@ export default function MyConnectionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/follow/following/${encodeURIComponent(currentUserEmail)}`
+      const data = await apiFetch(
+        `/api/follow/following/${encodeURIComponent(currentUserEmail)}`
       );
-      if (!response.ok) {
-        throw new Error('Failed to fetch connections');
-      }
-      const data = await response.json();
       setConnections(data.following || []);
     } catch (err) {
       console.error(err);
@@ -95,7 +92,7 @@ export default function MyConnectionsPage() {
 
     setUnfollowing(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/follow`, {
+      await apiFetch(`/api/follow`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -105,10 +102,6 @@ export default function MyConnectionsPage() {
           targetEmail: selectedUser.email,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to unfollow user');
-      }
 
       setConnections((prev) => prev.filter((item) => item.email !== selectedUser.email));
       setIsModalOpen(false);

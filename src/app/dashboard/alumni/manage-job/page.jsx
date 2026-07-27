@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { authClient } from '@/lib/auth-client';
+import { apiFetch } from '@/lib/api';
 import {
   Briefcase,
   Search,
@@ -17,8 +18,6 @@ import {
   Plus
 } from 'lucide-react';
 import Link from 'next/link';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ManageJobsPage() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
@@ -48,9 +47,7 @@ export default function ManageJobsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/jobs?limit=100`);
-        if (!res.ok) throw new Error(`Server error ${res.status}`);
-        const data = await res.json();
+        const data = await apiFetch(`/api/jobs?limit=100`);
         if (!cancelled && data.success) {
           const userJobs = (data.jobs || []).filter(
             (job) => job.postedBy === currentUserName
@@ -69,9 +66,7 @@ export default function ManageJobsPage() {
   const refreshJobs = async () => {
     if (!currentUserName) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/jobs?limit=100`);
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const data = await res.json();
+      const data = await apiFetch(`/api/jobs?limit=100`);
       if (data.success) {
         const userJobs = (data.jobs || []).filter(
           (job) => job.postedBy === currentUserName
@@ -103,14 +98,12 @@ export default function ManageJobsPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/jobs/${editingJob._id}`, {
+      const data = await apiFetch(`/api/jobs/${editingJob._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editFormData),
       });
 
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const data = await res.json();
       if (data.success) {
         setEditingJob(null);
         refreshJobs();
@@ -128,12 +121,10 @@ export default function ManageJobsPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/jobs/${deletingJob._id}`, {
+      const data = await apiFetch(`/api/jobs/${deletingJob._id}`, {
         method: 'DELETE',
       });
 
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const data = await res.json();
       if (data.success) {
         setDeletingJob(null);
         refreshJobs();

@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FiBriefcase, FiMapPin, FiClock, FiDollarSign, FiArrowRight, FiExternalLink } from 'react-icons/fi';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiFetch } from '@/lib/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -94,8 +93,7 @@ export default function LatestJobOpenings() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/jobs?limit=6`);
-      const data = await res.json();
+      const data = await apiFetch('/api/jobs?limit=6');
       if (data.success) {
         setJobs(data.jobs);
       } else {

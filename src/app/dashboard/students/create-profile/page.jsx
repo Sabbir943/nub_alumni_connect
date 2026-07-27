@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authClient } from '@/lib/auth-client';
+import { apiFetch } from '@/lib/api';
 import {
   FaUser,
   FaEnvelope,
@@ -20,8 +21,6 @@ import {
   FaSpinner,
   FaCamera
 } from 'react-icons/fa';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -67,8 +66,7 @@ export default function StudentProfileForm() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/students/check/${encodeURIComponent(userEmail)}`);
-        const data = await res.json();
+        const data = await apiFetch(`/api/students/check/${encodeURIComponent(userEmail)}`);
         if (cancelled) return;
         if (data.exists && data.profile) {
           setIsExisting(true);
@@ -114,32 +112,23 @@ export default function StudentProfileForm() {
     setStatus({ type: '', message: '' });
 
     const endpoint = isExisting
-      ? `${API_BASE_URL}/api/students/${encodeURIComponent(formData.email)}`
-      : `${API_BASE_URL}/api/students`;
+      ? `/api/students/${encodeURIComponent(formData.email)}`
+      : `/api/students`;
 
     const method = isExisting ? 'PATCH' : 'POST';
 
     try {
-      const res = await fetch(endpoint, {
+      const data = await apiFetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setIsExisting(true);
-        setStatus({
-          type: 'success',
-          message: isExisting ? 'Profile updated successfully!' : 'Profile created successfully!'
-        });
-      } else {
-        setStatus({
-          type: 'error',
-          message: data.message || 'Error processing request.'
-        });
-      }
+      setIsExisting(true);
+      setStatus({
+        type: 'success',
+        message: isExisting ? 'Profile updated successfully!' : 'Profile created successfully!'
+      });
     } catch (err) {
       setStatus({
         type: 'error',

@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiFetch } from '@/lib/api';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -105,12 +104,10 @@ export default function JobDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [jobRes, similarRes] = await Promise.all([
-        fetch(`${API_URL}/api/jobs/${jobId}`),
-        fetch(`${API_URL}/api/jobs?limit=6`),
+      const [jobData, similarData] = await Promise.all([
+        apiFetch(`/api/jobs/${jobId}`),
+        apiFetch('/api/jobs?limit=6'),
       ]);
-      const jobData = await jobRes.json();
-      const similarData = await similarRes.json();
 
       if (jobData.success && jobData.job) {
         setJob(jobData.job);

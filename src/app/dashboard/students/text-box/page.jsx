@@ -21,8 +21,7 @@ import {
   ChevronLeft,
   ImageIcon,
 } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiFetch } from '@/lib/api';
 
 const getInitials = (name) => {
   if (!name) return 'A';
@@ -93,18 +92,14 @@ export default function StudentTextBoxPage() {
     const fetchFriendsAndUnread = async () => {
       setFetchError(null);
       try {
-        const resFriends = await fetch(`${API_BASE_URL}/api/follow/following/${encodeURIComponent(currentUserEmail)}`);
-        if (!resFriends.ok) throw new Error('Failed to load contacts');
-        const friendsData = await resFriends.json();
+        const friendsData = await apiFetch(`/api/follow/following/${encodeURIComponent(currentUserEmail)}`);
         const connectionsList = friendsData.following || [];
 
         if (!isMounted) return;
         setFriends(connectionsList);
 
         try {
-          const resUnread = await fetch(`${API_BASE_URL}/api/messages/unread-summary/${encodeURIComponent(currentUserEmail)}`);
-          if (!resUnread.ok) throw new Error('Unread fetch failed');
-          const unreadData = await resUnread.json();
+          const unreadData = await apiFetch(`/api/messages/unread-summary/${encodeURIComponent(currentUserEmail)}`);
           if (isMounted && unreadData.success) {
             setUnreadCounts(unreadData.unreadCounts || {});
           }
@@ -135,11 +130,9 @@ export default function StudentTextBoxPage() {
     if (!currentUserEmail || !friendEmail) return;
     if (showLoading) setLoadingMessages(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/messages/conversation?user1=${encodeURIComponent(currentUserEmail)}&user2=${encodeURIComponent(friendEmail)}`
+      const data = await apiFetch(
+        `/api/messages/conversation?user1=${encodeURIComponent(currentUserEmail)}&user2=${encodeURIComponent(friendEmail)}`
       );
-      if (!response.ok) throw new Error('Failed to load messages');
-      const data = await response.json();
       if (data.success) {
         setMessages(data.messages || []);
         setUnreadCounts((prev) => ({ ...prev, [friendEmail]: 0 }));
@@ -182,13 +175,11 @@ export default function StudentTextBoxPage() {
 
     setSending(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
+      const data = await apiFetch(`/api/messages/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Send failed');
-      const data = await res.json();
       if (data.success) {
         setMessages((prev) => [...prev, data.message]);
         setNewMessageText('');

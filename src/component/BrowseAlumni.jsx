@@ -28,8 +28,7 @@ import {
   FiMessageCircle,
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { apiFetch } from "@/lib/api";
 
 const DEGREE_OPTIONS = [
   "B.Sc. in CSE",
@@ -427,11 +426,10 @@ function FollowButton({ targetEmail, currentUserEmail }) {
     let cancelled = false;
     async function checkStatus() {
       try {
-        const res = await fetch(
-          `${API_BASE}/api/follow/status?followerEmail=${encodeURIComponent(currentUserEmail)}&targetEmail=${encodeURIComponent(targetEmail)}`
+        const data = await apiFetch(
+          `/api/follow/status?followerEmail=${encodeURIComponent(currentUserEmail)}&targetEmail=${encodeURIComponent(targetEmail)}`
         );
-        if (res.ok && !cancelled) {
-          const data = await res.json();
+        if (!cancelled) {
           setIsFollowing(data.isFollowing);
         }
       } catch {
@@ -449,7 +447,7 @@ function FollowButton({ targetEmail, currentUserEmail }) {
     setLoading(true);
     try {
       if (isFollowing) {
-        const res = await fetch(`${API_BASE}/api/follow`, {
+        await apiFetch("/api/follow", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -457,9 +455,9 @@ function FollowButton({ targetEmail, currentUserEmail }) {
             targetEmail,
           }),
         });
-        if (res.ok) setIsFollowing(false);
+        setIsFollowing(false);
       } else {
-        const res = await fetch(`${API_BASE}/api/follow`, {
+        await apiFetch("/api/follow", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -467,7 +465,7 @@ function FollowButton({ targetEmail, currentUserEmail }) {
             targetEmail,
           }),
         });
-        if (res.ok) setIsFollowing(true);
+        setIsFollowing(true);
       }
     } catch {
       // ignore
@@ -570,9 +568,7 @@ export default function BrowseAlumni() {
         params.set("page", String(page));
         params.set("limit", "6");
 
-        const res = await fetch(`${API_BASE}/api/alumni-directory?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to fetch alumni");
-        const data = await res.json();
+        const data = await apiFetch(`/api/alumni-directory?${params.toString()}`);
         if (!cancelled) {
           setProfiles(data.profiles || []);
           setPagination(data.pagination);

@@ -10,8 +10,7 @@ import {
   FiLinkedin, FiTwitter, FiExternalLink,
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { apiFetch } from "@/lib/api";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -425,28 +424,26 @@ export default function AlumniOverviewPage() {
 
     const fetchData = async () => {
       try {
-        const profileRes = await fetch(`${API_URL}/api/alumni-directory/check/${user.email}`);
-        if (!profileRes.ok) throw new Error(`Server error ${profileRes.status}`);
-        const profileData = await profileRes.json();
+        const profileData = await apiFetch(`/api/alumni-directory/check/${user.email}`);
         if (!cancelled) setHasProfile(profileData.exists);
 
         const [alumniRes, followStatsRes, jobsRes, unreadRes, followersRes] = await Promise.allSettled([
-          fetch(`${API_URL}/api/alumni-directory?limit=20&sortBy=newest`),
-          fetch(`${API_URL}/api/follow/stats/${encodeURIComponent(user.email)}`),
-          fetch(`${API_URL}/api/jobs?limit=100`),
-          fetch(`${API_URL}/api/messages/unread-summary/${encodeURIComponent(user.email)}`),
-          fetch(`${API_URL}/api/follow/following/${encodeURIComponent(user.email)}`),
+          apiFetch(`/api/alumni-directory?limit=20&sortBy=newest`),
+          apiFetch(`/api/follow/stats/${encodeURIComponent(user.email)}`),
+          apiFetch(`/api/jobs?limit=100`),
+          apiFetch(`/api/messages/unread-summary/${encodeURIComponent(user.email)}`),
+          apiFetch(`/api/follow/following/${encodeURIComponent(user.email)}`),
         ]);
 
         if (cancelled) return;
 
-        const alumniData = alumniRes.status === 'fulfilled' && alumniRes.value.ok ? await alumniRes.value.json() : { profiles: [] };
+        const alumniData = alumniRes.status === 'fulfilled' ? alumniRes.value : { profiles: [] };
         const allAlumni = alumniData.profiles || alumniData.data || [];
-        const followStats = followStatsRes.status === 'fulfilled' && followStatsRes.value.ok ? await followStatsRes.value.json() : { followers: 0, following: 0 };
-        const jobsData = jobsRes.status === 'fulfilled' && jobsRes.value.ok ? await jobsRes.value.json() : { jobs: [] };
+        const followStats = followStatsRes.status === 'fulfilled' ? followStatsRes.value : { followers: 0, following: 0 };
+        const jobsData = jobsRes.status === 'fulfilled' ? jobsRes.value : { jobs: [] };
         const allJobs = jobsData.jobs || [];
-        const unreadData = unreadRes.status === 'fulfilled' && unreadRes.value.ok ? await unreadRes.value.json() : { totalUnread: 0 };
-        const followingData = followersRes.status === 'fulfilled' && followersRes.value.ok ? await followersRes.value.json() : { following: [] };
+        const unreadData = unreadRes.status === 'fulfilled' ? unreadRes.value : { totalUnread: 0 };
+        const followingData = followersRes.status === 'fulfilled' ? followersRes.value : { following: [] };
         const followingEmails = new Set((followingData.following || []).map(f => f.email));
         const myJobs = allJobs.filter(j => j.postedBy === user.name);
 
@@ -517,7 +514,7 @@ export default function AlumniOverviewPage() {
   const handleConnect = async (targetEmail) => {
     if (!user?.email) return;
     try {
-      await fetch(`${API_URL}/api/follow`, {
+      await apiFetch(`/api/follow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ followerEmail: user.email, targetEmail }),

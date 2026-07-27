@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { forbidden, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { FiUser, FiMail, FiLock, FiImage, FiBriefcase, FiArrowRight } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import toast, { Toaster } from 'react-hot-toast';
