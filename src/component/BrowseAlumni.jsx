@@ -26,6 +26,11 @@ import {
   FiHash,
   FiExternalLink,
   FiMessageCircle,
+  FiShield,
+  FiShieldOff,
+  FiAlertTriangle,
+  FiZap,
+  FiCpu,
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
@@ -94,6 +99,119 @@ const heroVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
+
+function VerificationBadge({ verification, size = "sm" }) {
+  if (!verification) {
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 text-[10px] font-semibold border border-zinc-200`}>
+        <FiShield className="w-3 h-3" />
+        Not Verified
+      </span>
+    );
+  }
+
+  const { badge, trustScore } = verification;
+  const config = {
+    Verified: {
+      bg: "bg-emerald-50",
+      text: "text-emerald-700",
+      border: "border-emerald-200",
+      icon: <FiShield className="w-3 h-3" />,
+      label: `Verified (${trustScore}%)`,
+    },
+    Unverified: {
+      bg: "bg-amber-50",
+      text: "text-amber-700",
+      border: "border-amber-200",
+      icon: <FiAlertTriangle className="w-3 h-3" />,
+      label: `Unverified (${trustScore}%)`,
+    },
+    Suspicious: {
+      bg: "bg-red-50",
+      text: "text-red-700",
+      border: "border-red-200",
+      icon: <FiShieldOff className="w-3 h-3" />,
+      label: `Suspicious (${trustScore}%)`,
+    },
+  };
+
+  const c = config[badge] || config.Unverified;
+  const sizeClasses = size === "lg"
+    ? "px-3 py-1.5 text-xs"
+    : "px-2 py-0.5 text-[10px]";
+
+  return (
+    <span className={`inline-flex items-center gap-1 ${sizeClasses} rounded-full ${c.bg} ${c.text} font-semibold border ${c.border}`}>
+      {c.icon}
+      {c.label}
+    </span>
+  );
+}
+
+function VerificationDetails({ verification }) {
+  if (!verification) return null;
+
+  const { trustScore, badge, breakdown, analysis, flags, verifiedAt } = verification;
+  const barColor = badge === 'Verified' ? 'bg-emerald-500' : badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500';
+
+  return (
+    <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+      <div className="flex items-center gap-2 mb-3">
+        <FiShield className="w-4 h-4 text-slate-400" />
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Verification</h4>
+      </div>
+
+      <div className="flex items-center gap-3 mb-3">
+        <VerificationBadge verification={verification} size="lg" />
+      </div>
+
+      <div className="mb-3">
+        <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+          <span>Trust Score</span>
+          <span>{trustScore}/100</span>
+        </div>
+        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${trustScore}%` }} />
+        </div>
+      </div>
+
+      {breakdown && (
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {Object.entries(breakdown).map(([key, val]) => (
+            <div key={key} className="flex justify-between text-[10px] text-slate-500">
+              <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+              <span className="font-semibold">{val}/25</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {analysis && (
+        <p className="text-xs text-slate-600 leading-relaxed mb-2">{analysis}</p>
+      )}
+
+      {flags && flags.length > 0 && (
+        <div className="mt-2">
+          <p className="text-[10px] font-semibold text-amber-600 uppercase mb-1">Flags</p>
+          <ul className="space-y-1">
+            {flags.map((flag, i) => (
+              <li key={i} className="text-[10px] text-amber-700 flex items-start gap-1">
+                <FiAlertTriangle className="w-2.5 h-2.5 mt-0.5 flex-shrink-0" />
+                {flag}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {verifiedAt && (
+        <p className="text-[9px] text-slate-400 mt-2">
+          Verified: {new Date(verifiedAt).toLocaleDateString()}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function ProfileDetailModal({ profile, isOpen, onClose }) {
   if (!profile || !isOpen) return null;
@@ -227,6 +345,9 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                   <p className="text-sm text-slate-700 leading-relaxed">{profile.bio}</p>
                 </div>
               )}
+
+              {/* AI Verification */}
+              <VerificationDetails verification={profile.verification} />
 
               {/* Skills */}
               {skills.length > 0 && (
@@ -516,6 +637,179 @@ function FollowButton({ targetEmail, currentUserEmail }) {
   );
 }
 
+function AIVerifyButton({ profile, type, onVerified }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const hasVerification = profile.verification && profile.verification.trustScore;
+
+  const handleVerify = async () => {
+    if (loading) return;
+    setLoading(true);
+    setResult(null);
+    setShowResult(false);
+
+    try {
+      const data = await apiFetch("/api/verify-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile, type }),
+      });
+      if (data.verification) {
+        setResult(data.verification);
+        setShowResult(true);
+        if (onVerified) onVerified(profile.email, data.verification);
+      }
+    } catch {
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const badgeColors = {
+    Verified: "from-emerald-500 to-green-500",
+    Unverified: "from-amber-500 to-orange-500",
+    Suspicious: "from-red-500 to-rose-500",
+  };
+
+  const scoreColor =
+    result?.trustScore >= 70
+      ? "text-emerald-600"
+      : result?.trustScore >= 40
+      ? "text-amber-600"
+      : "text-red-600";
+
+  return (
+    <div className="w-full">
+      {!showResult ? (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={handleVerify}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 border border-dashed border-blue-300 bg-blue-50/50 text-blue-600 hover:bg-blue-50 hover:border-blue-400 disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <FiCpu className="w-3.5 h-3.5" />
+              </motion.div>
+              <span>Analyzing...</span>
+              <motion.div
+                className="w-16 h-1 bg-blue-200 rounded-full overflow-hidden"
+              >
+                <motion.div
+                  className="h-full bg-blue-500 rounded-full"
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </motion.div>
+            </>
+          ) : hasVerification ? (
+            <>
+              <FiRefreshCw className="w-3.5 h-3.5" />
+              Re-verify with AI
+            </>
+          ) : (
+            <>
+              <FiZap className="w-3.5 h-3.5" />
+              Verify with AI
+            </>
+          )}
+        </motion.button>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 8, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="w-full"
+        >
+          <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-white">
+            {/* Gradient top bar */}
+            <div className={`h-1 bg-gradient-to-r ${badgeColors[result?.badge] || "from-zinc-400 to-zinc-500"}`} />
+
+            <div className="p-3">
+              {/* Badge + Score row */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.1 }}
+                  >
+                    <FiShield className={`w-4 h-4 ${
+                      result?.badge === "Verified" ? "text-emerald-500" :
+                      result?.badge === "Suspicious" ? "text-red-500" : "text-amber-500"
+                    }`} />
+                  </motion.div>
+                  <span className={`text-xs font-bold ${
+                    result?.badge === "Verified" ? "text-emerald-600" :
+                    result?.badge === "Suspicious" ? "text-red-600" : "text-amber-600"
+                  }`}>
+                    {result?.badge}
+                  </span>
+                </div>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className={`text-sm font-extrabold ${scoreColor}`}
+                >
+                  {result?.trustScore}%
+                </motion.span>
+              </div>
+
+              {/* Trust score bar */}
+              <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-2">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${result?.trustScore || 0}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                  className={`h-full rounded-full bg-gradient-to-r ${
+                    result?.trustScore >= 70 ? "from-emerald-500 to-green-500" :
+                    result?.trustScore >= 40 ? "from-amber-500 to-orange-500" :
+                    "from-red-500 to-rose-500"
+                  }`}
+                />
+              </div>
+
+              {/* Analysis text */}
+              {result?.analysis && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-[10px] text-zinc-500 leading-relaxed line-clamp-2"
+                >
+                  {result.analysis}
+                </motion.p>
+              )}
+
+              {/* AI powered label */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex items-center justify-center gap-1 mt-2 pt-2 border-t border-zinc-100"
+              >
+                <FiZap className="w-2.5 h-2.5 text-blue-400" />
+                <span className="text-[9px] text-zinc-400 font-medium uppercase tracking-wider">
+                  Verified by AI
+                </span>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 export default function BrowseAlumni() {
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
@@ -595,6 +889,12 @@ export default function BrowseAlumni() {
     setLocation("");
     setSortBy("newest");
     setPage(1);
+  };
+
+  const handleVerifyComplete = (email, verification) => {
+    setProfiles((prev) =>
+      prev.map((p) => (p.email === email ? { ...p, verification } : p))
+    );
   };
 
   const hasActiveFilters = degree || graduationYear || location || sortBy !== "newest";
@@ -863,6 +1163,16 @@ export default function BrowseAlumni() {
                       {profile.graduationYear || "N/A"}
                     </span>
                   </div>
+                  {profile.verification?.badge === "Verified" && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white"
+                    >
+                      <FiZap className="w-2.5 h-2.5" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">AI Verified</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Profile Content */}
@@ -886,9 +1196,14 @@ export default function BrowseAlumni() {
 
                   {/* Info */}
                   <div className="mt-3 text-center">
-                    <h3 className="text-base font-bold text-zinc-900 truncate">
-                      {profile.fullName}
-                    </h3>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <h3 className="text-base font-bold text-zinc-900 truncate">
+                        {profile.fullName}
+                      </h3>
+                    </div>
+                    <div className="mt-1">
+                      <VerificationBadge verification={profile.verification} />
+                    </div>
                     {profile.jobTitle && (
                       <p className="text-xs text-blue-600 font-medium truncate mt-0.5">
                         {profile.jobTitle}
@@ -959,6 +1274,13 @@ export default function BrowseAlumni() {
                     <FollowButton
                       targetEmail={profile.email}
                       currentUserEmail={currentUser?.email}
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <AIVerifyButton
+                      profile={profile}
+                      type="alumni"
+                      onVerified={handleVerifyComplete}
                     />
                   </div>
                 </div>

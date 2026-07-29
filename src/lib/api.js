@@ -6,5 +6,14 @@ export async function apiFetch(path, options = {}) {
     throw new Error(`Server returned ${res.status}: Expected JSON but got ${contentType}`);
   }
 
-  return res.json();
+  const data = await res.json();
+
+  if (!res.ok) {
+    const err = new Error(data.message || `Request failed with status ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
 }

@@ -13,6 +13,11 @@ import {
   FiX,
   FiRefreshCw,
   FiChevronDown,
+  FiShield,
+  FiShieldOff,
+  FiAlertTriangle,
+  FiZap,
+  FiCpu,
 } from "react-icons/fi";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
@@ -130,7 +135,139 @@ function FilterDropdown({ icon, options, value, onChange, placeholder }) {
   );
 }
 
-function JobCard({ job }) {
+function DeadlineCountdown({ deadline }) {
+  const [timeLeft, setTimeLeft] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!deadline) return;
+    function calc() {
+      const diff = new Date(deadline).getTime() - Date.now();
+      if (diff <= 0) return { expired: true, text: "Deadline passed", urgent: true, percent: 0, color: 'red' };
+      const totalDays = 30;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const percent = Math.min(100, Math.max(2, (diff / (totalDays * 24 * 60 * 60 * 1000)) * 100));
+      if (days > 7) return { expired: false, text: `${days} days remaining`, urgent: false, percent, color: 'green' };
+      if (days > 0) return { expired: false, text: `${days}d ${hours}h remaining`, urgent: days <= 2, percent, color: days <= 2 ? 'amber' : 'green' };
+      if (hours > 0) return { expired: false, text: `${hours}h ${mins}m remaining`, urgent: true, percent, color: 'amber' };
+      return { expired: false, text: `${mins}m remaining`, urgent: true, percent: 2, color: 'red' };
+    }
+    setTimeLeft(calc());
+    const interval = setInterval(() => setTimeLeft(calc()), 60000);
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  if (!timeLeft) return null;
+
+  const barColors = {
+    green: 'from-emerald-400 to-emerald-500',
+    amber: 'from-amber-400 to-orange-500',
+    red: 'from-red-400 to-red-500',
+  };
+
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className={`text-[10px] font-bold uppercase tracking-wider ${
+          timeLeft.expired ? 'text-red-500' : timeLeft.urgent ? 'text-amber-600' : 'text-emerald-600'
+        }`}>
+          {timeLeft.expired ? '⏰ Expired' : '⏱ Apply Now'}
+        </span>
+        <span className={`text-[10px] font-bold ${
+          timeLeft.expired ? 'text-red-500' : timeLeft.urgent ? 'text-amber-600' : 'text-emerald-600'
+        }`}>
+          {timeLeft.text}
+        </span>
+      </div>
+      <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${timeLeft.percent}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className={`h-full rounded-full bg-gradient-to-r ${barColors[timeLeft.color]}`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TrustScoreRing({ score, size = 32 }) {
+  const radius = (size - 6) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (score / 100) * circumference;
+  const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={3} />
+        <motion.circle
+          cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: circumference - progress }}
+          transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[8px] font-extrabold" style={{ color }}>{score}</span>
+      </div>
+    </div>
+  );
+}
+
+function JobVerificationBadge({ verification }) {
+  if (!verification) {
+    return (
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-50 border border-zinc-200 border-dashed">
+        <FiShield className="w-3 h-3 text-zinc-400" />
+        <span className="text-[10px] font-semibold text-zinc-400">Not verified</span>
+      </div>
+    );
+  }
+
+  const { badge, trustScore, linkStatus } = verification;
+  const config = {
+    Verified: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', glow: 'shadow-emerald-100', label: 'AI Verified' },
+    Unverified: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', glow: 'shadow-amber-100', label: 'Needs Review' },
+    Suspicious: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', glow: 'shadow-red-100', label: 'Suspicious' },
+  };
+  const c = config[badge] || config.Unverified;
+
+  return (
+    <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${c.bg} border ${c.border} shadow-sm ${c.glow}`}>
+      <TrustScoreRing score={trustScore} size={28} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1">
+          <FiZap className="w-3 h-3 text-blue-500" />
+          <span className={`text-[10px] font-bold ${c.text}`}>{c.label}</span>
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
+          {linkStatus === 'valid' && (
+            <span className="text-[9px] font-semibold text-emerald-600 flex items-center gap-0.5">
+              <FiCheckCircle className="w-2.5 h-2.5" /> Link OK
+            </span>
+          )}
+          {linkStatus === 'invalid' && (
+            <span className="text-[9px] font-semibold text-red-500 flex items-center gap-0.5">
+              <FiAlertTriangle className="w-2.5 h-2.5" /> Link broken
+            </span>
+          )}
+          {linkStatus === 'email' && (
+            <span className="text-[9px] font-semibold text-blue-500">Email only</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobCard({ job, onVerified }) {
+  const [verifying, setVerifying] = React.useState(false);
+  const [verification, setVerification] = React.useState(job.verification || null);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -152,12 +289,59 @@ function JobCard({ job }) {
     return formatDate(dateString);
   };
 
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (verifying) return;
+    setVerifying(true);
+    try {
+      const data = await apiFetch(`/api/jobs/verify/${job._id}`, { method: 'POST' });
+      if (data.verification) {
+        setVerification(data.verification);
+        if (onVerified) onVerified(job._id, data.verification);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   return (
     <motion.div
       variants={cardVariants}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-xl hover:shadow-zinc-200/50 transition-shadow duration-300 flex flex-col"
     >
+      {/* AI Verification Strip */}
+      <div className={`px-4 py-2 flex items-center justify-between ${
+        verification?.badge === 'Verified' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+        verification?.badge === 'Suspicious' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+        verification?.badge === 'Unverified' ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
+        'bg-gradient-to-r from-zinc-100 to-zinc-200'
+      }`}>
+        <div className="flex items-center gap-1.5">
+          {verification ? (
+            <>
+              <FiZap className={`w-3.5 h-3.5 ${verification.badge === 'Verified' ? 'text-white' : verification.badge === 'Suspicious' ? 'text-white' : 'text-white'}`} />
+              <span className="text-[11px] font-bold text-white uppercase tracking-wider">
+                {verification.badge === 'Verified' ? 'AI Verified' :
+                 verification.badge === 'Suspicious' ? 'Flagged by AI' : 'Under AI Review'}
+              </span>
+              <span className="text-[10px] font-bold text-white/80">({verification.trustScore}%)</span>
+            </>
+          ) : (
+            <>
+              <FiShield className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Click to AI Verify</span>
+            </>
+          )}
+        </div>
+        {verification && (
+          <TrustScoreRing score={verification.trustScore} size={26} />
+        )}
+      </div>
+
       <div className="p-5 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start gap-3">
@@ -178,10 +362,10 @@ function JobCard({ job }) {
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
             {job.workplaceType}
           </span>
-          {job.salaryRange && (
+          {job.salary && (
             <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">
               <FiDollarSign className="w-2.5 h-2.5" />
-              {job.salaryRange}
+              {job.salary}
             </span>
           )}
         </div>
@@ -196,6 +380,7 @@ function JobCard({ job }) {
             <FiCalendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
             <span>Deadline: {formatDate(job.applicationDeadline)}</span>
           </div>
+          <DeadlineCountdown deadline={job.applicationDeadline} />
         </div>
 
         {/* Skills */}
@@ -218,18 +403,52 @@ function JobCard({ job }) {
         <div className="flex-1" />
 
         {/* Footer */}
-        <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-[11px] text-zinc-400">
-            <FiClock className="w-3 h-3" />
-            <span>{timeAgo(job.createdAt)}</span>
+        <div className="mt-4 pt-3 border-t border-zinc-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1 text-[11px] text-zinc-400">
+              <FiClock className="w-3 h-3" />
+              <span>{timeAgo(job.createdAt)}</span>
+            </div>
+            <Link
+              href={`/job-portal/${job?._id}`}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              View Details <FiExternalLink className="w-3 h-3" />
+            </Link>
           </div>
-          <Link
-            
-            href={`/job-portal/${job?._id}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleVerify}
+            disabled={verifying}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-60"
           >
-            Apply <FiExternalLink className="w-3 h-3" />
-          </Link>
+            {verifying ? (
+              <>
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                  <FiCpu className="w-3.5 h-3.5" />
+                </motion.div>
+                <span>AI is analyzing this job...</span>
+                <motion.div className="w-12 h-1 bg-white/30 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-white rounded-full"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </motion.div>
+              </>
+            ) : verification ? (
+              <>
+                <FiRefreshCw className="w-3.5 h-3.5" />
+                Re-verify with AI
+              </>
+            ) : (
+              <>
+                <FiZap className="w-3.5 h-3.5" />
+                Verify this job with AI
+              </>
+            )}
+          </motion.button>
         </div>
       </div>
     </motion.div>
@@ -280,6 +499,10 @@ export default function JobPortalPage() {
     setWorkplaceType("All");
     setPostedDateFilter("all");
   }, []);
+
+  const handleVerifyComplete = (jobId, verification) => {
+    setJobs((prev) => prev.map((j) => j._id === jobId ? { ...j, verification } : j));
+  };
 
   const filteredJobs = jobs.filter((job) => {
     if (postedDateFilter === "all") return true;
@@ -474,7 +697,7 @@ export default function JobPortalPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {filteredJobs.map((job) => (
-              <JobCard key={job._id} job={job} />
+              <JobCard key={job._id} job={job} onVerified={handleVerifyComplete} />
             ))}
           </motion.div>
         )}

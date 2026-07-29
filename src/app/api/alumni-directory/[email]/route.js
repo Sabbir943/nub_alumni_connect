@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { analyzeProfile } from '@/lib/verify';
 
 export async function GET(request, { params }) {
   try {
@@ -33,7 +34,20 @@ export async function PATCH(request, { params }) {
       { returnDocument: 'after' }
     );
 
-    return NextResponse.json({ message: "Alumni profile updated", profile: result });
+    if (result) {
+      try {
+        const verification = await analyzeProfile(result, 'alumni');
+        await collection.updateOne(
+          { email },
+          { $set: { verification } }
+        );
+      } catch (e) {
+        console.error("Verification failed during update:", e.message);
+      }
+    }
+
+    const updatedProfile = await collection.findOne({ email });
+    return NextResponse.json({ message: "Alumni profile updated", profile: updatedProfile });
   } catch (error) {
     console.error("Error updating alumni profile:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });

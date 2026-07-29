@@ -17,6 +17,8 @@ import {
   FiLink,
   FiLoader,
   FiAlertCircle,
+  FiShield,
+  FiRefreshCw,
 } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
@@ -70,28 +72,83 @@ function fieldClass(extra = "") {
   return `w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:text-white transition-all ${extra}`;
 }
 
+function VerificationBadgeInline({ verification }) {
+  if (!verification) {
+    return (
+      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-500 text-xs font-semibold border border-zinc-200">
+        <FiShield className="w-3.5 h-3.5" />
+        Not Verified
+      </span>
+    );
+  }
+  const { badge, trustScore, breakdown, analysis, flags } = verification;
+  const colors = {
+    Verified: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", bar: "bg-emerald-500" },
+    Unverified: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", bar: "bg-amber-500" },
+    Suspicious: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", bar: "bg-red-500" },
+  };
+  const c = colors[badge] || colors.Unverified;
+
+  return (
+    <div className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <FiShield className={`w-4 h-4 ${c.text}`} />
+        <span className={`text-sm font-bold ${c.text}`}>{badge} ({trustScore}%)</span>
+      </div>
+      <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden mb-2">
+        <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${trustScore}%` }} />
+      </div>
+      {breakdown && (
+        <div className="grid grid-cols-2 gap-1 mb-2">
+          {Object.entries(breakdown).map(([key, val]) => (
+            <div key={key} className="flex justify-between text-[10px] text-slate-600">
+              <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+              <span className="font-semibold">{val}/25</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {analysis && <p className="text-xs text-slate-600 mt-1">{analysis}</p>}
+      {flags && flags.length > 0 && (
+        <div className="mt-2">
+          {flags.map((f, i) => (
+            <p key={i} className="text-[10px] text-amber-600 flex items-center gap-1">
+              <FiAlertCircle className="w-2.5 h-2.5" /> {f}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
 
-  const [view, setView] = useState("loading"); // loading | create | view | edit
+  const [view, setView] = useState("loading");
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
+  const [reverifyLoading, setReverifyLoading] = useState(false);
 
-  // Fetch existing profile on mount
+  const fetchProfile = async () => {
+    if (!user?.email) return;
+    try {
+      const res = await apiFetch(`/api/alumni-directory/check/${user.email}`);
+      if (res.exists && res.profile) {
+        setFormData((prev) => ({ ...prev, ...res.profile }));
+        setView("view");
+      } else {
+        setView("create");
+      }
+    } catch {
+      setView("create");
+    }
+  };
+
   useEffect(() => {
     if (!user?.email || isPending) return;
-
-    apiFetch(`/api/alumni-directory/check/${user.email}`)
-      .then((res) => {
-        if (res.exists && res.profile) {
-          setFormData((prev) => ({ ...prev, ...res.profile }));
-          setView("view");
-        } else {
-          setView("create");
-        }
-      })
-      .catch(() => setView("create"));
+    fetchProfile();
   }, [user, isPending]);
 
   const handleChange = (e) => {
@@ -117,16 +174,39 @@ export default function ProfilePage() {
         body: JSON.stringify(payload),
       });
 
+      if (data.profile) {
+        setFormData((prev) => ({ ...prev, ...data.profile }));
+      }
+
       toast.success(isEdit ? "Profile updated!" : "Profile created!");
       setView("view");
-    } catch {
-      toast.error("Could not connect to server.");
+    } catch (err) {
+      toast.error(err.message || "Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  // --- Loading spinner ---
+  const handleReverify = async () => {
+    if (!user) return;
+    setReverifyLoading(true);
+    try {
+      const data = await apiFetch("/api/verify-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: { ...formData, email: user.email, fullName: user.name }, type: "alumni" }),
+      });
+      if (data.verification) {
+        setFormData((prev) => ({ ...prev, verification: data.verification }));
+      }
+      toast.success("Profile re-verified!");
+    } catch {
+      toast.error("Verification failed.");
+    } finally {
+      setReverifyLoading(false);
+    }
+  };
+
   if (view === "loading" || isPending) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -135,13 +215,11 @@ export default function ProfilePage() {
     );
   }
 
-  // --- Profile created / view screen ---
   if (view === "view") {
     return (
       <div className="max-w-2xl mx-auto">
         <Toaster position="top-center" />
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8 text-center">
-          {/* Success Icon */}
           <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5">
             <FiCheckCircle className="w-8 h-8" />
           </div>
@@ -154,7 +232,6 @@ export default function ProfilePage() {
             anytime.
           </p>
 
-          {/* Profile Preview */}
           <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
             {formData.profilePictureUrl && (
               <img
@@ -200,15 +277,30 @@ export default function ProfilePage() {
                 {formData.skills}
               </p>
             )}
+
+            <div className="mt-4">
+              <VerificationBadgeInline verification={formData.verification} />
+            </div>
           </div>
 
-          {/* Edit Button */}
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setView("edit")}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors"
             >
               <FiEdit3 className="w-4 h-4" /> Edit Profile
+            </button>
+            <button
+              onClick={handleReverify}
+              disabled={reverifyLoading}
+              className="inline-flex items-center gap-2 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-semibold px-6 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-colors disabled:opacity-50"
+            >
+              {reverifyLoading ? (
+                <FiLoader className="w-4 h-4 animate-spin" />
+              ) : (
+                <FiRefreshCw className="w-4 h-4" />
+              )}
+              Re-verify
             </button>
           </div>
         </div>
@@ -216,7 +308,6 @@ export default function ProfilePage() {
     );
   }
 
-  // --- Create / Edit Form ---
   const isEdit = view === "edit";
 
   return (
@@ -224,7 +315,6 @@ export default function ProfilePage() {
       <Toaster position="top-center" />
 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-        {/* Header */}
         <div className="px-6 md:px-8 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
@@ -246,9 +336,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
-          {/* Profile Picture URL */}
           <div className="flex flex-col sm:flex-row items-center gap-4 bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60">
             <div className="w-20 h-20 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-blue-500 shrink-0">
               {formData.profilePictureUrl ? (
@@ -283,7 +371,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <InputField label="Full Name" icon={FiUser}>
               <input
@@ -361,7 +448,6 @@ export default function ProfilePage() {
             </InputField>
           </div>
 
-          {/* Professional Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <InputField label="Company / Organization" icon={FiBriefcase} required>
               <input
@@ -412,7 +498,6 @@ export default function ProfilePage() {
             </InputField>
           </div>
 
-          {/* Social Links */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <InputField label="LinkedIn" icon={FiLinkedin} required>
               <input
@@ -449,7 +534,6 @@ export default function ProfilePage() {
             </InputField>
           </div>
 
-          {/* Bio */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
               Short Bio <span className="text-red-500">*</span>
@@ -465,7 +549,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Submit */}
           <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
             <button
               type="submit"

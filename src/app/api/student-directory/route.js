@@ -20,13 +20,12 @@ export async function GET(request) {
     const filter = {};
 
     if (search) {
-      const regex = { $options: 'i' };
       filter.$or = [
-        { fullName: { $regex: search, ...regex } },
-        { studentId: { $regex: search, ...regex } },
-        { skills: { $regex: search, ...regex } },
-        { department: { $regex: search, ...regex } },
-        { bio: { $regex: search, ...regex } }
+        { fullName: { $regex: search, $options: 'i' } },
+        { studentId: { $regex: search, $options: 'i' } },
+        { skills: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } },
+        { bio: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -35,10 +34,13 @@ export async function GET(request) {
     }
 
     if (graduationYear) {
-      filter.$or = [
-        ...(filter.$or || []),
-        { batch: { $regex: graduationYear, $options: 'i' } },
-        { semester: { $regex: graduationYear, $options: 'i' } }
+      filter.$and = [
+        {
+          $or: [
+            { batch: { $regex: graduationYear, $options: 'i' } },
+            { semester: { $regex: graduationYear, $options: 'i' } }
+          ]
+        }
       ];
     }
 

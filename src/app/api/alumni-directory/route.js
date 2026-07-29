@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { analyzeProfile } from '@/lib/verify';
 
 export async function GET(request) {
   try {
@@ -23,13 +24,14 @@ export async function GET(request) {
       filter.$or = [
         { fullName: { $regex: search, $options: 'i' } },
         { skills: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } },
-        { organization: { $regex: search, $options: 'i' } }
+        { degree: { $regex: search, $options: 'i' } },
+        { organization: { $regex: search, $options: 'i' } },
+        { jobTitle: { $regex: search, $options: 'i' } }
       ];
     }
-    if (degree) filter.department = { $regex: degree, $options: 'i' };
+    if (degree) filter.degree = { $regex: degree, $options: 'i' };
     if (graduationYear) filter.graduationYear = { $regex: graduationYear, $options: 'i' };
-    if (location) filter.location = { $regex: location, $options: 'i' };
+    if (location) filter.currentLocation = { $regex: location, $options: 'i' };
 
     let sort = {};
     switch (sortBy) {
@@ -75,12 +77,27 @@ export async function POST(request) {
       return NextResponse.json({ message: "Profile already exists. Use PATCH to update." }, { status: 409 });
     }
 
-    const newProfile = { ...body, createdAt: new Date(), updatedAt: new Date() };
+    const now = new Date();
+    const newProfile = { ...body, createdAt: now, updatedAt: now };
     const result = await collection.insertOne(newProfile);
+
+    let verification = null;
+    try {
+      verification = await analyzeProfile(newProfile, 'alumni');
+      await collection.updateOne(
+        { email },
+        { $set: { verification } }
+      );
+    } catch (e) {
+      console.error("Verification failed during creation:", e.message);
+    }
+
+    const profile = await collection.findOne({ email });
+
     return NextResponse.json({
       message: "Alumni profile created",
       profileId: result.insertedId,
-      profile: newProfile
+      profile
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating alumni profile:", error);

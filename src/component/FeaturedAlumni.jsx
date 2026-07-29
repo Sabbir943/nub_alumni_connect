@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FiUsers, FiMapPin, FiBriefcase, FiCalendar, FiArrowRight, FiAward } from 'react-icons/fi';
+import { FiUsers, FiMapPin, FiBriefcase, FiCalendar, FiArrowRight, FiAward, FiShield, FiShieldOff, FiAlertTriangle } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 
 const containerVariants = {
@@ -220,6 +220,17 @@ export default function FeaturedAlumni() {
                   <h3 className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
                     {person.fullName}
                   </h3>
+                  {person.verification && (
+                    <span className={`inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
+                      person.verification.badge === 'Verified' ? 'bg-emerald-50 text-emerald-600' :
+                      person.verification.badge === 'Suspicious' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {person.verification.badge === 'Verified' ? <FiShield className="w-2.5 h-2.5" /> :
+                       person.verification.badge === 'Suspicious' ? <FiShieldOff className="w-2.5 h-2.5" /> :
+                       <FiAlertTriangle className="w-2.5 h-2.5" />}
+                      {person.verification.trustScore}%
+                    </span>
+                  )}
                   {person.jobTitle && (
                     <p className="text-xs text-blue-600 font-semibold truncate mt-0.5">{person.jobTitle}</p>
                   )}

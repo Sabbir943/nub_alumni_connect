@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { analyzeProfile } from '@/lib/verify';
 
 export async function POST(request) {
   try {
@@ -25,6 +26,7 @@ export async function POST(request) {
       return NextResponse.json({ message: "Student ID is already registered." }, { status: 409 });
     }
 
+    const now = new Date();
     const newStudent = {
       fullName, email, studentId,
       department: department || "",
@@ -37,15 +39,29 @@ export async function POST(request) {
       skills: skills || "",
       bio: bio || "",
       location: location || "",
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now
     };
 
     const result = await collection.insertOne(newStudent);
+
+    let verification = null;
+    try {
+      verification = await analyzeProfile(newStudent, 'student');
+      await collection.updateOne(
+        { email },
+        { $set: { verification } }
+      );
+    } catch (e) {
+      console.error("Verification failed during creation:", e.message);
+    }
+
+    const profile = await collection.findOne({ email });
+
     return NextResponse.json({
       message: "Student profile created successfully",
       profileId: result.insertedId,
-      profile: newStudent
+      profile
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating student profile:", error);

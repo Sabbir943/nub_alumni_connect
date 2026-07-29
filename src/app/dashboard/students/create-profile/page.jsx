@@ -19,7 +19,9 @@ import {
   FaMapMarkerAlt,
   FaSave,
   FaSpinner,
-  FaCamera
+  FaCamera,
+  FaShieldAlt,
+  FaSyncAlt
 } from 'react-icons/fa';
 
 const fadeUp = {
@@ -60,6 +62,7 @@ export default function StudentProfileForm() {
   const [loading, setLoading] = useState(false);
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [reverifyLoading, setReverifyLoading] = useState(false);
 
   useEffect(() => {
     if (sessionLoading || !userEmail) return undefined;
@@ -83,7 +86,8 @@ export default function StudentProfileForm() {
             linkedinUrl: data.profile.linkedinUrl || '',
             skills: data.profile.skills || '',
             bio: data.profile.bio || '',
-            location: data.profile.location || ''
+            location: data.profile.location || '',
+            verification: data.profile.verification || null
           });
         } else {
           setFormData((prev) => ({ ...prev, email: userEmail }));
@@ -124,6 +128,10 @@ export default function StudentProfileForm() {
         body: JSON.stringify(formData)
       });
 
+      if (data.profile) {
+        setFormData((prev) => ({ ...prev, ...data.profile }));
+      }
+
       setIsExisting(true);
       setStatus({
         type: 'success',
@@ -132,10 +140,28 @@ export default function StudentProfileForm() {
     } catch (err) {
       setStatus({
         type: 'error',
-        message: 'Server connection failed. Please try again.'
+        message: err.message || 'Server connection failed. Please try again.'
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReverify = async () => {
+    if (!isExisting) return;
+    setReverifyLoading(true);
+    try {
+      const data = await apiFetch("/api/verify-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: formData, type: "student" }),
+      });
+      setFormData((prev) => ({ ...prev, verification: data.verification }));
+      setStatus({ type: 'success', message: 'Profile re-verified successfully!' });
+    } catch {
+      setStatus({ type: 'error', message: 'Verification failed.' });
+    } finally {
+      setReverifyLoading(false);
     }
   };
 
@@ -497,6 +523,70 @@ export default function StudentProfileForm() {
                 )}
               </button>
             </motion.div>
+
+            {/* Verification Status & Re-verify */}
+            {isExisting && (
+              <motion.div custom={14} variants={fadeUp} initial="hidden" animate="visible">
+                {formData.verification ? (
+                  <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FaShieldAlt className={`w-4 h-4 ${
+                        formData.verification.badge === 'Verified' ? 'text-emerald-500' :
+                        formData.verification.badge === 'Suspicious' ? 'text-red-500' : 'text-amber-500'
+                      }`} />
+                      <span className={`text-sm font-bold ${
+                        formData.verification.badge === 'Verified' ? 'text-emerald-600' :
+                        formData.verification.badge === 'Suspicious' ? 'text-red-600' : 'text-amber-600'
+                      }`}>
+                        {formData.verification.badge} ({formData.verification.trustScore}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+                      <div className={`h-full rounded-full ${
+                        formData.verification.badge === 'Verified' ? 'bg-emerald-500' :
+                        formData.verification.badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500'
+                      }`} style={{ width: `${formData.verification.trustScore}%` }} />
+                    </div>
+                    {formData.verification.breakdown && (
+                      <div className="grid grid-cols-2 gap-1 mb-2">
+                        {Object.entries(formData.verification.breakdown).map(([key, val]) => (
+                          <div key={key} className="flex justify-between text-[10px] text-gray-500">
+                            <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                            <span className="font-semibold">{val}/25</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {formData.verification.analysis && (
+                      <p className="text-xs text-gray-500 mt-1">{formData.verification.analysis}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl flex items-center gap-3">
+                    <FaShieldAlt className="w-5 h-5 text-gray-400" />
+                    <p className="text-sm text-gray-500">Not verified yet</p>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleReverify}
+                  disabled={reverifyLoading}
+                  className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-2xl disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+                >
+                  {reverifyLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <FaSyncAlt />
+                      Re-verify Profile
+                    </>
+                  )}
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.form>

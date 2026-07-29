@@ -14,7 +14,7 @@ if (!globalThis._mongoClientPromise) {
 clientPromise = globalThis._mongoClientPromise;
 
 const connectedClient = await clientPromise;
-const db = connectedClient.db("nub-alumni");
+const db = connectedClient.db("nub_alumni");
 
 export const auth = betterAuth({
   emailAndPassword: {

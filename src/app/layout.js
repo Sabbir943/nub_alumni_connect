@@ -4,6 +4,7 @@ import Navbar from "@/component/Navbar";
 
 import { Toaster } from "react-hot-toast";
 import Footer from "@/component/Footer";
+import AIChatbot from "@/component/AIChatbot";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
         <Navbar/>
         {children}
         <Footer/>
+        <AIChatbot />
         <Toaster />
         </body>
     </html>

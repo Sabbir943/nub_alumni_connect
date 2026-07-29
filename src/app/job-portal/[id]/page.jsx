@@ -5,6 +5,17 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { apiFetch } from '@/lib/api';
+import {
+  FiShield,
+  FiShieldOff,
+  FiAlertTriangle,
+  FiZap,
+  FiCpu,
+  FiCheckCircle,
+  FiClock,
+  FiLink,
+  FiExternalLink,
+} from 'react-icons/fi';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -99,6 +110,8 @@ export default function JobDetailPage() {
   const [similarJobs, setSimilarJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verification, setVerification] = useState(null);
   const fetchJob = useCallback(async () => {
     if (!jobId) return;
     setLoading(true);
@@ -111,6 +124,7 @@ export default function JobDetailPage() {
 
       if (jobData.success && jobData.job) {
         setJob(jobData.job);
+        setVerification(jobData.job.verification || null);
         if (similarData.success) {
 
           const currentId = String(jobId);
@@ -156,6 +170,22 @@ export default function JobDetailPage() {
   };
 
   const isUrl = (v) => v && (v.startsWith('http://') || v.startsWith('https://'));
+
+  const handleVerify = async () => {
+    if (verifying || !job) return;
+    setVerifying(true);
+    try {
+      const data = await apiFetch(`/api/jobs/verify/${job._id}`, { method: 'POST' });
+      if (data.verification) {
+        setVerification(data.verification);
+        setJob((prev) => prev ? { ...prev, verification: data.verification } : prev);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   if (loading) return <Skeleton />;
   if (error || !job) return <NotFound />;
@@ -398,6 +428,123 @@ export default function JobDetailPage() {
                   <div className="mt-3 p-3 bg-[#fafafa] rounded-lg border border-[#e0dfdc]">
                     <p className="text-[10px] text-[#666] font-semibold uppercase tracking-wider">Contact</p>
                     <p className="text-xs text-[#191919] font-medium break-all">{job.applicationUrlOrEmail}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* AI Verification Card */}
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-[#e0dfdc] overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-[#191919] text-sm flex items-center gap-2">
+                    <FiShield className="w-4 h-4 text-[#0a66c2]" />
+                    AI Verification
+                  </h3>
+                  <button
+                    onClick={handleVerify}
+                    disabled={verifying}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-dashed border-[#0a66c2]/30 bg-[#eaf3fd] text-[#0a66c2] hover:bg-[#d6e8fa] hover:border-[#0a66c2]/50 disabled:opacity-50 transition-all"
+                  >
+                    {verifying ? (
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                        <FiCpu className="w-3 h-3" />
+                      </motion.div>
+                    ) : (
+                      <FiZap className="w-3 h-3" />
+                    )}
+                    {verification ? 'Re-verify' : 'Verify with AI'}
+                  </button>
+                </div>
+
+                {verification ? (
+                  <div>
+                    {/* Badge & Score */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {verification.badge === 'Verified' ? (
+                          <FiCheckCircle className="w-5 h-5 text-[#057642]" />
+                        ) : verification.badge === 'Suspicious' ? (
+                          <FiShieldOff className="w-5 h-5 text-[#d11124]" />
+                        ) : (
+                          <FiAlertTriangle className="w-5 h-5 text-[#b65700]" />
+                        )}
+                        <span className={`text-sm font-bold ${
+                          verification.badge === 'Verified' ? 'text-[#057642]' :
+                          verification.badge === 'Suspicious' ? 'text-[#d11124]' : 'text-[#b65700]'
+                        }`}>
+                          {verification.badge}
+                        </span>
+                      </div>
+                      <span className="text-lg font-extrabold text-[#191919]">{verification.trustScore}%</span>
+                    </div>
+
+                    {/* Score Bar */}
+                    <div className="w-full h-2 bg-[#f3f2ef] rounded-full overflow-hidden mb-3">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${verification.trustScore}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className={`h-full rounded-full ${
+                          verification.trustScore >= 70 ? 'bg-[#057642]' :
+                          verification.trustScore >= 40 ? 'bg-[#b65700]' : 'bg-[#d11124]'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Link Status */}
+                    {verification.linkStatus && (
+                      <div className={`p-2.5 rounded-lg mb-3 text-xs font-medium flex items-center gap-2 ${
+                        verification.linkStatus === 'valid' ? 'bg-[#e4f5e4] text-[#057642]' :
+                        verification.linkStatus === 'invalid' ? 'bg-[#ffe8e8] text-[#d11124]' :
+                        verification.linkStatus === 'email' ? 'bg-[#eaf3fd] text-[#0a66c2]' :
+                        'bg-[#f3f2ef] text-[#666]'
+                      }`}>
+                        <FiLink className="w-3.5 h-3.5" />
+                        {verification.linkDetail || verification.linkStatus}
+                      </div>
+                    )}
+
+                    {/* Breakdown */}
+                    {verification.breakdown && (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {Object.entries(verification.breakdown).map(([key, val]) => (
+                          <div key={key} className="flex justify-between text-[10px] text-[#666]">
+                            <span className="capitalize">{key}</span>
+                            <span className="font-semibold">{val}/25</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Analysis */}
+                    {verification.analysis && (
+                      <p className="text-xs text-[#666] leading-relaxed mb-2">{verification.analysis}</p>
+                    )}
+
+                    {/* Flags */}
+                    {verification.flags && verification.flags.length > 0 && (
+                      <div className="space-y-1">
+                        {verification.flags.map((flag, i) => (
+                          <p key={i} className="text-[10px] text-[#b65700] flex items-start gap-1">
+                            <FiAlertTriangle className="w-2.5 h-2.5 mt-0.5 flex-shrink-0" />
+                            {flag}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* AI Powered Label */}
+                    <div className="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-[#e0dfdc]">
+                      <FiZap className="w-2.5 h-2.5 text-[#0a66c2]" />
+                      <span className="text-[9px] text-[#999] font-medium uppercase tracking-wider">Powered by AI</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <FiShield className="w-8 h-8 text-[#e0dfdc] mx-auto mb-2" />
+                    <p className="text-xs text-[#666]">Click verify to analyze this job posting</p>
+                    <p className="text-[10px] text-[#999] mt-1">AI checks link validity, completeness & quality</p>
                   </div>
                 )}
               </div>
