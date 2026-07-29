@@ -49,7 +49,7 @@ const ContactUs = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
         
         {/* Left Side: Contact Information */}
-        <div className="bg-slate-900 p-8 md:p-12 lg:p-16 text-white flex flex-col justify-center">
+        <div className="bg-slate-900 p-6 sm:p-8 md:p-12 lg:p-16 text-white flex flex-col justify-center">
           <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight mb-4">
             Get in touch
           </h2>

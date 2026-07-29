@@ -25,7 +25,7 @@ const fadeUp = {
 function Skeleton() {
   return (
     <div className="min-h-screen bg-[#f3f2ef]">
-      <div className="max-w-[1000px] mx-auto px-4 py-6 animate-pulse">
+      <div className="max-w-5xl mx-auto px-4 py-6 animate-pulse">
         <div className="h-4 bg-white rounded w-48 mb-6" />
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
           <div className="space-y-2">
@@ -208,7 +208,7 @@ export default function JobDetailPage() {
     <div className="min-h-screen bg-[#f3f2ef]">
       {/* Top banner bar */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border-b border-[#e0dfdc] sticky top-0 z-20">
-        <div className="max-w-[1000px] mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <button onClick={() => router.push('/job-portal')} className="flex items-center gap-2 text-sm font-semibold text-[#666] hover:text-[#191919] transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -218,7 +218,7 @@ export default function JobDetailPage() {
         </div>
       </motion.div>
 
-      <div className="max-w-[1000px] mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
 
           {/* LEFT COLUMN */}

@@ -182,7 +182,7 @@ export default function StudentProfileForm() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl mx-auto my-8 p-12 text-center bg-white rounded-3xl shadow-xl border border-gray-100"
+        className="max-w-2xl mx-auto my-8 p-8 sm:p-12 text-center bg-white rounded-3xl shadow-xl border border-gray-100"
       >
         <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-6">
           <FaUser className="w-10 h-10 text-indigo-400" />
@@ -252,7 +252,7 @@ export default function StudentProfileForm() {
           <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/5" />
         </div>
 
-        <div className="px-8 pb-8 -mt-14">
+        <div className="px-5 sm:px-8 pb-8 -mt-14">
           <div className="relative w-28 h-28 mx-auto mb-6">
             {formData.profilePictureUrl ? (
               <img

@@ -219,7 +219,7 @@ export default function ProfilePage() {
     return (
       <div className="max-w-2xl mx-auto">
         <Toaster position="top-center" />
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-5 sm:p-8 text-center">
           <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5">
             <FiCheckCircle className="w-8 h-8" />
           </div>

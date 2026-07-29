@@ -107,7 +107,7 @@ const JobPost = () => {
   };
 
   return (
-    <section className="mt-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="mt-6 md:mt-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Decorative Card Header */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-t-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-xl">
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />

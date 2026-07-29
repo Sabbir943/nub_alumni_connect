@@ -67,7 +67,7 @@ const Banner = () => {
   }, [slides.length]);
 
   return (
-    <div className="relative w-full h-[540px] md:h-[500px] bg-zinc-950 overflow-hidden">
+    <div className="relative w-full h-[480px] sm:h-[520px] md:h-[560px] lg:h-[600px] bg-zinc-950 overflow-hidden">
       
       {/* Slides Viewport */}
       <div className="relative w-full h-full">

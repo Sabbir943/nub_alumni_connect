@@ -10,7 +10,7 @@ const NotFoundPage = () => {
         
         {/* Massive Neon Grid 404 Text */}
         <div className="relative select-none">
-          <h1 className="text-[120px] md:text-[160px] font-black leading-none bg-gradient-to-b from-blue-600 via-indigo-600 to-zinc-200 dark:to-zinc-900 bg-clip-text text-transparent tracking-tighter">
+          <h1 className="text-[80px] sm:text-[100px] md:text-[140px] lg:text-[160px] font-black leading-none bg-gradient-to-b from-blue-600 via-indigo-600 to-zinc-200 dark:to-zinc-900 bg-clip-text text-transparent tracking-tighter">
             404
           </h1>
           <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-zinc-950 via-transparent to-transparent h-full w-full bottom-0" />

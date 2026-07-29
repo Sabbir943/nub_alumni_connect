@@ -94,7 +94,7 @@ const DashboardLayout = ({ children }) => {
       {/* FIXED SIDE NAVIGATION WORKSPACE BAR */}
       <aside className={`
         fixed inset-y-0 left-0 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 md:sticky md:top-0 md:h-screen md:flex flex-col w-64 lg:w-72 bg-white dark:bg-zinc-900 
+        md:translate-x-0 md:sticky md:top-0 md:h-screen md:flex flex-col w-60 lg:w-64 bg-white dark:bg-zinc-900 
         border-r border-zinc-200 dark:border-zinc-800 p-5 z-40 transition-transform duration-300 ease-in-out
       `}>
         {/* Profile Card Header Segment */}

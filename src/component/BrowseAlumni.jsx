@@ -494,7 +494,7 @@ function FilterDropdown({ label, icon, options, value, onChange, placeholder }) 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 mt-2 w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-56 sm:w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 overflow-hidden"
           >
             <div className="p-2 max-h-60 overflow-y-auto">
               <button

@@ -191,7 +191,7 @@ export default function MyConnectionsPage() {
 
         {/* Connections Content */}
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm">
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
             <p className="text-sm font-medium text-slate-500">Fetching your connection list...</p>
           </div>
@@ -207,7 +207,7 @@ export default function MyConnectionsPage() {
             </button>
           </div>
         ) : filteredConnections.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
+          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 sm:p-12 text-center shadow-sm">
             <UserX className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-semibold text-slate-800">
               {searchTerm ? 'No matching connections found' : 'No connections yet'}
