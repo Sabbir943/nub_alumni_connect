@@ -2,229 +2,264 @@
 
 **Connecting Current Students and Alumni of Northern University Bangladesh**
 
-## 📌 Project Objective
-
-NUB Alumni Connect is a web-based platform that helps current students and alumni build professional relationships, find mentors, share opportunities, communicate, and strengthen the NUB community.
+A full-stack web platform for professional networking, mentorship, job discovery, and community building between NUB students and graduates.
 
 ---
 
-## 🧭 Layout & Page Structure
+## Features
 
-### Header / Navbar
+### Core
 
-| Page | Route | Access |
-|---|---|---|
-| Home / Feed (Community feed wall) | `/` | Public |
-| Alumni Directory (Search & filter graduates) | `/alumni` | Public |
-| Contact Us | `/contact` | Public |
-| Job Board (Browse active job/internship listings) | `/jobs` | Private |
-| Notice Board (University events and announcements) | `/notices` | Private |
+- **Alumni Directory** — Search and filter graduates by name, department, batch, graduation year, company, designation, and location
+- **Student Directory** — Browse current students with department and batch filtering
+- **Job Portal** — Alumni post jobs/internships; students browse, verify, and apply
+- **Notice Board** — University announcements, events, and opportunities
+- **Contact Form** — Reach out to the platform team
 
-**Conditional Ending:**
-- **Logged Out:** Login / Signup buttons
-- **Logged In:** User Avatar Dropdown → My Profile, Dashboard, Logout
+### AI-Powered
 
-### Footer
+- **AI Profile Verification** — OpenAI GPT-4o-mini analyzes alumni and student profiles, assigning a trust score (0-100) with verification badges
+- **AI Job Verification** — Validates job posting links (HTTP HEAD checks), scores quality (completeness, quality, consistency, freshness), and flags suspicious content
+- **AI Chatbot** — Floating chat widget on all pages with NUB-focused system prompt and rule-based fallback when OpenAI is unavailable
 
----
+### Social
 
-## 🧑‍💻 Dashboard Layout — Student / Alumni / Admin
+- **Follow System** — Follow/unfollow users, view followers and following lists with real-time counts
+- **Private Messaging** — Direct messages between users with unread message summaries
+- **Dashboard Profiles** — Create and edit detailed profiles with verification status
 
-### 🔹 Student Dashboard Sidebar
-Focused on skill-building, tracking job search pipelines, and managing conversations.
+### Dashboard
 
-| # | Feature | Route | Description |
-|---|---|---|---|
-| 1 | Overview | `/dashboard` | Main metric cards — total jobs applied to, active chat threads, unread notices |
-| 2 | Messenger Chat | `/dashboard/messages` | Full-screen messenger panel to chat in real-time with alumni mentors or classmates |
-| 3 | My Applications | `/dashboard/applications` | Progress table tracking submitted job/internship resumes with live status updates |
-| 4 | Resume Review | `/dashboard/resume-review` | Workspace to upload CV files and read evaluations, annotations, and ratings from alumni |
-| 5 | Skill Exchange | `/dashboard/skills` | Post skills you can help with or request support from other peers in specific domains |
-| 6 | Profile Settings | `/dashboard/profile` | Update student card details, GitHub link, tech stack, and manage personal posts |
-
-### 🔹 Alumni Dashboard Sidebar
-Tailored for graduates managing recruitment posts, reviewing resumes, and sharing insights.
-
-| # | Feature | Route | Description |
-|---|---|---|---|
-| 1 | Alumni Analytics | `/dashboard` | High-level metrics — views on posted jobs and total resumes reviewed |
-| 2 | Messenger Hub | `/dashboard/messages` | Messenger-style window to connect directly with students seeking tips or referrals |
-| 3 | Manage & Post Jobs | `/dashboard/manage-jobs` | Form to post new openings and an applicant tracker to review student resumes |
-| 4 | Resume Critiques | `/dashboard/resume-critiques` | List of student-submitted CVs awaiting feedback, ratings, and suggestions |
-| 5 | My Success Stories | `/dashboard/my-stories` | Drafting studio to write and edit career journey articles for the homepage |
-| 6 | Profile Settings | `/dashboard/profile` | Update current company name, designation, graduation year, and account preferences |
-
-### 🔹 Admin Dashboard Sidebar
-Designed strictly for platform metrics, user verification, system-wide moderation, and university announcements.
-
-| # | Feature | Route | Description |
-|---|---|---|---|
-| 1 | System Overview | `/dashboard` | Comprehensive charts — overall user growth, total job posts, system health |
-| 2 | Manage Users | `/dashboard/admin/users` | User database management table to verify newly registered alumni and manage roles |
-| 3 | Reported Content | `/dashboard/admin/reported` | Moderation workspace showing flagged posts, comments, or jobs with Delete/Ignore actions |
-| 4 | Notice & Events Manager | `/dashboard/admin/notices` | Authoring engine to publish official NUB notices and schedule campus events |
-| 5 | Forum Moderation | `/dashboard/admin/forums` | Add, rename, or structure discussion categories (Programming, Higher Studies, etc.) |
-| 6 | Admin Settings | `/dashboard/admin/profile` | Update admin details, view audit logs of team changes, modify site settings |
+- **Alumni Dashboard** — Profile management, job posting, job management, connections, messaging
+- **Student Dashboard** — Profile creation, job browsing, connections, messaging
 
 ---
 
-## 🔐 Authentication Features
+## Tech Stack
 
-### Sign Up
-- Student Registration
-- Alumni Registration
-- Upload Profile Picture
-
-### Sign In
-- Email & Password Login
-- Remember Me
-- Forgot Password
-
-### Security
-- Role-Based Access Control (RBAC)
-- Session Management
-- Password Hashing
-
-### Register Page Fields
-- Name
-- Email
-- Photo URL
-- Role selector → **Student** / **Alumni**
-- Password
-- Google Login button
-- Link to Login page
-
-**Password Validation Rules:**
-- Must contain an uppercase letter
-- Must contain a lowercase letter
-- Minimum length: 6 characters
-
-> ⚠️ Show all error and success messages using toast/sweet alert. Do **NOT** use the browser's default `alert()`.
-
-> 💡 Do **NOT** implement email verification or forgot password — it inconveniences the examiner. These may be added after receiving results.
-
-### Login Page Fields
-- Email
-- Password
-- Google Login
-- Link to Register page
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| React | React 19.2.4 |
+| Styling | Tailwind CSS 4 |
+| UI Components | HeroUI 3.2.1 |
+| Animations | Framer Motion 12.42.2 |
+| Icons | Lucide React, React Icons |
+| Database | MongoDB 7.4.0 (native driver) |
+| Authentication | Better Auth 1.6.23 (Email/Password + Google OAuth) |
+| Forms | React Hook Form 7.80.0 |
+| AI | OpenAI GPT-4o-mini |
+| Compiler | React Compiler (enabled) |
 
 ---
 
-## ✨ Attractive Features
+## Getting Started
 
-1. **Alumni Directory** — Search alumni by Name, Department, Batch, Graduation Year, Company, Designation, Location
-2. **Find Your Friend** — Search classmates/batchmates, send connection requests, view mutual connections
-3. **Alumni Mentorship Program** — Students request mentorship, book sessions, ask career questions; alumni accept mentees and schedule meetings
-4. **Job & Internship Portal** — Alumni post jobs/internships/freelancing opportunities; students apply, save jobs, and track applications
-5. **Alumni Success Stories** — Alumni share career journeys, achievements, and experiences
-6. **Event Management** — Admin creates reunions, seminars, workshops, career fairs; users register and receive reminders
-7. **Community Feed** — Facebook/LinkedIn-style feed: create posts, like, comment, share achievements
-8. **Private Messaging** — Student ↔ Alumni chat, real-time notifications, inbox system
-9. **Discussion Forum** — Categories: Career Advice, Programming, Higher Studies, Research, Entrepreneurship
-10. **Alumni Donation & Scholarship** — Alumni donate/sponsor scholarships; students apply for scholarships
-11. **Skill Exchange** — Offer help in Programming, Graphic Design, Digital Marketing, Research
-12. **Notice Board** — Admin publishes university notices, events, and opportunities
-13. **Achievement Showcase** — Students and alumni showcase projects, research papers, certifications, awards
-14. **Resume Review System** — Students upload CVs; alumni provide suggestions, ratings, and feedback
+### Prerequisites
 
----
+- Node.js 18+
+- MongoDB database (local or Atlas)
+- OpenAI API key (optional — AI features fall back to rule-based scoring)
 
-## 🧑‍🤝‍🧑 User Roles
-
-| Role | Access Level |
-|---|---|
-| **Student** | Access to student dashboard, job board, mentorship requests, resume review, skill exchange |
-| **Alumni** | Access to alumni dashboard, job posting, mentorship management, resume critiques, success stories |
-| **Admin** | Full platform access — user management, moderation, notices, forum structure, system analytics |
-
----
-
-## 🛠️ Tech Stack
-
-> This section is a suggested starting point — update it to match the stack you actually use for this project.
-
-- **Frontend:** Next.js (React)
-- **Styling:** Tailwind CSS
-- **UI Components:** HeroUI
-- **Backend:** Node.js / Express
-- **Database:** MongoDB
-- **Authentication:** Better Auth (Email/Password + Google Login), Role-Based Access Control
-- **Forms:** React Hook Form
-- **Notifications:** Toast / SweetAlert2
-
----
-
-## 🚀 Getting Started
+### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd nub-alumni-connect
-
-# Install dependencies
+git clone https://github.com/Sabbir943/nub_alumni_connect.git
+cd nub_alumni_connect/my-app
 npm install
-
-# Set up environment variables
-cp .env.example .env.local
-
-# Run the development server
-npm run dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
 
 ### Environment Variables
 
+Copy `.env.example` to `.env` and fill in your values:
+
+```env
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=your-secret-key
+MONGODB_URI=mongodb://localhost:27017/nub_alumni
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+OPENAI_API_KEY=your-openai-api-key
 ```
-MONGODB_URI=
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-NEXT_PUBLIC_API_BASE_URL=
-NEXT_PUBLIC_IMAGE_UPLOAD_API=
+
+### Run
+
+```bash
+npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 📂 Suggested Folder Structure
+## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── (public)/
-│   │   ├── page.js                # Home / Feed
-│   │   ├── alumni/                # Alumni Directory
-│   │   └── contact/
-│   ├── (private)/
-│   │   ├── jobs/                  # Job Board
-│   │   └── notices/               # Notice Board
-│   ├── dashboard/
-│   │   ├── page.js                # Overview (role-based)
-│   │   ├── messages/
-│   │   ├── applications/
-│   │   ├── resume-review/
-│   │   ├── skills/
-│   │   ├── manage-jobs/
-│   │   ├── resume-critiques/
-│   │   ├── my-stories/
-│   │   ├── profile/
-│   │   └── admin/
-│   │       ├── users/
-│   │       ├── reported/
-│   │       ├── notices/
-│   │       ├── forums/
-│   │       └── profile/
-│   ├── login/
-│   └── register/
-├── components/
+│   ├── layout.js                  # Root layout (includes AIChatbot)
+│   ├── page.js                    # Homepage
+│   ├── not-found.js               # 404 page
+│   ├── globals.css                # Global styles
+│   ├── signin/page.jsx            # Sign in
+│   ├── signup/page.jsx            # Sign up
+│   ├── alumni-directory/page.jsx  # Alumni directory
+│   ├── student-directory/page.jsx # Student directory
+│   ├── job-portal/
+│   │   ├── page.jsx               # Job listings
+│   │   └── [id]/page.jsx          # Job detail + verification
+│   ├── notice/page.jsx            # Notice board
+│   ├── contact-us/page.jsx        # Contact form
+│   └── dashboard/
+│       ├── layout.jsx             # Dashboard wrapper
+│       ├── page.jsx               # Dashboard home
+│       ├── alumni/
+│       │   ├── layout.jsx         # Alumni sidebar layout
+│       │   ├── overview/page.jsx  # Alumni overview
+│       │   ├── Profile/page.jsx   # Alumni profile (create/edit/view)
+│       │   ├── editprofile/page.jsx
+│       │   ├── jobPost/page.jsx   # Post a job
+│       │   ├── manage-job/page.jsx # Manage posted jobs
+│       │   ├── my-connection/page.jsx
+│       │   └── text/page.jsx      # Messaging
+│       └── students/
+│           ├── overview/page.jsx  # Student overview
+│           ├── create-profile/page.jsx # Student profile
+│           ├── job-portal/page.jsx
+│           ├── my-connection/page.jsx
+│           └── text-box/page.jsx  # Messaging
+├── component/
+│   ├── Navbar.jsx                 # Navigation with mobile menu
+│   ├── Footer.jsx                 # Site footer
+│   ├── Banner.jsx                 # Homepage hero banner
+│   ├── AIChatbot.jsx              # Floating AI chat widget
+│   ├── BrowseAlumni.jsx           # Alumni directory cards + modal
+│   ├── BrowseStudents.jsx         # Student directory cards + modal
+│   ├── FeaturedAlumni.jsx         # Homepage featured section
+│   ├── ImpactSection.jsx          # Homepage impact stats
+│   ├── HighlightReviews.jsx       # Homepage reviews
+│   ├── LatestJobOpenings.jsx      # Homepage job previews
+│   ├── DashboardLayout.jsx        # Dashboard sidebar layout
+│   └── DashboardSplash.jsx        # Dashboard loading state
 ├── lib/
-└── models/
+│   ├── api.js                     # apiFetch wrapper (checks res.ok)
+│   ├── auth.js                    # Server-side auth config
+│   ├── auth-client.js             # Client-side auth config
+│   ├── mongodb.js                 # MongoDB connection
+│   └── verify.js                  # AI profile analysis (shared)
+└── app/api/
+    ├── auth/[...all]/route.js     # Better Auth catch-all
+    ├── verify-profile/route.js    # Profile verification endpoint
+    ├── alumni-directory/          # Alumni CRUD + check
+    ├── students/                  # Student CRUD + check
+    ├── student-directory/         # Public student directory
+    ├── jobs/                      # Jobs CRUD + verification
+    ├── follow/                    # Follow/unfollow + stats
+    ├── messages/                  # Send, conversation, unread
+    ├── chat/route.js              # AI chatbot streaming endpoint
+    └── contact/route.js           # Contact form submission
 ```
 
 ---
 
-## 📄 License
+## API Endpoints
 
-This project is developed for academic purposes at Northern University Bangladesh (NUB).
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| * | `/api/auth/*` | Better Auth catch-all (sign in, sign up, session, Google OAuth) |
+
+### Profiles
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/alumni-directory` | List/create alumni profiles |
+| GET/PATCH | `/api/alumni-directory/[email]` | Get/update specific alumni |
+| GET | `/api/alumni-directory/check/[email]` | Check if alumni exists |
+| GET/POST | `/api/students` | List/create student profiles |
+| GET/PATCH | `/api/students/[email]` | Get/update specific student |
+| GET | `/api/students/check/[email]` | Check if student exists |
+| POST | `/api/verify-profile` | AI verify a profile |
+
+### Jobs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/jobs` | List/create job postings |
+| GET/PATCH/DELETE | `/api/jobs/[id]` | Get/update/delete a job |
+| GET | `/api/jobs/verify/[id]` | AI verify a job posting |
+
+### Social
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/follow` | Follow a user |
+| GET | `/api/follow/status` | Check follow status |
+| GET | `/api/follow/followers/[email]` | Get user's followers |
+| GET | `/api/follow/following/[email]` | Get who user follows |
+| GET | `/api/follow/stats/[email]` | Get follow counts |
+
+### Messaging
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/messages/send` | Send a message |
+| GET | `/api/messages/conversation` | Get conversation between users |
+| GET | `/api/messages/unread-summary/[email]` | Get unread message counts |
+
+### Other
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/contact` | Submit contact form |
+| POST | `/api/chat` | AI chatbot (streaming) |
+
+---
+
+## MongoDB Collections
+
+| Collection | Description |
+|------------|-------------|
+| `alumni_directory` | Alumni profiles (degree, batch, company, etc.) |
+| `students` | Student profiles (department, batch, etc.) |
+| `jobs` | Job postings with verification data |
+| `user` | Better Auth user accounts |
+| `session` | Better Auth sessions |
+| `account` | Better Auth linked accounts |
+| `verification` | Better Auth email verifications |
+| `follow` | User follow relationships |
+| `messages` | Direct messages between users |
+
+---
+
+## AI Features
+
+### Profile Verification
+- Analyzes profile completeness, consistency, and quality
+- Returns a trust score (0-100) with verification level (high/medium/low)
+- Flags missing fields, suspicious patterns, and inconsistencies
+- Badge displayed on directory cards and detail modals
+
+### Job Verification
+- Link validation via HTTP HEAD requests
+- Quality scoring: completeness (0-25), quality (0-25), consistency (0-25), freshness (0-25)
+- Flags suspicious job postings (urgency language, unrealistic salaries, etc.)
+- Deadline countdown with visual progress indicator on job cards
+
+### AI Chatbot
+- Floating widget on all pages with streaming responses
+- NUB-focused system prompt for alumni network questions
+- Rule-based fallback when OpenAI API is unavailable
+- Suggested quick questions for common queries
+
+---
+
+## Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Production build
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+---
+
+## License
+
+Academic project for Northern University Bangladesh (NUB).
