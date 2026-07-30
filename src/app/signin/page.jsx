@@ -22,20 +22,18 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      
-        const { data, error } = await authClient.signIn.email({
-          email: formData.email,
-          password: formData.password,
-        });
-     
-      
-      // Simulating a successful login flow
-      if (formData.email && formData.password) {
-        toast.success('Successfully logged into NUB Nexus!');
-        setTimeout(() => router.push('/'), 1500);
-      } else {
-        toast.error('Please fill in all required fields.');
+      const { data, error } = await authClient.signIn.email({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        toast.error(error.message || 'Invalid email or password.');
+        return;
       }
+
+      toast.success('Successfully logged in!');
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       toast.error(err.message || 'Authentication failed. Please try again.');
     } finally {
@@ -46,10 +44,9 @@ const SignIn = () => {
   const handleGoogleLogin = async () => {
     try {
       toast.loading('Connecting to Google...');
-      
-        
-        await authClient.signIn.social({ provider: "google" });
-      
+      await authClient.signIn.social({ provider: "google" });
+      toast.success('Successfully logged in with Google!');
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       toast.error('Google authentication failed.');
     }

@@ -81,18 +81,20 @@ const SignUpPage = () => {
 
     setLoading(true);
     try {
-      
-        const { data, error } = await authClient.signUp.email({
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-          image: formData.photoUrl,
-          role: formData.role
-        });
-        
-       
-       
-      toast.success('Account registered successfully!');
+      const { data, error } = await authClient.signUp.email({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        image: formData.photoUrl,
+        role: formData.role
+      });
+
+      if (error) {
+        toast.error(error.message || 'Registration failed. Try again.');
+        return;
+      }
+
+      toast.success('Account registered successfully! Please sign in.');
       setTimeout(() => router.push('/signin'), 1500);
     } catch (err) {
       toast.error(err.message || 'Registration failed. Try again.');
@@ -103,10 +105,9 @@ const SignUpPage = () => {
     const handleGoogleLogin = async () => {
     try {
       toast.loading('Connecting to Google...');
-      
-        
-        await authClient.signIn.social({ provider: "google" });
-      
+      await authClient.signIn.social({ provider: "google" });
+      toast.success('Successfully signed in with Google!');
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       toast.error('Google authentication failed.');
     }

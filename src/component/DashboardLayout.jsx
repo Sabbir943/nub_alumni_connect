@@ -8,6 +8,7 @@ import {
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen 
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
+import toast from 'react-hot-toast';
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
@@ -62,6 +63,8 @@ const DashboardLayout = ({ children }) => {
   const currentLinks = getNavLinks();
 
   const handleLogout = async () => {
+    await authClient.signOut();
+    toast.success('Successfully logged out!');
     router.push('/signin');
   };
 
