@@ -77,6 +77,13 @@ export async function POST(request) {
       return NextResponse.json({ message: "Profile already exists. Use PATCH to update." }, { status: 409 });
     }
 
+    if (body.studentId) {
+      const dupStudent = await collection.findOne({ studentId: body.studentId });
+      if (dupStudent) {
+        return NextResponse.json({ message: "A profile with this Student ID already exists." }, { status: 409 });
+      }
+    }
+
     const now = new Date();
     const newProfile = { ...body, createdAt: now, updatedAt: now };
     const result = await collection.insertOne(newProfile);

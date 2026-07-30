@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
+import { uploadImage } from '@/lib/upload';
+import toast, { Toaster } from 'react-hot-toast';
 import {
   FaUser,
   FaEnvelope,
@@ -21,7 +23,8 @@ import {
   FaSpinner,
   FaCamera,
   FaShieldAlt,
-  FaSyncAlt
+  FaSyncAlt,
+  FaTimes
 } from 'react-icons/fa';
 
 const fadeUp = {
@@ -60,6 +63,8 @@ export default function StudentProfileForm() {
 
   const [isExisting, setIsExisting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
   const [reverifyLoading, setReverifyLoading] = useState(false);
@@ -108,6 +113,34 @@ export default function StudentProfileForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setFormData((prev) => ({ ...prev, profilePictureUrl: url }));
+      toast.success('Image uploaded!');
+    } catch (err) {
+      toast.error(err.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, profilePictureUrl: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
@@ -195,6 +228,7 @@ export default function StudentProfileForm() {
 
   return (
     <div className="max-w-3xl mx-auto my-8">
+      <Toaster position="top-center" />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -267,9 +301,30 @@ export default function StudentProfileForm() {
                 </span>
               </div>
             )}
-            <div className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100">
-              <FaCamera className="w-4 h-4 text-gray-400" />
-            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+            >
+              {uploading ? <FaSpinner className="w-4 h-4 text-indigo-500 animate-spin" /> : <FaCamera className="w-4 h-4 text-gray-400" />}
+            </button>
+            {formData.profilePictureUrl && (
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute -top-1 -right-1 p-1.5 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+              >
+                <FaTimes className="w-3 h-3 text-gray-400" />
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
 
           <div className="space-y-6">
@@ -444,19 +499,31 @@ export default function StudentProfileForm() {
               </motion.div>
             </div>
 
-            {/* Profile Image URL */}
+            {/* Profile Image Upload */}
             <motion.div custom={10} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profile Image URL</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profile Photo</label>
               <div className="relative group">
                 <FaImage className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input
-                  type="url"
-                  name="profilePictureUrl"
-                  value={formData.profilePictureUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                />
+                {formData.profilePictureUrl ? (
+                  <div className="flex items-center gap-3 w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl">
+                    <img src={formData.profilePictureUrl} alt="Preview" className="w-10 h-10 rounded-lg object-cover" />
+                    <span className="flex-1 text-xs text-gray-500 truncate">Photo selected</span>
+                    <button type="button" onClick={handleRemoveImage} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+                      <FaTimes className="w-3 h-3 text-gray-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex items-center gap-3 pl-11 pr-4 py-3 bg-gray-50 border border-dashed border-gray-300 rounded-2xl text-sm hover:border-indigo-400 transition-colors"
+                  >
+                    <span className="text-gray-400">
+                      {uploading ? 'Uploading...' : 'Choose a photo from your computer'}
+                    </span>
+                  </button>
+                )}
               </div>
             </motion.div>
 

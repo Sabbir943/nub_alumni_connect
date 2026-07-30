@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FiUser,
   FiMail,
@@ -19,10 +19,13 @@ import {
   FiAlertCircle,
   FiShield,
   FiRefreshCw,
+  FiCamera,
+  FiX,
 } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
+import { uploadImage } from "@/lib/upload";
 
 const INITIAL_FORM = {
   profilePictureUrl: "",
@@ -129,6 +132,8 @@ export default function ProfilePage() {
   const [view, setView] = useState("loading");
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [reverifyLoading, setReverifyLoading] = useState(false);
 
   const fetchProfile = async () => {
@@ -154,6 +159,34 @@ export default function ProfilePage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setFormData((prev) => ({ ...prev, profilePictureUrl: url }));
+      toast.success("Image uploaded!");
+    } catch (err) {
+      toast.error(err.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, profilePictureUrl: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -355,18 +388,37 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1.5 w-full text-center sm:text-left">
               <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Profile Photo URL
+                Profile Photo
               </h4>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Paste a direct link to your photo
+                Choose a photo from your computer
               </p>
+              {formData.profilePictureUrl ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-500 truncate max-w-[200px]">Photo selected</span>
+                  <button type="button" onClick={handleRemoveImage} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors">
+                    <FiX className="w-3.5 h-3.5 text-zinc-400" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+                >
+                  <FiCamera className="w-4 h-4 text-zinc-400" />
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {uploading ? "Uploading..." : "Browse Photo"}
+                  </span>
+                </button>
+              )}
               <input
-                type="url"
-                name="profilePictureUrl"
-                value={formData.profilePictureUrl}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:text-white"
-                placeholder="https://example.com/photo.jpg"
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
               />
             </div>
           </div>

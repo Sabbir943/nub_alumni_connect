@@ -1,26 +1,60 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiUser, FiMail, FiLock, FiImage, FiBriefcase, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiImage, FiBriefcase, FiArrowRight, FiCamera, FiX } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import toast, { Toaster } from 'react-hot-toast';
 import { authClient } from '@/lib/auth-client';
+import { uploadImage } from '@/lib/upload';
 
 const SignUpPage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState('');
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     photoUrl: '',
-    role: 'Student', // Options: 'Student' | 'Alumni'
+    role: 'Student',
     password: ''
   });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setFormData((prev) => ({ ...prev, photoUrl: url }));
+      setPreview(url);
+      toast.success('Image uploaded!');
+    } catch (err) {
+      toast.error(err.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, photoUrl: '' }));
+    setPreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // Explicit Client-Side Password Rules Testing Engine
@@ -115,15 +149,37 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          {/* Photo URL field */}
+          {/* Photo Upload field */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Photo URL</label>
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Profile Photo</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400"><FiImage /></span>
-              <input 
-                type="url" name="photoUrl" required value={formData.photoUrl} onChange={handleInputChange}
-                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-zinc-100 transition-all"
-                placeholder="https://example.com/avatar.jpg"
+              {preview || formData.photoUrl ? (
+                <div className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                  <img src={preview || formData.photoUrl} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />
+                  <span className="flex-1 text-xs text-zinc-500 truncate">Photo selected</span>
+                  <button type="button" onClick={handleRemoveImage} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                    <FiX className="w-4 h-4 text-zinc-400" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-zinc-950 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+                >
+                  <FiCamera className="w-5 h-5 text-zinc-400" />
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {uploading ? 'Uploading...' : 'Choose a photo from your computer'}
+                  </span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
               />
             </div>
           </div>
