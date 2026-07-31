@@ -105,7 +105,10 @@ function VerificationBadge({ verification, size = "sm" }) {
     );
   }
 
-  const { badge, trustScore } = verification;
+  const { badge, trustScore, linkValidation } = verification;
+  const allLinksValid = linkValidation && linkValidation.length > 0 && linkValidation.every(l => l.valid);
+  const anyLinkInvalid = linkValidation && linkValidation.some(l => !l.valid && l.url);
+
   const config = {
     Verified: {
       bg: "bg-emerald-50",
@@ -123,10 +126,10 @@ function VerificationBadge({ verification, size = "sm" }) {
     },
     Suspicious: {
       bg: "bg-red-50",
-      text: "text-red-700",
-      border: "border-red-200",
+      text: anyLinkInvalid ? "text-red-700" : "text-red-700",
+      border: anyLinkInvalid ? "border-red-200" : "border-red-200",
       icon: <FiShieldOff className="w-3 h-3" />,
-      label: `Suspicious (${trustScore}%)`,
+      label: anyLinkInvalid ? `Invalid Links (${trustScore}%)` : `Suspicious (${trustScore}%)`,
     },
   };
 
@@ -137,7 +140,7 @@ function VerificationBadge({ verification, size = "sm" }) {
 
   return (
     <span className={`inline-flex items-center gap-1 ${sizeClasses} rounded-full ${c.bg} ${c.text} font-semibold border ${c.border}`}>
-      {c.icon}
+      {allLinksValid ? <FiCheck className="w-3 h-3" /> : c.icon}
       {c.label}
     </span>
   );
@@ -146,7 +149,7 @@ function VerificationBadge({ verification, size = "sm" }) {
 function VerificationDetails({ verification }) {
   if (!verification) return null;
 
-  const { trustScore, badge, breakdown, analysis, flags, verifiedAt } = verification;
+  const { trustScore, badge, breakdown, analysis, flags, verifiedAt, linkValidation } = verification;
   const barColor = badge === 'Verified' ? 'bg-emerald-500' : badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500';
 
   return (
@@ -169,6 +172,37 @@ function VerificationDetails({ verification }) {
           <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${trustScore}%` }} />
         </div>
       </div>
+
+      {linkValidation && linkValidation.length > 0 && (
+        <div className="mb-3 p-3 bg-white rounded-lg border border-slate-100">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Link Status</p>
+          <div className="space-y-1.5">
+            {linkValidation.map((link, i) => (
+              <div key={i} className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  {link.valid ? (
+                    <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <FiCheck className="w-2.5 h-2.5 text-emerald-600" />
+                    </span>
+                  ) : link.url ? (
+                    <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
+                      <FiX className="w-2.5 h-2.5 text-red-600" />
+                    </span>
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                      <FiAlertTriangle className="w-2.5 h-2.5 text-zinc-400" />
+                    </span>
+                  )}
+                  <span className="font-semibold text-slate-600">{link.label}</span>
+                </div>
+                <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-zinc-400'}`}>
+                  {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {breakdown && (
         <div className="grid grid-cols-2 gap-2 mb-3">
@@ -757,6 +791,32 @@ function AIVerifyButton({ profile, type, onVerified }) {
                 >
                   {result.analysis}
                 </motion.p>
+              )}
+
+              {result?.linkValidation && result.linkValidation.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.45 }}
+                  className="mt-2 pt-2 border-t border-zinc-100 space-y-1"
+                >
+                  {result.linkValidation.map((link, i) => (
+                    <div key={i} className="flex items-center justify-between text-[9px]">
+                      <span className="font-medium text-zinc-500">{link.label}</span>
+                      {link.valid ? (
+                        <span className="flex items-center gap-0.5 text-emerald-600 font-semibold">
+                          <FiCheck className="w-2.5 h-2.5" /> Valid
+                        </span>
+                      ) : link.url ? (
+                        <span className="flex items-center gap-0.5 text-red-600 font-semibold">
+                          <FiX className="w-2.5 h-2.5" /> Invalid
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400">N/A</span>
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
               )}
 
               <motion.div

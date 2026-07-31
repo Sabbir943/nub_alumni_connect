@@ -229,6 +229,9 @@ export default function FeaturedAlumni() {
                        person.verification.badge === 'Suspicious' ? <FiShieldOff className="w-2.5 h-2.5" /> :
                        <FiAlertTriangle className="w-2.5 h-2.5" />}
                       {person.verification.trustScore}%
+                      {person.verification.linkValidation && person.verification.linkValidation.some(l => !l.valid && l.url) && (
+                        <span className="ml-0.5 text-red-400">•</span>
+                      )}
                     </span>
                   )}
                   {person.jobTitle && (

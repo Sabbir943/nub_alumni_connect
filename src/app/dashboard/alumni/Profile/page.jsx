@@ -84,7 +84,7 @@ function VerificationBadgeInline({ verification }) {
       </span>
     );
   }
-  const { badge, trustScore, breakdown, analysis, flags } = verification;
+  const { badge, trustScore, breakdown, analysis, flags, linkValidation } = verification;
   const colors = {
     Verified: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", bar: "bg-emerald-500" },
     Unverified: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", bar: "bg-amber-500" },
@@ -101,6 +101,38 @@ function VerificationBadgeInline({ verification }) {
       <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden mb-2">
         <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${trustScore}%` }} />
       </div>
+
+      {linkValidation && linkValidation.length > 0 && (
+        <div className="mb-3 p-3 bg-white rounded-lg border border-slate-100">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Link Status</p>
+          <div className="space-y-1.5">
+            {linkValidation.map((link, i) => (
+              <div key={i} className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  {link.valid ? (
+                    <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <FiCheckCircle className="w-2.5 h-2.5 text-emerald-600" />
+                    </span>
+                  ) : link.url ? (
+                    <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
+                      <FiAlertCircle className="w-2.5 h-2.5 text-red-600" />
+                    </span>
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                      <FiAlertCircle className="w-2.5 h-2.5 text-zinc-400" />
+                    </span>
+                  )}
+                  <span className="font-semibold text-slate-600">{link.label}</span>
+                </div>
+                <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-zinc-400'}`}>
+                  {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {breakdown && (
         <div className="grid grid-cols-2 gap-1 mb-2">
           {Object.entries(breakdown).map(([key, val]) => (

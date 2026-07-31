@@ -614,6 +614,38 @@ export default function StudentProfileForm() {
                         formData.verification.badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500'
                       }`} style={{ width: `${formData.verification.trustScore}%` }} />
                     </div>
+
+                    {formData.verification.linkValidation && formData.verification.linkValidation.length > 0 && (
+                      <div className="mb-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Link Status</p>
+                        <div className="space-y-1.5">
+                          {formData.verification.linkValidation.map((link, i) => (
+                            <div key={i} className="flex items-center justify-between text-[10px]">
+                              <div className="flex items-center gap-1.5">
+                                {link.valid ? (
+                                  <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                                    <FaCheckCircle className="w-2.5 h-2.5 text-emerald-600" />
+                                  </span>
+                                ) : link.url ? (
+                                  <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
+                                    <FaExclamationCircle className="w-2.5 h-2.5 text-red-600" />
+                                  </span>
+                                ) : (
+                                  <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                    <FaExclamationCircle className="w-2.5 h-2.5 text-gray-400" />
+                                  </span>
+                                )}
+                                <span className="font-semibold text-gray-600">{link.label}</span>
+                              </div>
+                              <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-gray-400'}`}>
+                                {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {formData.verification.breakdown && (
                       <div className="grid grid-cols-2 gap-1 mb-2">
                         {Object.entries(formData.verification.breakdown).map(([key, val]) => (
