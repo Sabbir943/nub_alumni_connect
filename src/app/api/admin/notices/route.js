@@ -42,6 +42,32 @@ export async function POST(request) {
     };
 
     const result = await notices.insertOne(notice);
+
+    try {
+      const notifications = await getCollection('notifications');
+      const userCol = await getCollection('user');
+      const filter = {};
+      if (audience === 'alumni') filter.role = 'Alumni';
+      else if (audience === 'students') filter.role = 'Student';
+
+      const users = await userCol.find(filter).project({ email: 1 }).toArray();
+      if (users.length > 0) {
+        const notifDocs = users.map(u => ({
+          recipientEmail: u.email,
+          type: 'admin_notice',
+          actorEmail: null,
+          actorName: 'Admin',
+          message: `Notice: ${title}`,
+          link: '/dashboard',
+          read: false,
+          createdAt: new Date(),
+        }));
+        await notifications.insertMany(notifDocs);
+      }
+    } catch (e) {
+      console.error("Notice broadcast error:", e.message);
+    }
+
     return NextResponse.json({ message: 'Notice created', noticeId: result.insertedId.toString() });
   } catch (error) {
     console.error('Create notice error:', error);

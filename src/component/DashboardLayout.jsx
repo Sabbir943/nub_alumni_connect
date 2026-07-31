@@ -1,19 +1,22 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit, 
-  FiFileText, FiCheckSquare, FiShield, FiAlertTriangle, 
-  FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen 
+import {
+  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
+  FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
+  FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
+  FiBell
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
+import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   const { 
     data: session, 
@@ -23,12 +26,27 @@ const DashboardLayout = ({ children }) => {
   } = authClient.useSession();
 
   const user = session?.user;
+  const email = user?.email;
+
+  useEffect(() => {
+    if (!email) return;
+    const fetchUnread = async () => {
+      try {
+        const data = await apiFetch(`/api/notifications/${email}?unread=true`);
+        setUnreadNotifCount(data.unreadCount || 0);
+      } catch (e) {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [email]);
 
   // ==========================================
   // NAVIGATION ROLE MAP DEFINITIONS
   // ==========================================
   const alumniLinks = [
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
+    { label: 'Notifications', href: '/dashboard/alumni/notifications', icon: <FiBell />, badge: unreadNotifCount || null },
     { label: 'Create Profile', href: '/dashboard/alumni/Profile', icon: <FiUserPlus /> },
     { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
@@ -39,7 +57,8 @@ const DashboardLayout = ({ children }) => {
 
   const studentLinks = [
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
-    { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare />, badge: 5 },
+    { label: 'Notifications', href: '/dashboard/students/notifications', icon: <FiBell />, badge: unreadNotifCount || null },
+    { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare /> },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
     { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiBriefcase /> },
     { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> }
@@ -48,7 +67,7 @@ const DashboardLayout = ({ children }) => {
   const adminLinks = [
     { label: 'Admin Dashboard', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Manage Users', href: '/dashboard/admin/users', icon: <FiShield /> },
-    { label: 'Reported Content', href: '/dashboard/admin/reports', icon: <FiAlertTriangle />, badge: 12 },
+    { label: 'Reported Content', href: '/dashboard/admin/reports', icon: <FiAlertTriangle /> },
     { label: 'Add Notices', href: '/dashboard/admin/notices', icon: <FiPlusCircle /> },
     { label: 'Reunion & Events', href: '/dashboard/admin/reunion', icon: <FiCalendar /> }
   ];

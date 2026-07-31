@@ -5,11 +5,27 @@ import { analyzeProfile } from '@/lib/verify';
 export async function GET(request, { params }) {
   try {
     const { email } = await params;
+    const { searchParams } = new URL(request.url);
+    const forceReverify = searchParams.get('reverify') === 'true';
     const collection = await getCollection('alumni_directory');
     const profile = await collection.findOne({ email });
     if (!profile) {
       return NextResponse.json({ message: "Alumni profile not found" }, { status: 404 });
     }
+
+    const isStale = !profile.verification || !profile.verification.verifiedAt
+      || (Date.now() - new Date(profile.verification.verifiedAt).getTime()) > 7 * 24 * 60 * 60 * 1000;
+
+    if (forceReverify || isStale) {
+      try {
+        const verification = await analyzeProfile(profile, 'alumni');
+        await collection.updateOne({ email }, { $set: { verification } });
+        profile.verification = verification;
+      } catch (e) {
+        console.error("Re-verification failed:", e.message);
+      }
+    }
+
     return NextResponse.json({ profile });
   } catch (error) {
     console.error("Error fetching alumni profile:", error);

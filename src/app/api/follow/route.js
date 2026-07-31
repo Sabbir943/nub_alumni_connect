@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCollection } from '@/lib/mongodb';
+import { getCollection, findProfileByEmail } from '@/lib/mongodb';
 
 export async function POST(request) {
   try {
@@ -15,6 +15,25 @@ export async function POST(request) {
     }
 
     await collection.insertOne({ followerEmail, targetEmail, createdAt: new Date() });
+
+    try {
+      const followerProfile = await findProfileByEmail(followerEmail);
+      const followerName = followerProfile?.fullName || followerEmail.split('@')[0];
+      const notifications = await getCollection('notifications');
+      await notifications.insertOne({
+        recipientEmail: targetEmail,
+        type: 'follow',
+        actorEmail: followerEmail,
+        actorName: followerName,
+        message: `${followerName} started following you`,
+        link: '/dashboard',
+        read: false,
+        createdAt: new Date(),
+      });
+    } catch (e) {
+      console.error("Follow notification error:", e.message);
+    }
+
     return NextResponse.json({ message: "Followed successfully" }, { status: 201 });
   } catch (error) {
     console.error("Error following:", error);
