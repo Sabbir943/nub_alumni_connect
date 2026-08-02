@@ -845,6 +845,7 @@ export default function BrowseStudents() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
@@ -864,29 +865,6 @@ export default function BrowseStudents() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const prevFiltersRef = useRef({ search, department, graduationYear, location, sortBy });
-
-  const fetchProfiles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (department) params.set("degree", department);
-      if (graduationYear) params.set("graduationYear", graduationYear);
-      if (location) params.set("location", location);
-      params.set("sortBy", sortBy);
-      params.set("page", String(page));
-      params.set("limit", "6");
-
-      const data = await apiFetch(`/api/student-directory?${params.toString()}`);
-      setProfiles(data.profiles || []);
-      setPagination(data.pagination);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, department, graduationYear, location, sortBy, page]);
 
   useEffect(() => {
     const prev = prevFiltersRef.current;
@@ -929,7 +907,7 @@ export default function BrowseStudents() {
     }
     load();
     return () => { cancelled = true; };
-  }, [search, department, graduationYear, location, sortBy, page]);
+  }, [search, department, graduationYear, location, sortBy, page, retryCount]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -1141,7 +1119,7 @@ export default function BrowseStudents() {
           >
             <p className="text-red-600 font-medium">{error}</p>
             <button
-              onClick={fetchProfiles}
+              onClick={() => setRetryCount(c => c + 1)}
               className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors"
             >
               Try Again

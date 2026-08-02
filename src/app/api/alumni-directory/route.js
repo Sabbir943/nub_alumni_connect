@@ -17,7 +17,13 @@ export async function GET(request) {
     const limitNum = limit;
     const skip = (pageNum - 1) * limitNum;
 
-    const collection = await getCollection('alumni_directory');
+    let collection;
+    try {
+      collection = await getCollection('alumni_directory');
+    } catch (dbErr) {
+      console.error("Database connection error:", dbErr.message);
+      return NextResponse.json({ profiles: [], pagination: { total: 0, totalPages: 0, currentPage: 1, pageSize: limitNum, hasNext: false, hasPrevious: false } });
+    }
     const filter = {};
 
     if (search) {

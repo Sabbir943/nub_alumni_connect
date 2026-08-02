@@ -6,7 +6,7 @@ import {
   FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
   FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
-  FiBell
+  FiBell, FiHome
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
@@ -146,6 +146,19 @@ const DashboardLayout = ({ children }) => {
 
         {/* Dynamic Mapping Route Block */}
         <nav className="flex-1 space-y-1 overflow-y-auto">
+          <Link
+            href="/"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-base text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600">
+                <FiHome />
+              </span>
+              <span>Home</span>
+            </div>
+          </Link>
+
           {currentLinks.map((link) => (
             <Link
               key={link.label}

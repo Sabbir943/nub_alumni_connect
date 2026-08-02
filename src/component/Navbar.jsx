@@ -70,6 +70,8 @@ const Navbar = () => {
 
   const isActive = (path) => pathname === path;
 
+  if (pathname.startsWith('/dashboard')) return null;
+
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
       isScrolled
