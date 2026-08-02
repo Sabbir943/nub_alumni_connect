@@ -71,16 +71,34 @@ export default function StudentTextBoxPage() {
   const [fetchError, setFetchError] = useState(null);
 
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
   const pollingRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+
+  const scrollToBottom = (smooth = true) => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' });
+    }
+  };
+
+  const handleScroll = () => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 150;
+  };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottomRef.current) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   useEffect(() => {
     if (activeFriend && !loadingMessages) {
       inputRef.current?.focus();
+      setTimeout(() => scrollToBottom(false), 50);
     }
   }, [activeFriend, loadingMessages]);
 
@@ -184,6 +202,8 @@ export default function StudentTextBoxPage() {
         setMessages((prev) => [...prev, data.message]);
         setNewMessageText('');
         setFetchError(null);
+        isNearBottomRef.current = true;
+        setTimeout(() => scrollToBottom(), 50);
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -454,7 +474,7 @@ export default function StudentTextBoxPage() {
                 </motion.div>
 
                 {/* Messages Area */}
-                <div className="flex-1 px-4 sm:px-6 py-4 overflow-y-auto space-y-1 bg-gradient-to-b from-slate-50/50 to-emerald-50/20">
+                <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 px-4 sm:px-6 py-4 overflow-y-auto space-y-1 bg-gradient-to-b from-slate-50/50 to-emerald-50/20">
                   {loadingMessages ? (
                     <div className="h-full flex items-center justify-center">
                       <motion.div

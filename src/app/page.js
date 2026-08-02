@@ -13,6 +13,9 @@ const LatestJobOpenings = dynamic(() => import("@/component/LatestJobOpenings"),
 const FeaturedAlumni = dynamic(() => import("@/component/FeaturedAlumni"), {
   loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
 });
+const ContactUs = dynamic(() => import("@/component/ContactUs"), {
+  loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
+});
 
 export default function Home() {
   return (
@@ -22,6 +25,7 @@ export default function Home() {
       <ImpactSection />
       <HighlightReviews />
       <FeaturedAlumni />
+      <ContactUs />
     </div>
   );
 }

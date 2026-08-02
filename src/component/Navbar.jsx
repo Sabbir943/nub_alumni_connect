@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiMenu, FiX, FiBell, FiMessageSquare,
   FiUser, FiLogOut, FiBriefcase, FiUsers,
-  FiCompass, FiBookOpen, FiGrid,   FiMail,
+  FiCompass, FiBookOpen, FiGrid,
   FiChevronDown
 } from 'react-icons/fi';
 import { GraduationCap } from 'lucide-react';
@@ -60,7 +60,6 @@ const Navbar = () => {
     { label: 'Home', href: '/', icon: <FiCompass className="w-4 h-4" /> },
     { label: 'Alumni Directory', href: '/alumni-directory', icon: <FiUsers className="w-4 h-4" /> },
     { label: 'Student Directory', href: '/student-directory', icon: <GraduationCap className="w-4 h-4" /> },
-    { label: 'Contact Us', href: '/contact-us', icon: <FiMail className="w-4 h-4" /> },
   ];
 
   const privateLinks = [
