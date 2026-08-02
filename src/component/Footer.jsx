@@ -1,4 +1,3 @@
-"use client";
 import React from 'react';
 import Link from 'next/link';
 import { FiGithub, FiLinkedin, FiMail, FiGlobe, FiChevronRight } from 'react-icons/fi';

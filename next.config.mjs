@@ -13,6 +13,9 @@ const nextConfig = {
     ],
   },
   reactCompiler: true,
+  experimental: {
+    optimizePackageImports: ['react-icons', 'lucide-react'],
+  },
 };
 
 export default nextConfig;

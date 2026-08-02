@@ -1,8 +1,18 @@
+import dynamic from "next/dynamic";
 import Banner from "@/component/Banner";
-import HighlightReviews from "@/component/HighlightReviews";
-import ImpactSection from "@/component/ImpactSection";
-import LatestJobOpenings from "@/component/LatestJobOpenings";
-import FeaturedAlumni from "@/component/FeaturedAlumni";
+
+const HighlightReviews = dynamic(() => import("@/component/HighlightReviews"), {
+  loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
+});
+const ImpactSection = dynamic(() => import("@/component/ImpactSection"), {
+  loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
+});
+const LatestJobOpenings = dynamic(() => import("@/component/LatestJobOpenings"), {
+  loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
+});
+const FeaturedAlumni = dynamic(() => import("@/component/FeaturedAlumni"), {
+  loading: () => <div className="h-96 bg-zinc-50 animate-pulse" />,
+});
 
 export default function Home() {
   return (

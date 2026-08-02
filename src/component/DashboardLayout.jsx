@@ -6,7 +6,7 @@ import {
   FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
   FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
-  FiBell, FiHome
+  FiBell, FiUser, FiHome
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
@@ -98,118 +98,145 @@ const DashboardLayout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 flex flex-col md:flex-row transition-colors duration-300">
-      
-      {/* MOBILE RESPONSIVE TOP HEADER */}
-      <div className="md:hidden flex items-center justify-between bg-white dark:bg-zinc-900 px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 z-50">
-        <span className="text-sm font-black tracking-wider uppercase bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          {user?.role || 'User'} Workspace
-        </span>
-        <button 
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 focus:outline-none"
-        >
-          {isMobileOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
-        </button>
-      </div>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 flex flex-col transition-colors duration-300">
 
-      {/* FIXED SIDE NAVIGATION WORKSPACE BAR */}
-      <aside className={`
-        fixed inset-y-0 left-0 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 md:sticky md:top-0 md:h-screen md:flex flex-col w-60 lg:w-64 bg-white dark:bg-zinc-900 
-        border-r border-zinc-200 dark:border-zinc-800 p-5 z-40 transition-transform duration-300 ease-in-out
-      `}>
-        {/* Profile Card Header Segment */}
-        <div className="pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-800">
+      {/* ========== TOP DASHBOARD NAVBAR ========== */}
+      <header className="sticky top-0 z-50 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="flex items-center justify-between px-4 sm:px-6 h-14">
+          {/* Left: Mobile menu toggle + Brand */}
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center shadow-md ${
-              user?.role?.toLowerCase() === 'admin'
-                ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
-                : 'bg-blue-600 text-white'
-            }`}>
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="overflow-hidden">
-              <h3 className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">{user?.name || 'Anonymous'}</h3>
-              <span className={`inline-block px-2 py-0.5 mt-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold ${
-                user?.role?.toLowerCase() === 'admin'
-                  ? 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400'
-                  : user?.role === 'Alumni'
-                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
-                  : 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-              }`}>
-                {user?.role || 'Guest'}
+            <button
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors lg:hidden"
+            >
+              {isMobileOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
+            </button>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                <span className="text-white font-extrabold text-xs">N</span>
+              </div>
+              <span className="text-sm font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
+                Dashboard
               </span>
-            </div>
+            </Link>
+          </div>
+
+          {/* Right: Profile actions */}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <FiHome className="w-4 h-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <FiUser className="w-4 h-4" />
+              <span className="hidden sm:inline">My Profile</span>
+            </Link>
+            <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
+            {user?.image ? (
+              <img src={user.image} alt="Profile" className="w-8 h-8 rounded-lg object-cover ring-2 ring-zinc-200 dark:ring-zinc-700" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <span className="text-white font-bold text-xs">{user?.name?.charAt(0)}</span>
+              </div>
+            )}
           </div>
         </div>
+      </header>
 
-        {/* Dynamic Mapping Route Block */}
-        <nav className="flex-1 space-y-1 overflow-y-auto">
-          <Link
-            href="/"
-            onClick={() => setIsMobileOpen(false)}
-            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
-          >
+      {/* ========== BODY: SIDEBAR + CONTENT ========== */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* SIDEBAR - Desktop: always visible, Mobile: drawer */}
+        <aside className={`
+          fixed inset-y-0 left-0 top-14 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+          lg:translate-x-0 lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] flex flex-col w-60 lg:w-64 
+          bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 p-4 z-40 
+          transition-transform duration-300 ease-in-out overflow-y-auto
+        `}>
+          {/* Profile Card */}
+          <div className="pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <span className="text-base text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600">
-                <FiHome />
-              </span>
-              <span>Home</span>
-            </div>
-          </Link>
-
-          {currentLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              onClick={() => setIsMobileOpen(false)}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
-                isActive(link.href)
-                  ? user?.role?.toLowerCase() === 'admin'
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/15'
-                    : 'bg-blue-600 text-white shadow-md shadow-blue-600/15'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`text-base ${isActive(link.href) ? 'text-white' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600'}`}>
-                  {link.icon}
-                </span>
-                <span>{link.label}</span>
+              <div className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center shadow-md ${
+                user?.role?.toLowerCase() === 'admin'
+                  ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
+                  : 'bg-blue-600 text-white'
+              }`}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
-              
-              {link.badge && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive(link.href) ? 'bg-white text-blue-600' : 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'}`}>
-                  {link.badge}
+              <div className="overflow-hidden">
+                <h3 className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">{user?.name || 'Anonymous'}</h3>
+                <span className={`inline-block px-2 py-0.5 mt-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold ${
+                  user?.role?.toLowerCase() === 'admin'
+                    ? 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400'
+                    : user?.role === 'Alumni'
+                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                    : 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                }`}>
+                  {user?.role || 'Guest'}
                 </span>
-              )}
-            </Link>
-          ))}
-        </nav>
+              </div>
+            </div>
+          </div>
 
-        {/* Fixed Sign Out Control Trigger */}
-        <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
-          >
-            <FiLogOut className="text-base" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+          {/* Navigation Links */}
+          <nav className="flex-1 space-y-1">
+            {currentLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
+                  isActive(link.href)
+                    ? user?.role?.toLowerCase() === 'admin'
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/15'
+                      : 'bg-blue-600 text-white shadow-md shadow-blue-600/15'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-base ${isActive(link.href) ? 'text-white' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600'}`}>
+                    {link.icon}
+                  </span>
+                  <span>{link.label}</span>
+                </div>
+                
+                {link.badge && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive(link.href) ? 'bg-white text-blue-600' : 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'}`}>
+                    {link.badge}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </nav>
 
-      {/* Screen Backdrop Glass Mask Layer for Mobile Drawer */}
-      {isMobileOpen && (
-        <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 md:hidden" />
-      )}
+          {/* Logout */}
+          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
+            >
+              <FiLogOut className="text-base" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
 
-      {/* DASHBOARD COMPONENT RENDER PORTAL */}
-      <main className="flex-1 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-x-hidden">
-        {children}
-      </main>
+        {/* Mobile backdrop */}
+        {isMobileOpen && (
+          <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden" />
+        )}
 
+        {/* Main content */}
+        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-x-hidden">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
