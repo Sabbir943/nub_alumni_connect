@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FiUsers, FiMapPin, FiBriefcase, FiCalendar, FiArrowRight, FiAward, FiShield, FiShieldOff, FiAlertTriangle } from 'react-icons/fi';
+import { FiUsers, FiMapPin, FiBriefcase, FiCalendar, FiArrowRight, FiAward, FiShield, FiShieldOff, FiAlertTriangle, FiStar } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 
 const containerVariants = {
@@ -220,20 +220,21 @@ export default function FeaturedAlumni() {
                   <h3 className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
                     {person.fullName}
                   </h3>
-                  {person.verification && (
-                    <span className={`inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
-                      person.verification.badge === 'Verified' ? 'bg-emerald-50 text-emerald-600' :
-                      person.verification.badge === 'Suspicious' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      {person.verification.badge === 'Verified' ? <FiShield className="w-2.5 h-2.5" /> :
-                       person.verification.badge === 'Suspicious' ? <FiShieldOff className="w-2.5 h-2.5" /> :
-                       <FiAlertTriangle className="w-2.5 h-2.5" />}
-                      {person.verification.trustScore}%
-                      {person.verification.linkValidation && person.verification.linkValidation.some(l => !l.valid && l.url) && (
-                        <span className="ml-0.5 text-red-400">•</span>
-                      )}
-                    </span>
-                  )}
+                  {person.verification && (() => {
+                    const score = person.verification.trustScore;
+                    const ratingVal = (score / 20).toFixed(1);
+                    const ratingStyle = score >= 70
+                      ? { bg: "bg-emerald-50", text: "text-emerald-600" }
+                      : score >= 40
+                      ? { bg: "bg-amber-50", text: "text-amber-600" }
+                      : { bg: "bg-red-50", text: "text-red-600" };
+                    return (
+                      <span className={`inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${ratingStyle.bg} ${ratingStyle.text}`}>
+                        <FiStar className="w-2.5 h-2.5" />
+                        {ratingVal}/5
+                      </span>
+                    );
+                  })()}
                   {person.jobTitle && (
                     <p className="text-xs text-blue-600 font-semibold truncate mt-0.5">{person.jobTitle}</p>
                   )}

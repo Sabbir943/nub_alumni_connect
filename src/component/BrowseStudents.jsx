@@ -29,6 +29,7 @@ import {
   FiAlertTriangle,
   FiZap,
   FiCpu,
+  FiStar,
 } from "react-icons/fi";
 import { GraduationCap } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -105,43 +106,24 @@ function VerificationBadge({ verification, size = "sm" }) {
     );
   }
 
-  const { badge, trustScore, linkValidation } = verification;
-  const allLinksValid = linkValidation && linkValidation.length > 0 && linkValidation.every(l => l.valid);
-  const anyLinkInvalid = linkValidation && linkValidation.some(l => !l.valid && l.url);
+  const { trustScore } = verification;
+  const rating = (trustScore / 20).toFixed(1);
 
-  const config = {
-    Verified: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-      icon: <FiShield className="w-3 h-3" />,
-      label: `Verified (${trustScore}%)`,
-    },
-    Unverified: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      border: "border-amber-200",
-      icon: <FiAlertTriangle className="w-3 h-3" />,
-      label: `Unverified (${trustScore}%)`,
-    },
-    Suspicious: {
-      bg: "bg-red-50",
-      text: anyLinkInvalid ? "text-red-700" : "text-red-700",
-      border: anyLinkInvalid ? "border-red-200" : "border-red-200",
-      icon: <FiShieldOff className="w-3 h-3" />,
-      label: anyLinkInvalid ? `Invalid Links (${trustScore}%)` : `Suspicious (${trustScore}%)`,
-    },
+  const getRatingStyle = (score) => {
+    if (score >= 70) return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" };
+    if (score >= 40) return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
+    return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
   };
 
-  const c = config[badge] || config.Unverified;
+  const c = getRatingStyle(trustScore);
   const sizeClasses = size === "lg"
     ? "px-3 py-1.5 text-xs"
     : "px-2 py-0.5 text-[10px]";
 
   return (
     <span className={`inline-flex items-center gap-1 ${sizeClasses} rounded-full ${c.bg} ${c.text} font-semibold border ${c.border}`}>
-      {allLinksValid ? <FiCheck className="w-3 h-3" /> : c.icon}
-      {c.label}
+      <FiStar className="w-3 h-3" />
+      {rating}/5
     </span>
   );
 }
@@ -149,8 +131,8 @@ function VerificationBadge({ verification, size = "sm" }) {
 function VerificationDetails({ verification }) {
   if (!verification) return null;
 
-  const { trustScore, badge, breakdown, analysis, flags, verifiedAt, linkValidation } = verification;
-  const barColor = badge === 'Verified' ? 'bg-emerald-500' : badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500';
+  const { trustScore, breakdown, analysis, flags, verifiedAt, linkValidation } = verification;
+  const barColor = trustScore >= 70 ? 'bg-emerald-500' : trustScore >= 40 ? 'bg-amber-500' : 'bg-red-500';
 
   return (
     <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -166,7 +148,11 @@ function VerificationDetails({ verification }) {
       <div className="mb-3">
         <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
           <span>Trust Score</span>
-          <span>{trustScore}/100</span>
+          <span className="flex items-center gap-1">
+            <FiStar className="w-3 h-3 text-amber-400" />
+            {(trustScore / 20).toFixed(1)}/5
+            <span className="text-slate-400">({trustScore}/100)</span>
+          </span>
         </div>
         <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
           <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${trustScore}%` }} />
@@ -808,8 +794,8 @@ function AIVerifyButton({ profile, type, onVerified }) {
                           <FiCheck className="w-2.5 h-2.5" /> Valid
                         </span>
                       ) : link.url ? (
-                        <span className="flex items-center gap-0.5 text-red-600 font-semibold">
-                          <FiX className="w-2.5 h-2.5" /> Invalid
+                        <span className="flex items-center gap-0.5 text-amber-600 font-semibold">
+                          <FiAlertTriangle className="w-2.5 h-2.5" /> Unverified
                         </span>
                       ) : (
                         <span className="text-zinc-400">N/A</span>
