@@ -17,6 +17,9 @@ const connectedClient = await clientPromise;
 const db = connectedClient.db("nub_alumni");
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  trustHost: true,
   emailAndPassword: {
     enabled: true,
   },

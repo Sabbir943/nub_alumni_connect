@@ -61,9 +61,9 @@ const SignUpPage = () => {
   const validatePasswordRules = (pass) => {
     const hasUpper = /[A-Z]/.test(pass);
     const hasLower = /[a-z]/.test(pass);
-    const hasLength = pass.length >= 6;
+    const hasLength = pass.length >= 8;
 
-    if (!hasLength) return 'Password must be at least 6 characters long.';
+    if (!hasLength) return 'Password must be at least 8 characters long.';
     if (!hasUpper) return 'Password must contain at least one uppercase letter.';
     if (!hasLower) return 'Password must contain at least one lowercase letter.';
     return null;
