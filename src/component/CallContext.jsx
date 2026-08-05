@@ -165,6 +165,14 @@ export function CallProvider({ children, email }) {
           peerConnectionRef.current.close();
           peerConnectionRef.current = null;
         }
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach((t) => t.stop());
+          setLocalStream(null);
+          localStreamRef.current = null;
+        }
+        setRemoteStream(null);
+        setAudioEnabled(true);
+        setVideoEnabled(true);
       }
     } catch (e) {
       // Silent fail for polling
@@ -233,6 +241,13 @@ export function CallProvider({ children, email }) {
       setCallState(null);
       setCallFailed(err.message || "Call failed");
       stopRingtone();
+      callIdRef.current = null;
+      setCurrentCallId(null);
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        setLocalStream(null);
+        localStreamRef.current = null;
+      }
       setTimeout(() => setCallFailed(null), 3000);
     }
   }, [email, setupLocalStream, createPeerConnection]);

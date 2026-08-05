@@ -13,24 +13,29 @@ export async function POST(request) {
 
     const calls = await getCollection("calls");
 
-    // Check if callee is already in a call
-    const existingCall = await calls.findOne({
+    // Auto-cleanup: Mark stale calls (older than 2 minutes) as ended
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    await calls.updateMany(
+      { status: { $in: ["ringing", "connecting"] }, updatedAt: { $lt: twoMinutesAgo } },
+      { $set: { status: "ended", updatedAt: new Date() } }
+    );
+
+    // Check if either user is in an ACTIVE call (only ringing/connecting/connected within last 2 min)
+    const activeCallCheck = await calls.findOne({
       $or: [
-        { calleeEmail, status: { $in: ["ringing", "connecting", "connected"] } },
-        { callerEmail: calleeEmail, status: { $in: ["ringing", "connecting", "connected"] } },
-        { callerEmail: calleeEmail, callerEmail: calleeEmail, status: { $in: ["ringing", "connecting", "connected"] } },
+        { calleeEmail, status: { $in: ["ringing", "connecting", "connected"] }, updatedAt: { $gte: twoMinutesAgo } },
+        { callerEmail: calleeEmail, status: { $in: ["ringing", "connecting", "connected"] }, updatedAt: { $gte: twoMinutesAgo } },
       ],
     });
 
-    if (existingCall) {
+    if (activeCallCheck) {
       return NextResponse.json({ message: "User is already in a call" }, { status: 409 });
     }
 
-    // Check if caller is already in a call
     const callerInCall = await calls.findOne({
       $or: [
-        { callerEmail, status: { $in: ["ringing", "connecting", "connected"] } },
-        { calleeEmail: callerEmail, status: { $in: ["ringing", "connecting", "connected"] } },
+        { callerEmail, status: { $in: ["ringing", "connecting", "connected"] }, updatedAt: { $gte: twoMinutesAgo } },
+        { calleeEmail: callerEmail, status: { $in: ["ringing", "connecting", "connected"] }, updatedAt: { $gte: twoMinutesAgo } },
       ],
     });
 
