@@ -22,7 +22,7 @@ import {
   ImageIcon,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { useSocket } from '@/lib/useSocket';
+import { useCall } from '@/component/CallContext';
 import { useWebRTC } from '@/lib/useWebRTC';
 import CallOverlay from '@/component/CallOverlay';
 
@@ -72,9 +72,8 @@ export default function MessengerPage() {
   const [sending, setSending] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [callType, setCallType] = useState('video');
 
-  // Socket.IO and WebRTC hooks
+  // Global call context
   const {
     isConnected,
     incomingCall,
@@ -93,17 +92,31 @@ export default function MessengerPage() {
     clearPeerSdp,
     clearPeerIceCandidate,
     setCallState,
-  } = useSocket(currentUserEmail);
-
-  const {
     localStream,
     remoteStream,
     audioEnabled,
     videoEnabled,
-    startCall,
-    answerCall: webrtcAnswerCall,
     toggleAudio,
     toggleVideo,
+    setupLocalStream,
+    cleanupCall,
+    peerConnectionRef,
+    callType: globalCallType,
+    setCallType: setGlobalCallType,
+    setLocalStream,
+    setRemoteStream,
+  } = useCall();
+
+  // WebRTC hook for media handling (uses signaling from global context)
+  const {
+    localStream: webrtcLocalStream,
+    remoteStream: webrtcRemoteStream,
+    audioEnabled: webrtcAudioEnabled,
+    videoEnabled: webrtcVideoEnabled,
+    startCall,
+    answerCall: webrtcAnswerCall,
+    toggleAudio: webrtcToggleAudio,
+    toggleVideo: webrtcToggleVideo,
     getLocalStream,
     createPeerConnection,
   } = useWebRTC({
@@ -118,6 +131,12 @@ export default function MessengerPage() {
     sendIceCandidate,
     callEnded,
   });
+
+  // Use WebRTC streams if available, otherwise use global context streams
+  const effectiveLocalStream = webrtcLocalStream || localStream;
+  const effectiveRemoteStream = webrtcRemoteStream || remoteStream;
+  const effectiveAudioEnabled = webrtcAudioEnabled ?? audioEnabled;
+  const effectiveVideoEnabled = webrtcVideoEnabled ?? videoEnabled;
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -523,7 +542,7 @@ export default function MessengerPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setCallType('audio');
+                        setGlobalCallType('audio');
                         getLocalStream(false).then(() => {
                           callUser(activeFriend.email, 'audio');
                         });
@@ -537,7 +556,7 @@ export default function MessengerPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setCallType('video');
+                        setGlobalCallType('video');
                         getLocalStream(true).then(() => {
                           callUser(activeFriend.email, 'video');
                         });
@@ -758,18 +777,18 @@ export default function MessengerPage() {
       <CallOverlay
         callState={callState}
         incomingCall={incomingCall}
-        localStream={localStream}
-        remoteStream={remoteStream}
-        audioEnabled={audioEnabled}
-        videoEnabled={videoEnabled}
-        callType={callType}
+        localStream={effectiveLocalStream}
+        remoteStream={effectiveRemoteStream}
+        audioEnabled={effectiveAudioEnabled}
+        videoEnabled={effectiveVideoEnabled}
+        callType={globalCallType}
         callerName={activeFriend?.fullName || incomingCall?.callerEmail?.split('@')[0]}
         calleeName={activeFriend?.fullName || currentUserEmail?.split('@')[0]}
         onAccept={handleAcceptCall}
         onDecline={handleDeclineCall}
         onEndCall={handleEndCall}
-        onToggleAudio={toggleAudio}
-        onToggleVideo={toggleVideo}
+        onToggleAudio={webrtcToggleAudio || toggleAudio}
+        onToggleVideo={webrtcToggleVideo || toggleVideo}
       />
 
       {/* Call Failed Toast */}

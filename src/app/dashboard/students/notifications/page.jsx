@@ -4,9 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiBell, FiBellOff, FiUserPlus, FiMessageSquare, FiInfo,
   FiTrash2, FiCheck, FiCheckCircle, FiClock,
+  FiPhone, FiPhoneOff, FiVideo, FiPhoneCall, FiPhoneIncoming,
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
+import { useCall } from "@/component/CallContext";
+import { useRouter } from "next/navigation";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,6 +24,9 @@ const typeConfig = {
   follow: { icon: <FiUserPlus />, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30", label: "Follow" },
   message: { icon: <FiMessageSquare />, color: "text-teal-500", bg: "bg-teal-50 dark:bg-teal-950/30", label: "Message" },
   admin_notice: { icon: <FiInfo />, color: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/30", label: "Notice" },
+  call_incoming: { icon: <FiPhoneIncoming />, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30", label: "Call" },
+  call_missed: { icon: <FiPhoneOff />, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/30", label: "Missed" },
+  call_ended: { icon: <FiPhone />, color: "text-zinc-500", bg: "bg-zinc-50 dark:bg-zinc-950/30", label: "Call" },
 };
 
 function timeAgo(dateStr) {
@@ -41,6 +47,8 @@ export default function StudentNotifications() {
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const email = user?.email;
+  const router = useRouter();
+  const { answerCall, declineCall, incomingCall, callState } = useCall();
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -105,13 +113,28 @@ export default function StudentNotifications() {
     }
   };
 
+  const handleAcceptCall = async (notification) => {
+    if (incomingCall) return;
+    await answerCall(notification.actorEmail);
+    await markOneRead(notification._id);
+    router.push(`/dashboard/students/text-box?chatWith=${notification.actorEmail}`);
+  };
+
+  const handleDeclineCall = async (notification) => {
+    await declineCall(notification.actorEmail);
+    await markOneRead(notification._id);
+  };
+
   const filteredNotifications = filter === "unread"
     ? notifications.filter(n => !n.read)
+    : filter === "calls"
+    ? notifications.filter(n => n.type?.startsWith("call_"))
     : notifications;
 
   const filterButtons = [
     { key: "all", label: "All" },
     { key: "unread", label: "Unread" },
+    { key: "calls", label: "Calls" },
     { key: "follow", label: "Follows" },
     { key: "message", label: "Messages" },
     { key: "admin_notice", label: "Notices" },
@@ -262,6 +285,38 @@ export default function StudentNotifications() {
 
                     {!notification.read && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-emerald-500"></div>
+                    )}
+
+                    {/* Call Action Buttons */}
+                    {notification.type === "call_incoming" && notification.callStatus === "ringing" && !notification.read && (
+                      <div className="flex gap-2 mt-3 px-4 pb-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleDeclineCall(notification)}
+                          className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FiPhoneOff className="w-4 h-4" />
+                          Decline
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleAcceptCall(notification)}
+                          className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FiPhone className="w-4 h-4" />
+                          Accept
+                        </motion.button>
+                      </div>
+                    )}
+
+                    {/* Missed Call Indicator */}
+                    {notification.type === "call_missed" && (
+                      <div className="flex items-center gap-2 mt-2 px-4 pb-2">
+                        <FiPhoneOff className="w-4 h-4 text-red-500" />
+                        <span className="text-sm text-red-500 font-medium">Missed call</span>
+                      </div>
                     )}
                   </motion.div>
                 );

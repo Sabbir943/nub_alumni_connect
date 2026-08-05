@@ -22,7 +22,7 @@ import {
   ImageIcon,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { useSocket } from '@/lib/useSocket';
+import { useCall } from '@/component/CallContext';
 import { useWebRTC } from '@/lib/useWebRTC';
 import CallOverlay from '@/component/CallOverlay';
 
@@ -72,9 +72,8 @@ export default function StudentTextBoxPage() {
   const [sending, setSending] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [callType, setCallType] = useState('video');
 
-  // Socket.IO and WebRTC hooks
+  // Global call context
   const {
     isConnected,
     incomingCall,
@@ -93,17 +92,31 @@ export default function StudentTextBoxPage() {
     clearPeerSdp,
     clearPeerIceCandidate,
     setCallState,
-  } = useSocket(currentUserEmail);
+    localStream: globalLocalStream,
+    remoteStream: globalRemoteStream,
+    audioEnabled: globalAudioEnabled,
+    videoEnabled: globalVideoEnabled,
+    toggleAudio: globalToggleAudio,
+    toggleVideo: globalToggleVideo,
+    setupLocalStream,
+    cleanupCall,
+    peerConnectionRef,
+    callType: globalCallType,
+    setCallType: setGlobalCallType,
+    setLocalStream: setGlobalLocalStream,
+    setRemoteStream: setGlobalRemoteStream,
+  } = useCall();
 
+  // WebRTC hook for media handling
   const {
-    localStream,
-    remoteStream,
-    audioEnabled,
-    videoEnabled,
+    localStream: webrtcLocalStream,
+    remoteStream: webrtcRemoteStream,
+    audioEnabled: webrtcAudioEnabled,
+    videoEnabled: webrtcVideoEnabled,
     startCall,
     answerCall: webrtcAnswerCall,
-    toggleAudio,
-    toggleVideo,
+    toggleAudio: webrtcToggleAudio,
+    toggleVideo: webrtcToggleVideo,
     getLocalStream,
     createPeerConnection,
   } = useWebRTC({
@@ -118,6 +131,12 @@ export default function StudentTextBoxPage() {
     sendIceCandidate,
     callEnded,
   });
+
+  // Use WebRTC streams if available, otherwise use global context streams
+  const effectiveLocalStream = webrtcLocalStream || globalLocalStream;
+  const effectiveRemoteStream = webrtcRemoteStream || globalRemoteStream;
+  const effectiveAudioEnabled = webrtcAudioEnabled ?? globalAudioEnabled;
+  const effectiveVideoEnabled = webrtcVideoEnabled ?? globalVideoEnabled;
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -530,7 +549,7 @@ export default function StudentTextBoxPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setCallType('audio');
+                        setGlobalCallType('audio');
                         getLocalStream(false).then(() => {
                           callUser(activeFriend.email, 'audio');
                         });
@@ -544,7 +563,7 @@ export default function StudentTextBoxPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setCallType('video');
+                        setGlobalCallType('video');
                         getLocalStream(true).then(() => {
                           callUser(activeFriend.email, 'video');
                         });
@@ -765,18 +784,18 @@ export default function StudentTextBoxPage() {
       <CallOverlay
         callState={callState}
         incomingCall={incomingCall}
-        localStream={localStream}
-        remoteStream={remoteStream}
-        audioEnabled={audioEnabled}
-        videoEnabled={videoEnabled}
-        callType={callType}
+        localStream={effectiveLocalStream}
+        remoteStream={effectiveRemoteStream}
+        audioEnabled={effectiveAudioEnabled}
+        videoEnabled={effectiveVideoEnabled}
+        callType={globalCallType}
         callerName={activeFriend?.fullName || incomingCall?.callerEmail?.split('@')[0]}
         calleeName={activeFriend?.fullName || currentUserEmail?.split('@')[0]}
         onAccept={handleAcceptCall}
         onDecline={handleDeclineCall}
         onEndCall={handleEndCall}
-        onToggleAudio={toggleAudio}
-        onToggleVideo={toggleVideo}
+        onToggleAudio={webrtcToggleAudio || globalToggleAudio}
+        onToggleVideo={webrtcToggleVideo || globalToggleVideo}
       />
 
       {/* Call Failed Toast */}
