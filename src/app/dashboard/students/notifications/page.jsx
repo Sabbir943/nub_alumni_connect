@@ -125,11 +125,19 @@ export default function StudentNotifications() {
     await markOneRead(notification._id);
   };
 
-  const filteredNotifications = filter === "unread"
-    ? notifications.filter(n => !n.read)
-    : filter === "calls"
-    ? notifications.filter(n => n.type?.startsWith("call_"))
-    : notifications;
+  const filteredNotifications = (() => {
+    const filtered = filter === "unread"
+      ? notifications.filter(n => !n.read)
+      : filter === "calls"
+      ? notifications.filter(n => n.type?.startsWith("call_"))
+      : notifications;
+    const seen = new Set();
+    return filtered.filter(n => {
+      if (seen.has(n._id)) return false;
+      seen.add(n._id);
+      return true;
+    });
+  })();
 
   const filterButtons = [
     { key: "all", label: "All" },
