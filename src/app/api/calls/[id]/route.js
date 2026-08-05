@@ -1,0 +1,172 @@
+import { NextResponse } from "next/server";
+import { getCollection, ObjectId } from "@/lib/mongodb";
+
+// PATCH /api/calls/[id] - Update call status (answer, decline, end, signaling)
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { action, email, offer, answer, iceCandidate, status } = body;
+
+    const calls = await getCollection("calls");
+    let callId;
+    try {
+      callId = new ObjectId(id);
+    } catch {
+      return NextResponse.json({ message: "Invalid call ID" }, { status: 400 });
+    }
+
+    const call = await calls.findOne({ _id: callId });
+    if (!call) {
+      return NextResponse.json({ message: "Call not found" }, { status: 404 });
+    }
+
+    if (action === "answer") {
+      await calls.updateOne(
+        { _id: callId },
+        { $set: { status: "connecting", updatedAt: new Date() } }
+      );
+
+      // Update notification
+      try {
+        const notifications = await getCollection("notifications");
+        await notifications.updateOne(
+          { callId: id, recipientEmail: email },
+          { $set: { callStatus: "answered", read: true } }
+        );
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, status: "connecting" });
+    }
+
+    if (action === "decline") {
+      await calls.updateOne(
+        { _id: callId },
+        { $set: { status: "declined", updatedAt: new Date() } }
+      );
+
+      // Update notification
+      try {
+        const notifications = await getCollection("notifications");
+        await notifications.updateOne(
+          { callId: id, recipientEmail: email },
+          { $set: { callStatus: "declined", message: `Declined by ${email.split("@")[0]}` } }
+        );
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, status: "declined" });
+    }
+
+    if (action === "end") {
+      await calls.updateOne(
+        { _id: callId },
+        { $set: { status: "ended", updatedAt: new Date() } }
+      );
+
+      // Update notification
+      try {
+        const notifications = await getCollection("notifications");
+        await notifications.updateOne(
+          { callId: id },
+          { $set: { callStatus: "ended", read: true } }
+        );
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, status: "ended" });
+    }
+
+    if (action === "offer" && offer) {
+      await calls.updateOne(
+        { _id: callId },
+        { $set: { offer, updatedAt: new Date() } }
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "answer-sdp" && answer) {
+      await calls.updateOne(
+        { _id: callId },
+        { $set: { answer, status: "connected", updatedAt: new Date() } }
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "ice-candidate" && iceCandidate) {
+      await calls.updateOne(
+        { _id: callId },
+        {
+          $push: { iceCandidates: { email, candidate: iceCandidate } },
+          $set: { updatedAt: new Date() },
+        }
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "signal") {
+      const updateFields = { updatedAt: new Date() };
+      if (offer) updateFields.offer = offer;
+      if (answer) {
+        updateFields.answer = answer;
+        updateFields.status = "connected";
+      }
+      if (status) updateFields.status = status;
+
+      if (iceCandidate) {
+        await calls.updateOne(
+          { _id: callId },
+          {
+            $push: { iceCandidates: { email, candidate: iceCandidate } },
+            $set: updateFields,
+          }
+        );
+      } else {
+        await calls.updateOne({ _id: callId }, { $set: updateFields });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ message: "Invalid action" }, { status: 400 });
+  } catch (error) {
+    console.error("Update call error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}
+
+// GET /api/calls/[id] - Get call details (for signaling)
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+
+    const calls = await getCollection("calls");
+    let callId;
+    try {
+      callId = new ObjectId(id);
+    } catch {
+      return NextResponse.json({ message: "Invalid call ID" }, { status: 400 });
+    }
+
+    const call = await calls.findOne({ _id: callId });
+    if (!call) {
+      return NextResponse.json({ message: "Call not found" }, { status: 404 });
+    }
+
+    // Filter ICE candidates to only show other party's candidates
+    const filteredCandidates = (call.iceCandidates || []).filter(
+      (c) => c.email !== email
+    );
+
+    return NextResponse.json({
+      call: {
+        ...call,
+        _id: call._id.toString(),
+        iceCandidates: filteredCandidates,
+      },
+    });
+  } catch (error) {
+    console.error("Get call error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}

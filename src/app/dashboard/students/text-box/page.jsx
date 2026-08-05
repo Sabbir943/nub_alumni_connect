@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useCall } from '@/component/CallContext';
-import { useWebRTC } from '@/lib/useWebRTC';
 import CallOverlay from '@/component/CallOverlay';
 
 const getInitials = (name) => {
@@ -75,68 +74,24 @@ export default function StudentTextBoxPage() {
 
   // Global call context
   const {
-    isConnected,
     incomingCall,
     callState,
     callFailed,
     callEnded,
-    peerSdp,
-    peerIceCandidate,
     callUser,
-    answerCall: socketAnswerCall,
+    answerCall,
     declineCall,
-    endCall: socketEndCall,
-    sendOffer,
-    sendAnswer,
-    sendIceCandidate,
-    clearPeerSdp,
-    clearPeerIceCandidate,
+    endCall,
     setCallState,
-    localStream: globalLocalStream,
-    remoteStream: globalRemoteStream,
-    audioEnabled: globalAudioEnabled,
-    videoEnabled: globalVideoEnabled,
-    toggleAudio: globalToggleAudio,
-    toggleVideo: globalToggleVideo,
+    localStream,
+    remoteStream,
+    audioEnabled,
+    videoEnabled,
+    toggleAudio,
+    toggleVideo,
     setupLocalStream,
-    cleanupCall,
-    peerConnectionRef,
-    callType: globalCallType,
-    setCallType: setGlobalCallType,
-    setLocalStream: setGlobalLocalStream,
-    setRemoteStream: setGlobalRemoteStream,
+    callType,
   } = useCall();
-
-  // WebRTC hook for media handling
-  const {
-    localStream: webrtcLocalStream,
-    remoteStream: webrtcRemoteStream,
-    audioEnabled: webrtcAudioEnabled,
-    videoEnabled: webrtcVideoEnabled,
-    startCall,
-    answerCall: webrtcAnswerCall,
-    toggleAudio: webrtcToggleAudio,
-    toggleVideo: webrtcToggleVideo,
-    getLocalStream,
-    createPeerConnection,
-  } = useWebRTC({
-    callState,
-    incomingCall,
-    peerSdp,
-    peerIceCandidate,
-    clearPeerSdp,
-    clearPeerIceCandidate,
-    sendOffer,
-    sendAnswer,
-    sendIceCandidate,
-    callEnded,
-  });
-
-  // Use WebRTC streams if available, otherwise use global context streams
-  const effectiveLocalStream = webrtcLocalStream || globalLocalStream;
-  const effectiveRemoteStream = webrtcRemoteStream || globalRemoteStream;
-  const effectiveAudioEnabled = webrtcAudioEnabled ?? globalAudioEnabled;
-  const effectiveVideoEnabled = webrtcVideoEnabled ?? globalVideoEnabled;
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -340,9 +295,7 @@ export default function StudentTextBoxPage() {
   }
 
   const handleAcceptCall = async (callerEmail) => {
-    const callData = incomingCall;
-    await socketAnswerCall(callerEmail);
-    await webrtcAnswerCall(callerEmail, callData?.callType || 'video');
+    await answerCall(callerEmail);
   };
 
   const handleDeclineCall = (callerEmail) => {
@@ -350,10 +303,7 @@ export default function StudentTextBoxPage() {
   };
 
   const handleEndCall = () => {
-    if (activeFriend?.email) {
-      socketEndCall(activeFriend.email);
-    }
-    setCallState(null);
+    endCall();
   };
 
   return (
@@ -549,10 +499,7 @@ export default function StudentTextBoxPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setGlobalCallType('audio');
-                        getLocalStream(false).then(() => {
-                          callUser(activeFriend.email, 'audio');
-                        });
+                        callUser(activeFriend.email, 'audio');
                       }}
                       disabled={!!callState}
                       className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all disabled:opacity-50"
@@ -563,10 +510,7 @@ export default function StudentTextBoxPage() {
                     <button 
                       onClick={() => {
                         if (!activeFriend?.email || !currentUserEmail) return;
-                        setGlobalCallType('video');
-                        getLocalStream(true).then(() => {
-                          callUser(activeFriend.email, 'video');
-                        });
+                        callUser(activeFriend.email, 'video');
                       }}
                       disabled={!!callState}
                       className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all disabled:opacity-50"
@@ -784,18 +728,18 @@ export default function StudentTextBoxPage() {
       <CallOverlay
         callState={callState}
         incomingCall={incomingCall}
-        localStream={effectiveLocalStream}
-        remoteStream={effectiveRemoteStream}
-        audioEnabled={effectiveAudioEnabled}
-        videoEnabled={effectiveVideoEnabled}
-        callType={globalCallType}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        audioEnabled={audioEnabled}
+        videoEnabled={videoEnabled}
+        callType={callType}
         callerName={activeFriend?.fullName || incomingCall?.callerEmail?.split('@')[0]}
         calleeName={activeFriend?.fullName || currentUserEmail?.split('@')[0]}
         onAccept={handleAcceptCall}
         onDecline={handleDeclineCall}
         onEndCall={handleEndCall}
-        onToggleAudio={webrtcToggleAudio || globalToggleAudio}
-        onToggleVideo={webrtcToggleVideo || globalToggleVideo}
+        onToggleAudio={toggleAudio}
+        onToggleVideo={toggleVideo}
       />
 
       {/* Call Failed Toast */}
