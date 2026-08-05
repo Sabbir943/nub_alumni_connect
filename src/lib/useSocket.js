@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
+import {
+  playRingtone,
+  playIncomingRingtone,
+  stopRingtone,
+  playConnectSound,
+  playEndSound,
+  playDeclineSound,
+} from "./ringtone";
 
 let socket = null;
 
@@ -47,26 +55,35 @@ export function useSocket(email) {
 
     s.on("incoming-call", (data) => {
       setIncomingCall(data);
+      playIncomingRingtone();
     });
 
     s.on("call-answered", (data) => {
       setCallState("connecting");
+      stopRingtone();
+      playConnectSound();
     });
 
     s.on("call-declined", (data) => {
       setCallState(null);
+      stopRingtone();
+      playDeclineSound();
       setCallFailed("Call declined");
       setTimeout(() => setCallFailed(null), 3000);
     });
 
     s.on("call-failed", (data) => {
       setCallState(null);
+      stopRingtone();
+      playDeclineSound();
       setCallFailed(data.reason || "Call failed");
       setTimeout(() => setCallFailed(null), 3000);
     });
 
     s.on("call-ended", (data) => {
       setCallState(null);
+      stopRingtone();
+      playEndSound();
       setCallEnded(true);
       setIncomingCall(null);
       setTimeout(() => setCallEnded(false), 100);
@@ -103,12 +120,14 @@ export function useSocket(email) {
     if (!s) return;
     setCallState("ringing");
     setCallFailed(null);
+    playRingtone();
     s.emit("call-user", { calleeEmail, callType });
   }, []);
 
   const answerCall = useCallback((callerEmail) => {
     const s = socketRef.current;
     if (!s) return;
+    stopRingtone();
     setCallState("connecting");
     setIncomingCall(null);
     s.emit("answer-call", { callerEmail });
@@ -117,6 +136,7 @@ export function useSocket(email) {
   const declineCall = useCallback((callerEmail) => {
     const s = socketRef.current;
     if (!s) return;
+    stopRingtone();
     setIncomingCall(null);
     s.emit("decline-call", { callerEmail });
   }, []);
@@ -124,6 +144,7 @@ export function useSocket(email) {
   const endCall = useCallback((otherEmail) => {
     const s = socketRef.current;
     if (!s) return;
+    stopRingtone();
     setCallState(null);
     setCallEnded(true);
     setTimeout(() => setCallEnded(false), 100);

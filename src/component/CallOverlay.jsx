@@ -39,8 +39,25 @@ function VideoStream({ stream, muted, label, isLocal }) {
 function AudioOnlyView({ name, isRinging }) {
   return (
     <div className="flex flex-col items-center justify-center">
-      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/30">
-        <FiUser className="w-16 h-16 text-white" />
+      {/* Pulsing rings when ringing */}
+      <div className="relative">
+        {isRinging && (
+          <>
+            <motion.div
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 w-32 h-32 rounded-full bg-emerald-500"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+              className="absolute inset-0 w-32 h-32 rounded-full bg-emerald-500"
+            />
+          </>
+        )}
+        <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/30">
+          <FiUser className="w-16 h-16 text-white" />
+        </div>
       </div>
       <h2 className="mt-6 text-2xl font-bold text-white">{name || "Unknown"}</h2>
       {isRinging && (
@@ -117,10 +134,23 @@ function IncomingCallUI({ callerName, callType, onAccept, onDecline }) {
     >
       <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl min-w-[300px]">
         <div className="text-center mb-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-3">
-            <FiUser className="w-8 h-8 text-white" />
+          {/* Pulsing rings around avatar */}
+          <div className="relative inline-block">
+            <motion.div
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 w-16 h-16 rounded-full bg-emerald-500"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+              className="absolute inset-0 w-16 h-16 rounded-full bg-emerald-500"
+            />
+            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto">
+              <FiUser className="w-8 h-8 text-white" />
+            </div>
           </div>
-          <h3 className="text-lg font-bold text-white">{callerName}</h3>
+          <h3 className="text-lg font-bold text-white mt-3">{callerName}</h3>
           <p className="text-sm text-white/70 mt-1">
             Incoming {callType} call...
           </p>
