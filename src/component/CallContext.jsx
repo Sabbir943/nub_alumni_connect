@@ -42,6 +42,7 @@ export function CallProvider({ children, email }) {
   const isCallerRef = useRef(false);
   const processedSignalsRef = useRef(new Set());
   const lastSignalCountRef = useRef(0);
+  const pendingCandidatesRef = useRef([]);
 
   const setupLocalStream = useCallback(async (type = "video") => {
     try {
@@ -129,6 +130,15 @@ export function CallProvider({ children, email }) {
       if (isCallerRef.current && call.answer && pc.signalingState === "have-local-offer") {
         await pc.setRemoteDescription(new RTCSessionDescription(call.answer));
         setCallState("connecting");
+        // Flush pending ICE candidates after setting remote description
+        for (const c of pendingCandidatesRef.current) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          } catch (e) {
+            console.error("Failed to add queued ICE candidate:", e);
+          }
+        }
+        pendingCandidatesRef.current = [];
       }
 
       // Process new ICE candidates from the other party
@@ -139,10 +149,16 @@ export function CallProvider({ children, email }) {
           const candKey = `${c.candidate.sdpMid}-${c.candidate.sdpMLineIndex}`;
           if (!processedSignalsRef.current.has(candKey)) {
             processedSignalsRef.current.add(candKey);
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(c.candidate));
-            } catch (e) {
-              console.error("Failed to add ICE candidate:", e);
+            // Only add if remote description is set
+            if (pc.remoteDescription) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(c.candidate));
+              } catch (e) {
+                console.error("Failed to add ICE candidate:", e);
+              }
+            } else {
+              // Queue for later
+              pendingCandidatesRef.current.push(c.candidate);
             }
           }
         }
@@ -204,6 +220,7 @@ export function CallProvider({ children, email }) {
         isCallerRef.current = false;
         processedSignalsRef.current.clear();
         lastSignalCountRef.current = 0;
+        pendingCandidatesRef.current = [];
         setTimeout(() => setCallEnded(false), 100);
 
         if (peerConnectionRef.current) {
@@ -252,6 +269,7 @@ export function CallProvider({ children, email }) {
       isCallerRef.current = true;
       processedSignalsRef.current.clear();
       lastSignalCountRef.current = 0;
+      pendingCandidatesRef.current = [];
       playRingtone();
 
       const stream = await setupLocalStream(type);
@@ -314,6 +332,7 @@ export function CallProvider({ children, email }) {
       isCallerRef.current = false;
       processedSignalsRef.current.clear();
       lastSignalCountRef.current = 0;
+      pendingCandidatesRef.current = [];
 
       const callId = incomingCall?.callId || callIdRef.current;
       if (!callId) return;
@@ -385,6 +404,7 @@ export function CallProvider({ children, email }) {
     isCallerRef.current = false;
     processedSignalsRef.current.clear();
     lastSignalCountRef.current = 0;
+    pendingCandidatesRef.current = [];
     setTimeout(() => setCallEnded(false), 100);
 
     const callId = callIdRef.current;
