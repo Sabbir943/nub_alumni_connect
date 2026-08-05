@@ -52,9 +52,11 @@ export async function POST(request) {
 
     const result = await calls.insertOne(call);
 
-    // Create notification for callee
+    // Create notifications for BOTH users
     try {
       const notifications = await getCollection("notifications");
+
+      // Notification for callee (incoming call)
       await notifications.insertOne({
         recipientEmail: calleeEmail,
         type: "call_incoming",
@@ -65,6 +67,21 @@ export async function POST(request) {
         callId: result.insertedId.toString(),
         link: `/dashboard/alumni/text?chatWith=${callerEmail}`,
         read: false,
+        callStatus: "ringing",
+        createdAt: new Date(),
+      });
+
+      // Notification for caller (outgoing call)
+      await notifications.insertOne({
+        recipientEmail: callerEmail,
+        type: "call_outgoing",
+        actorEmail: calleeEmail,
+        actorName: calleeEmail.split("@")[0],
+        callType: callType || "video",
+        message: `Calling ${calleeEmail.split("@")[0]} (${callType || "video"})`,
+        callId: result.insertedId.toString(),
+        link: `/dashboard/alumni/text?chatWith=${calleeEmail}`,
+        read: true,
         callStatus: "ringing",
         createdAt: new Date(),
       });

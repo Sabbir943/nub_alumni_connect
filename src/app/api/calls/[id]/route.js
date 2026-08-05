@@ -27,12 +27,17 @@ export async function PATCH(request, { params }) {
         { $set: { status: "connecting", updatedAt: new Date() } }
       );
 
-      // Update notification
+      // Update ALL notifications for this call
       try {
         const notifications = await getCollection("notifications");
-        await notifications.updateOne(
-          { callId: id, recipientEmail: email },
+        await notifications.updateMany(
+          { callId: id },
           { $set: { callStatus: "answered", read: true } }
+        );
+        // Update caller notification message
+        await notifications.updateMany(
+          { callId: id, type: "call_outgoing" },
+          { $set: { message: `Call answered by ${call.calleeEmail.split("@")[0]}` } }
         );
       } catch (e) {}
 
@@ -45,12 +50,18 @@ export async function PATCH(request, { params }) {
         { $set: { status: "declined", updatedAt: new Date() } }
       );
 
-      // Update notification
+      // Update ALL notifications for this call
       try {
         const notifications = await getCollection("notifications");
-        await notifications.updateOne(
-          { callId: id, recipientEmail: email },
-          { $set: { callStatus: "declined", message: `Declined by ${email.split("@")[0]}` } }
+        await notifications.updateMany(
+          { callId: id },
+          {
+            $set: {
+              callStatus: "declined",
+              message: `Call declined by ${email.split("@")[0]}`,
+              read: true,
+            },
+          }
         );
       } catch (e) {}
 
@@ -58,21 +69,48 @@ export async function PATCH(request, { params }) {
     }
 
     if (action === "end") {
+      // Calculate call duration
+      const now = new Date();
+      const duration = Math.floor((now - call.createdAt) / 1000);
+      const mins = Math.floor(duration / 60);
+      const secs = duration % 60;
+      const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
       await calls.updateOne(
         { _id: callId },
-        { $set: { status: "ended", updatedAt: new Date() } }
+        { $set: { status: "ended", duration, updatedAt: now } }
       );
 
-      // Update notification
+      // Update ALL notifications for this call with duration
       try {
         const notifications = await getCollection("notifications");
-        await notifications.updateOne(
-          { callId: id },
-          { $set: { callStatus: "ended", read: true } }
+        const statusText = call.status === "connected" ? `Call ended - ${durationStr}` : "Call ended";
+
+        await notifications.updateMany(
+          { callId: id, type: "call_incoming" },
+          {
+            $set: {
+              callStatus: "ended",
+              message: `${statusText} with ${call.callerEmail.split("@")[0]}`,
+              callDuration: durationStr,
+              read: true,
+            },
+          }
+        );
+        await notifications.updateMany(
+          { callId: id, type: "call_outgoing" },
+          {
+            $set: {
+              callStatus: "ended",
+              message: `${statusText} with ${call.calleeEmail.split("@")[0]}`,
+              callDuration: durationStr,
+              read: true,
+            },
+          }
         );
       } catch (e) {}
 
-      return NextResponse.json({ success: true, status: "ended" });
+      return NextResponse.json({ success: true, status: "ended", duration: durationStr });
     }
 
     if (action === "offer" && offer) {

@@ -24,7 +24,8 @@ const typeConfig = {
   follow: { icon: <FiUserPlus />, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Follow" },
   message: { icon: <FiMessageSquare />, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30", label: "Message" },
   admin_notice: { icon: <FiInfo />, color: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/30", label: "Notice" },
-  call_incoming: { icon: <FiPhoneIncoming />, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30", label: "Call" },
+  call_incoming: { icon: <FiPhoneIncoming />, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30", label: "Incoming" },
+  call_outgoing: { icon: <FiPhone />, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/30", label: "Outgoing" },
   call_missed: { icon: <FiPhoneOff />, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/30", label: "Missed" },
   call_ended: { icon: <FiPhone />, color: "text-zinc-500", bg: "bg-zinc-50 dark:bg-zinc-950/30", label: "Call" },
 };
@@ -260,6 +261,17 @@ export default function AlumniNotifications() {
                             <div className="flex items-center gap-2 mt-1.5">
                               <FiClock className="text-xs text-zinc-400" />
                               <span className="text-xs text-zinc-400">{timeAgo(notification.createdAt)}</span>
+                              {notification.callDuration && (
+                                <span className="text-xs text-emerald-500 font-medium ml-1">
+                                  {notification.callDuration}
+                                </span>
+                              )}
+                              {notification.callStatus === "missed" && (
+                                <span className="text-xs text-red-500 font-medium ml-1">Missed</span>
+                              )}
+                              {notification.callStatus === "declined" && (
+                                <span className="text-xs text-red-500 font-medium ml-1">Declined</span>
+                              )}
                               {!notification.read && (
                                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                               )}
