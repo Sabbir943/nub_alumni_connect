@@ -20,6 +20,11 @@ export async function POST(request) {
     try {
       const senderProfile = await findProfileByEmail(senderEmail);
       const senderName = senderProfile?.fullName || senderEmail.split('@')[0];
+      const receiverProfile = await findProfileByEmail(receiverEmail);
+      const receiverRole = receiverProfile?.role || receiverProfile?.userType || 'alumni';
+      const messagingPath = receiverRole.toLowerCase() === 'student' 
+        ? '/dashboard/students/text-box' 
+        : '/dashboard/alumni/text';
       const notifications = await getCollection('notifications');
       const recentFromSender = await notifications.findOne({
         recipientEmail: receiverEmail,
@@ -34,7 +39,7 @@ export async function POST(request) {
           actorEmail: senderEmail,
           actorName: senderName,
           message: `${senderName} sent you a message`,
-          link: `/dashboard/alumni/text?chatWith=${senderEmail}`,
+          link: `${messagingPath}?chatWith=${senderEmail}`,
           read: false,
           createdAt: new Date(),
         });

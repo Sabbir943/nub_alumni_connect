@@ -32,9 +32,12 @@ import {
   FiZap,
   FiCpu,
   FiStar,
+  FiLoader,
+  FiSend,
 } from "react-icons/fi";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
+import toast from "react-hot-toast";
 
 const DEGREE_OPTIONS = [
   "B.Sc. in CSE",
@@ -857,6 +860,135 @@ function AIVerifyButton({ profile, type, onVerified }) {
   );
 }
 
+function MentorshipRequestModal({ profile, isOpen, onClose, currentUserEmail }) {
+  const [expertise, setExpertise] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  if (!isOpen || !profile) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentUserEmail) {
+      toast.error("Please log in to request mentorship");
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiFetch("/api/mentorships", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentEmail: currentUserEmail,
+          alumniEmail: profile.email,
+          expertise,
+          message,
+        }),
+      });
+      toast.success("Mentorship request sent!");
+      setExpertise("");
+      setMessage("");
+      onClose();
+    } catch (err) {
+      toast.error(err.message || "Failed to send request");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
+                    <FiBookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Request Mentorship</h3>
+                    <p className="text-xs text-slate-500">Connect with {profile.fullName}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <FiX className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                    Area of Expertise
+                  </label>
+                  <input
+                    type="text"
+                    value={expertise}
+                    onChange={(e) => setExpertise(e.target.value)}
+                    placeholder="e.g., Software Engineering, Career Advice"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                    Message
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows="4"
+                    placeholder="Tell the mentor why you'd like to connect..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-violet-500/20 transition-all disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FiSend className="w-4 h-4" />
+                    )}
+                    Send Request
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function BrowseAlumni() {
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
@@ -882,6 +1014,7 @@ export default function BrowseAlumni() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [mentorshipProfile, setMentorshipProfile] = useState(null);
   const prevFiltersRef = useRef({ search, degree, graduationYear, location, sortBy });
 
   useEffect(() => {
@@ -1323,6 +1456,27 @@ export default function BrowseAlumni() {
                       currentUserEmail={currentUser?.email}
                     />
                   </div>
+                  {profile.isMentor && currentUser?.email && currentUser.email !== profile.email && (
+                    <div className="mt-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setMentorshipProfile(profile)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-violet-500/20 transition-all duration-200"
+                      >
+                        <FiBookOpen className="w-3.5 h-3.5" />
+                        Request Mentorship
+                      </motion.button>
+                    </div>
+                  )}
+                  {profile.isMentor && !currentUser?.email && (
+                    <div className="mt-2">
+                      <span className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 text-zinc-400 border border-zinc-200 rounded-xl text-xs font-semibold cursor-not-allowed">
+                        <FiBookOpen className="w-3.5 h-3.5" />
+                        Login to Request Mentorship
+                      </span>
+                    </div>
+                  )}
                   <div className="mt-2">
                     <AIVerifyButton
                       profile={profile}
@@ -1401,6 +1555,14 @@ export default function BrowseAlumni() {
         profile={selectedProfile}
         isOpen={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
+      />
+
+      {/* Mentorship Request Modal */}
+      <MentorshipRequestModal
+        profile={mentorshipProfile}
+        isOpen={!!mentorshipProfile}
+        onClose={() => setMentorshipProfile(null)}
+        currentUserEmail={currentUser?.email}
       />
     </div>
   );

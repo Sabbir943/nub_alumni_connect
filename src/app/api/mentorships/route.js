@@ -4,6 +4,26 @@ import { getCollection, serializeId, findProfileByEmail } from '@/lib/mongodb';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const mode = searchParams.get('mode');
+    const email = searchParams.get('email');
+    const status = searchParams.get('status');
+
+    if (mode && email) {
+      const collection = await getCollection('mentorships');
+      const query = mode === 'alumni'
+        ? { alumniEmail: email }
+        : { studentEmail: email };
+      if (status) query.status = status;
+
+      const mentorships = await collection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .toArray();
+
+      return NextResponse.json({ success: true, mentorships: serializeId(mentorships), total: mentorships.length });
+    }
+
     const search = searchParams.get('search') || '';
 
     const alumni = await getCollection('alumni_directory');
@@ -13,6 +33,7 @@ export async function GET(request) {
       const regex = { $options: 'i' };
       filter.$or = [
         { fullName: { $regex: search, ...regex } },
+        { skills: { $regex: search, ...regex } },
         { expertise: { $regex: search, ...regex } },
         { jobTitle: { $regex: search, ...regex } },
         { organization: { $regex: search, ...regex } },
@@ -39,6 +60,10 @@ export async function POST(request) {
 
     if (!studentEmail || !alumniEmail) {
       return NextResponse.json({ success: false, message: "studentEmail and alumniEmail are required." }, { status: 400 });
+    }
+
+    if (studentEmail === alumniEmail) {
+      return NextResponse.json({ success: false, message: "You cannot request mentorship from yourself." }, { status: 400 });
     }
 
     const collection = await getCollection('mentorships');
@@ -81,7 +106,7 @@ export async function POST(request) {
         actorEmail: studentEmail,
         actorName: mentorship.studentName,
         message: `${mentorship.studentName} sent you a mentorship request`,
-        link: '/dashboard/alumni/mentorship',
+        link: '/dashboard/alumni/mentorshipHub',
         read: false,
         createdAt: now,
       });

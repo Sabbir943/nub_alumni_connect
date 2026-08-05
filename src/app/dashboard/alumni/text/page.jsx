@@ -22,6 +22,9 @@ import {
   ImageIcon,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useSocket } from '@/lib/useSocket';
+import { useWebRTC } from '@/lib/useWebRTC';
+import CallOverlay from '@/component/CallOverlay';
 
 const getInitials = (name) => {
   if (!name) return 'A';
@@ -69,6 +72,52 @@ export default function MessengerPage() {
   const [sending, setSending] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [callType, setCallType] = useState('video');
+
+  // Socket.IO and WebRTC hooks
+  const {
+    isConnected,
+    incomingCall,
+    callState,
+    callFailed,
+    callEnded,
+    peerSdp,
+    peerIceCandidate,
+    callUser,
+    answerCall: socketAnswerCall,
+    declineCall,
+    endCall: socketEndCall,
+    sendOffer,
+    sendAnswer,
+    sendIceCandidate,
+    clearPeerSdp,
+    clearPeerIceCandidate,
+    setCallState,
+  } = useSocket(currentUserEmail);
+
+  const {
+    localStream,
+    remoteStream,
+    audioEnabled,
+    videoEnabled,
+    startCall,
+    answerCall: webrtcAnswerCall,
+    toggleAudio,
+    toggleVideo,
+    getLocalStream,
+    createPeerConnection,
+  } = useWebRTC({
+    callState,
+    incomingCall,
+    peerSdp,
+    peerIceCandidate,
+    clearPeerSdp,
+    clearPeerIceCandidate,
+    sendOffer,
+    sendAnswer,
+    sendIceCandidate,
+    callEnded,
+  });
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -270,6 +319,23 @@ export default function MessengerPage() {
     );
   }
 
+  const handleAcceptCall = async (callerEmail) => {
+    const callData = incomingCall;
+    await socketAnswerCall(callerEmail);
+    await webrtcAnswerCall(callerEmail, callData?.callType || 'video');
+  };
+
+  const handleDeclineCall = (callerEmail) => {
+    declineCall(callerEmail);
+  };
+
+  const handleEndCall = () => {
+    if (activeFriend?.email) {
+      socketEndCall(activeFriend.email);
+    }
+    setCallState(null);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -454,10 +520,32 @@ export default function MessengerPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-blue-500 transition-all">
+                    <button 
+                      onClick={() => {
+                        if (!activeFriend?.email || !currentUserEmail) return;
+                        setCallType('audio');
+                        getLocalStream(false).then(() => {
+                          callUser(activeFriend.email, 'audio');
+                        });
+                      }}
+                      disabled={!!callState}
+                      className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-blue-500 transition-all disabled:opacity-50"
+                      title="Start Audio Call"
+                    >
                       <Phone className="w-4.5 h-4.5" />
                     </button>
-                    <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-blue-500 transition-all">
+                    <button 
+                      onClick={() => {
+                        if (!activeFriend?.email || !currentUserEmail) return;
+                        setCallType('video');
+                        getLocalStream(true).then(() => {
+                          callUser(activeFriend.email, 'video');
+                        });
+                      }}
+                      disabled={!!callState}
+                      className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all disabled:opacity-50"
+                      title="Start Video Call"
+                    >
                       <Video className="w-4.5 h-4.5" />
                     </button>
                     <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all">
@@ -665,6 +753,38 @@ export default function MessengerPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Call Overlay */}
+      <CallOverlay
+        callState={callState}
+        incomingCall={incomingCall}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        audioEnabled={audioEnabled}
+        videoEnabled={videoEnabled}
+        callType={callType}
+        callerName={activeFriend?.fullName || incomingCall?.callerEmail?.split('@')[0]}
+        calleeName={activeFriend?.fullName || currentUserEmail?.split('@')[0]}
+        onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall}
+        onEndCall={handleEndCall}
+        onToggleAudio={toggleAudio}
+        onToggleVideo={toggleVideo}
+      />
+
+      {/* Call Failed Toast */}
+      <AnimatePresence>
+        {callFailed && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[110] bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold"
+          >
+            {callFailed}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

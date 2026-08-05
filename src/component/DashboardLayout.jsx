@@ -52,7 +52,8 @@ const DashboardLayout = ({ children }) => {
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
     { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
-    { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> }
+    { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> },
+    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> }
   ];
 
   const studentLinks = [
@@ -61,7 +62,8 @@ const DashboardLayout = ({ children }) => {
     { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare /> },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
     { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiBriefcase /> },
-    { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> }
+    { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> },
+    { label: 'My Mentorship', href: '/dashboard/students/my-mentorship', icon: <FiBookOpen /> }
   ];
 
   const adminLinks = [
