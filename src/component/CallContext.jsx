@@ -33,14 +33,15 @@ export function CallProvider({ children, email }) {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [currentCallId, setCurrentCallId] = useState(null);
-  const [peerSdp, setPeerSdp] = useState(null);
 
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const callIdRef = useRef(null);
   const isPollingRef = useRef(false);
-  const lastPollResultRef = useRef(null);
+  const isCallerRef = useRef(false);
+  const processedSignalsRef = useRef(new Set());
+  const lastSignalCountRef = useRef(0);
 
   const setupLocalStream = useCallback(async (type = "video") => {
     try {
@@ -99,10 +100,11 @@ export function CallProvider({ children, email }) {
     };
 
     pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+      const state = pc.iceConnectionState;
+      if (state === "connected" || state === "completed") {
         setCallState("connected");
         playConnectSound();
-      } else if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
+      } else if (state === "disconnected" || state === "failed") {
         setCallState(null);
         playEndSound();
       }
@@ -111,6 +113,47 @@ export function CallProvider({ children, email }) {
     return pc;
   }, [email]);
 
+  // Poll for signaling (answer SDP + ICE candidates) during active call
+  const pollSignaling = useCallback(async () => {
+    if (!callIdRef.current) return;
+
+    try {
+      const data = await apiFetch(`/api/calls/${callIdRef.current}?email=${encodeURIComponent(email)}`);
+      const call = data.call;
+      if (!call) return;
+
+      const pc = peerConnectionRef.current;
+      if (!pc) return;
+
+      // If we are the caller and got an answer, set it
+      if (isCallerRef.current && call.answer && pc.signalingState === "have-local-offer") {
+        await pc.setRemoteDescription(new RTCSessionDescription(call.answer));
+        setCallState("connecting");
+      }
+
+      // Process new ICE candidates from the other party
+      const candidates = call.iceCandidates || [];
+      if (candidates.length > lastSignalCountRef.current) {
+        for (let i = lastSignalCountRef.current; i < candidates.length; i++) {
+          const c = candidates[i];
+          const candKey = `${c.candidate.sdpMid}-${c.candidate.sdpMLineIndex}`;
+          if (!processedSignalsRef.current.has(candKey)) {
+            processedSignalsRef.current.add(candKey);
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(c.candidate));
+            } catch (e) {
+              console.error("Failed to add ICE candidate:", e);
+            }
+          }
+        }
+        lastSignalCountRef.current = candidates.length;
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }, [email]);
+
+  // Poll for incoming calls (slower - every 2s)
   const pollForCalls = useCallback(async () => {
     if (!email || isPollingRef.current) return;
     isPollingRef.current = true;
@@ -140,7 +183,6 @@ export function CallProvider({ children, email }) {
         setCurrentCallId(call._id);
         setCallState("connecting");
         stopRingtone();
-        playConnectSound();
       }
 
       // Handle call ended/declined
@@ -159,6 +201,9 @@ export function CallProvider({ children, email }) {
         setIncomingCall(null);
         callIdRef.current = null;
         setCurrentCallId(null);
+        isCallerRef.current = false;
+        processedSignalsRef.current.clear();
+        lastSignalCountRef.current = 0;
         setTimeout(() => setCallEnded(false), 100);
 
         if (peerConnectionRef.current) {
@@ -175,35 +220,45 @@ export function CallProvider({ children, email }) {
         setVideoEnabled(true);
       }
     } catch (e) {
-      // Silent fail for polling
+      // Silent fail
     } finally {
       isPollingRef.current = false;
     }
   }, [email, callState]);
 
-  // Poll for calls every 2 seconds
+  // Main polling - 2s for call state, 500ms for signaling during active call
   useEffect(() => {
     if (!email) return;
 
-    pollIntervalRef.current = setInterval(pollForCalls, 2000);
+    pollIntervalRef.current = setInterval(() => {
+      pollForCalls();
+      if (callIdRef.current && (callState === "connecting" || callState === "connected" || isCallerRef.current)) {
+        pollSignaling();
+      }
+    }, 2000);
+
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [email, pollForCalls]);
+  }, [email, pollForCalls, pollSignaling, callState]);
 
   const callUser = useCallback(async (calleeEmail, type = "video") => {
     try {
       setCallState("ringing");
       setCallFailed(null);
       setCallType(type);
+      isCallerRef.current = true;
+      processedSignalsRef.current.clear();
+      lastSignalCountRef.current = 0;
       playRingtone();
 
       const stream = await setupLocalStream(type);
       if (!stream) {
         setCallState(null);
         setCallFailed("Could not access camera/microphone");
+        isCallerRef.current = false;
         return;
       }
 
@@ -220,7 +275,6 @@ export function CallProvider({ children, email }) {
         callIdRef.current = data.callId;
         setCurrentCallId(data.callId);
 
-        // Create offer
         const pc = createPeerConnection();
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -241,6 +295,7 @@ export function CallProvider({ children, email }) {
       setCallState(null);
       setCallFailed(err.message || "Call failed");
       stopRingtone();
+      isCallerRef.current = false;
       callIdRef.current = null;
       setCurrentCallId(null);
       if (localStreamRef.current) {
@@ -256,11 +311,13 @@ export function CallProvider({ children, email }) {
     try {
       stopRingtone();
       setCallState("connecting");
+      isCallerRef.current = false;
+      processedSignalsRef.current.clear();
+      lastSignalCountRef.current = 0;
 
       const callId = incomingCall?.callId || callIdRef.current;
       if (!callId) return;
 
-      // Notify server we answered
       await apiFetch(`/api/calls/${callId}`, {
         method: "PATCH",
         body: JSON.stringify({ action: "answer", email }),
@@ -268,15 +325,12 @@ export function CallProvider({ children, email }) {
 
       setIncomingCall(null);
 
-      // Get call details (with offer)
       const callData = await apiFetch(`/api/calls/${callId}?email=${encodeURIComponent(email)}`);
       const call = callData.call;
 
-      // Get local stream
       const stream = await setupLocalStream(call.callType || "video");
       if (!stream) return;
 
-      // Create peer connection and set remote offer
       const pc = createPeerConnection();
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -285,7 +339,6 @@ export function CallProvider({ children, email }) {
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
-        // Send answer back
         await apiFetch(`/api/calls/${callId}`, {
           method: "PATCH",
           body: JSON.stringify({
@@ -299,6 +352,9 @@ export function CallProvider({ children, email }) {
       console.error("Answer call failed:", err);
       setCallState(null);
       setCallFailed("Failed to answer call");
+      isCallerRef.current = false;
+      callIdRef.current = null;
+      setCurrentCallId(null);
       setTimeout(() => setCallFailed(null), 3000);
     }
   }, [email, incomingCall, setupLocalStream, createPeerConnection]);
@@ -326,6 +382,9 @@ export function CallProvider({ children, email }) {
     setCallState(null);
     setCallEnded(true);
     setIncomingCall(null);
+    isCallerRef.current = false;
+    processedSignalsRef.current.clear();
+    lastSignalCountRef.current = 0;
     setTimeout(() => setCallEnded(false), 100);
 
     const callId = callIdRef.current;
@@ -374,7 +433,7 @@ export function CallProvider({ children, email }) {
     }
   }, [localStream]);
 
-  const clearPeerSdp = useCallback(() => setPeerSdp(null), []);
+  const clearPeerSdp = useCallback(() => {}, []);
   const clearPeerIceCandidate = useCallback(() => {}, []);
 
   const value = {
@@ -388,7 +447,7 @@ export function CallProvider({ children, email }) {
     remoteStream,
     audioEnabled,
     videoEnabled,
-    peerSdp,
+    peerSdp: null,
     peerIceCandidate: null,
     peerConnectionRef,
     currentCallId,
@@ -415,6 +474,6 @@ export function CallProvider({ children, email }) {
 
 export function useCall() {
   const ctx = useContext(CallContext);
-  if (!ctx) throw new Error("useCall must be used within CallProvider");
+  if (!ctx) throw new Error("useCall must be used within CallContext");
   return ctx;
 }

@@ -124,7 +124,7 @@ export async function PATCH(request, { params }) {
     if (action === "answer-sdp" && answer) {
       await calls.updateOne(
         { _id: callId },
-        { $set: { answer, status: "connected", updatedAt: new Date() } }
+        { $set: { answer, updatedAt: new Date() } }
       );
       return NextResponse.json({ success: true });
     }
