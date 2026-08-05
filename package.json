@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
-    "lint": "eslint"
+    "start": "next start",
+    "lint": "eslint",
+    "socket-server": "node socket-server.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.23",

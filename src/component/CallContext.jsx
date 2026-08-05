@@ -16,7 +16,8 @@ let socket = null;
 
 function getSocket() {
   if (!socket) {
-    socket = io(typeof window !== "undefined" ? window.location.origin : "", {
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    socket = io(SOCKET_URL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 5,
