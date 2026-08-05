@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
+const http = require('http');
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -14,6 +15,14 @@ async function connectDB() {
   db = client.db(DB_NAME);
   return db;
 }
+
+// Create HTTP server for health checks
+const httpServer = http.createServer((req, res) => {
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', service: 'socket-server' }));
+  }
+});
 
 async function createCallNotification({ recipientEmail, callerEmail, callerName, callType }) {
   try {
@@ -52,7 +61,7 @@ async function updateCallNotification(notificationId, updates) {
   }
 }
 
-const io = new Server(PORT, {
+const io = new Server(httpServer, {
   cors: {
     origin: CORS_ORIGIN,
     methods: ['GET', 'POST'],
@@ -285,4 +294,7 @@ io.on('connection', (socket) => {
   });
 });
 
-console.log(`[Socket.IO] Server running on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`[Socket.IO] Server running on port ${PORT}`);
+  console.log(`[Socket.IO] Health check: http://localhost:${PORT}/`);
+});
