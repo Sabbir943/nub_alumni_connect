@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiPhone, FiPhoneOff, FiVideo, FiVideoOff, FiMic, FiMicOff,
@@ -9,18 +9,25 @@ import {
 function VideoStream({ stream, muted, label, isLocal }) {
   const videoRef = useRef(null);
 
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+  const attachStream = useCallback((el, s) => {
+    if (el && s && el.srcObject !== s) {
+      el.srcObject = s;
     }
-  }, [stream]);
+  }, []);
+
+  useEffect(() => {
+    attachStream(videoRef.current, stream);
+  }, [stream, attachStream]);
 
   if (!stream) return null;
 
   return (
     <div className={`relative ${isLocal ? "" : "w-full h-full"}`}>
       <video
-        ref={videoRef}
+        ref={(el) => {
+          videoRef.current = el;
+          attachStream(el, stream);
+        }}
         autoPlay
         playsInline
         muted={muted}
@@ -314,6 +321,19 @@ export default function CallOverlay({
               </div>
             )}
           </div>
+        )}
+
+        {/* Hidden audio element to ensure remote audio plays in all call types */}
+        {remoteStream && (
+          <audio
+            ref={(el) => {
+              if (el && el.srcObject !== remoteStream) {
+                el.srcObject = remoteStream;
+              }
+            }}
+            autoPlay
+            playsInline
+          />
         )}
 
         {/* Controls */}
