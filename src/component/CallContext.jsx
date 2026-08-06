@@ -243,16 +243,20 @@ export function CallProvider({ children, email }) {
     }
   }, [email, callState]);
 
-  // Main polling - 2s for call state, 500ms for signaling during active call
+  // Main polling - 500ms for signaling during active call, 2s for call state
   useEffect(() => {
     if (!email) return;
 
+    const hasActiveCall = callIdRef.current && (callState === "connecting" || callState === "connected" || isCallerRef.current);
+    const interval = hasActiveCall ? 500 : 2000;
+
     pollIntervalRef.current = setInterval(() => {
       pollForCalls();
-      if (callIdRef.current && (callState === "connecting" || callState === "connected" || isCallerRef.current)) {
+      // Signal for both caller (ringing -> connecting) and callee (connecting -> connected)
+      if (callIdRef.current && (callState === "ringing" || callState === "connecting" || callState === "connected" || isCallerRef.current)) {
         pollSignaling();
       }
-    }, 2000);
+    }, interval);
 
     return () => {
       if (pollIntervalRef.current) {
@@ -336,6 +340,10 @@ export function CallProvider({ children, email }) {
 
       const callId = incomingCall?.callId || callIdRef.current;
       if (!callId) return;
+
+      // Set callIdRef early so polling works immediately
+      callIdRef.current = callId;
+      setCurrentCallId(callId);
 
       await apiFetch(`/api/calls/${callId}`, {
         method: "PATCH",
