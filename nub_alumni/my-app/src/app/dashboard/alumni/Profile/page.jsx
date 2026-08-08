@@ -41,6 +41,7 @@ const INITIAL_FORM = {
   skills: "",
   facebookUrl: "",
   twitterUrl: "",
+  isMentor: false,
 };
 
 const DEGREE_OPTIONS = [
@@ -84,7 +85,7 @@ function VerificationBadgeInline({ verification }) {
       </span>
     );
   }
-  const { badge, trustScore, breakdown, analysis, flags } = verification;
+  const { badge, trustScore, breakdown, analysis, flags, linkValidation } = verification;
   const colors = {
     Verified: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", bar: "bg-emerald-500" },
     Unverified: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", bar: "bg-amber-500" },
@@ -101,6 +102,38 @@ function VerificationBadgeInline({ verification }) {
       <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden mb-2">
         <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${trustScore}%` }} />
       </div>
+
+      {linkValidation && linkValidation.length > 0 && (
+        <div className="mb-3 p-3 bg-white rounded-lg border border-slate-100">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Link Status</p>
+          <div className="space-y-1.5">
+            {linkValidation.map((link, i) => (
+              <div key={i} className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  {link.valid ? (
+                    <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <FiCheckCircle className="w-2.5 h-2.5 text-emerald-600" />
+                    </span>
+                  ) : link.url ? (
+                    <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
+                      <FiAlertCircle className="w-2.5 h-2.5 text-red-600" />
+                    </span>
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                      <FiAlertCircle className="w-2.5 h-2.5 text-zinc-400" />
+                    </span>
+                  )}
+                  <span className="font-semibold text-slate-600">{link.label}</span>
+                </div>
+                <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-zinc-400'}`}>
+                  {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {breakdown && (
         <div className="grid grid-cols-2 gap-1 mb-2">
           {Object.entries(breakdown).map(([key, val]) => (
@@ -309,6 +342,13 @@ export default function ProfilePage() {
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
                 {formData.skills}
               </p>
+            )}
+
+            {formData.isMentor && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800 mt-3">
+                <FiBookOpen className="w-3.5 h-3.5" />
+                Available as Mentor
+              </span>
             )}
 
             <div className="mt-4">
@@ -601,9 +641,33 @@ export default function ProfilePage() {
             />
           </div>
 
+          <div className="flex items-center gap-3 p-4 bg-violet-50 dark:bg-violet-950/20 rounded-xl border border-violet-200 dark:border-violet-800">
+            <button
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, isMentor: !prev.isMentor }))}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                formData.isMentor ? "bg-violet-600" : "bg-zinc-300 dark:bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                  formData.isMentor ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
+            <div>
+              <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <FiBookOpen className="w-4 h-4 text-violet-500" />
+                Available as a Mentor
+              </label>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Students can find and request mentorship from you
+              </p>
+            </div>
+          </div>
+
           <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
             <button
-              type="submit"
               disabled={saving}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-8 py-3 rounded-xl transition-colors disabled:opacity-50"
             >
