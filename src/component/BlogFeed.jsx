@@ -118,8 +118,15 @@ export default function BlogFeed({ currentUserEmail }) {
         </div>
 
         <div className="flex gap-6 items-start">
-          {/* Main Feed */}
-          <div className="flex-1 min-w-0 max-w-2xl">
+          {/* Sidebar - Left */}
+          <BlogSidebar
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            currentUserEmail={currentUserEmail}
+          />
+
+          {/* Main Feed - Right */}
+          <div className="flex-1 min-w-0">
             <div className="mb-5 sm:mb-6">
               <CreatePost authorEmail={currentUserEmail} onPostCreated={handlePostCreated} />
             </div>
@@ -185,13 +192,6 @@ export default function BlogFeed({ currentUserEmail }) {
               </>
             )}
           </div>
-
-          {/* Sidebar - Desktop */}
-          <BlogSidebar
-            selectedCategory={selectedCategory}
-            onCategoryChange={handleCategoryChange}
-            currentUserEmail={currentUserEmail}
-          />
         </div>
       </div>
 

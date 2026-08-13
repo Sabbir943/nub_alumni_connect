@@ -83,7 +83,7 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
   }, []);
 
   return (
-    <aside className={`${isMobile ? 'block w-full' : 'hidden lg:block w-80 xl:w-[340px] shrink-0'} space-y-5 ${!isMobile ? 'sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin pb-6' : ''}`}>
+    <aside className={`${isMobile ? 'block w-full' : 'hidden lg:block w-80 lg:w-96 xl:w-[420px] shrink-0'} space-y-5 ${!isMobile ? 'sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin pb-6' : ''}`}>
       {/* Categories */}
       <Section title="Categories" icon={<FiGrid size={16} />}>
         <div className="space-y-1">
