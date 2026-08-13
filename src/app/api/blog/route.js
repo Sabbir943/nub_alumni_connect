@@ -61,7 +61,7 @@ export async function POST(request) {
 
     const profile = await findProfileByEmail(authorEmail);
     const authorName = profile?.name || authorEmail.split('@')[0];
-    const authorAvatar = profile?.avatar || null;
+    const authorAvatar = profile?.profilePictureUrl || null;
 
     const newPost = {
       authorEmail,

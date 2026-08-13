@@ -54,7 +54,7 @@ export async function POST(request, { params }) {
 
     const profile = await findProfileByEmail(authorEmail);
     const authorName = profile?.name || authorEmail.split('@')[0];
-    const authorAvatar = profile?.avatar || null;
+    const authorAvatar = profile?.profilePictureUrl || null;
 
     const newComment = {
       postId: id,

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle } from 'react-icons/fi';
+import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink } from 'react-icons/fi';
+import { FacebookShareButton, TwitterShareButton, WhatsappShareButton } from 'react-share';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -141,9 +142,23 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareMenuRef = useRef(null);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.origin + '/blog' : '';
   const shareText = `${post.authorName} posted on NUB Alumni Connect`;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+        setShowShareMenu(false);
+      }
+    }
+    if (showShareMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showShareMenu]);
 
   const totalReactions = Object.values(reactions).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
 
@@ -279,6 +294,17 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
     } catch {}
   };
 
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied!');
+      handleShare();
+    } catch {
+      toast.error('Failed to copy link');
+    }
+    setShowShareMenu(false);
+  };
+
   const activeReaction = REACTIONS.find((r) => userReactions[r.type]);
 
   return (
@@ -405,14 +431,52 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
           <span>Comments</span>
         </button>
 
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" ref={shareMenuRef}>
           <button
-            onClick={handleShare}
+            onClick={() => setShowShareMenu(!showShareMenu)}
             className="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
           >
             <FiShare2 size={20} />
             <span>Share</span>
           </button>
+
+          <AnimatePresence>
+            {showShareMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute bottom-full right-0 mb-2 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-2 min-w-[180px] z-20"
+              >
+                <FacebookShareButton url={shareUrl} quote={shareText} onShareWindowClose={handleShare}>
+                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
+                    <span className="text-blue-600 font-bold text-sm">f</span>
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">Facebook</span>
+                  </div>
+                </FacebookShareButton>
+                <TwitterShareButton url={shareUrl} title={shareText} onShareWindowClose={handleShare}>
+                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
+                    <span className="text-sky-500 font-bold text-sm">𝕏</span>
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">Twitter</span>
+                  </div>
+                </TwitterShareButton>
+                <WhatsappShareButton url={shareUrl} title={shareText} onShareWindowClose={handleShare}>
+                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
+                    <span className="text-green-500 font-bold text-sm">💬</span>
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">WhatsApp</span>
+                  </div>
+                </WhatsappShareButton>
+                <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left"
+                >
+                  <FiLink size={14} className="text-zinc-500" />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Copy Link</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

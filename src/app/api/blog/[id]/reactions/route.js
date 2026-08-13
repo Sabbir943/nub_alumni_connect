@@ -28,13 +28,6 @@ export async function POST(request, { params }) {
     const typeArray = currentReactions[type] || [];
     const hasReacted = typeArray.includes(email);
 
-    const update = {};
-    if (hasReacted) {
-      update[`reactions.${type}`] = email;
-    } else {
-      update[`reactions.${type}`] = email;
-    }
-
     if (hasReacted) {
       await posts.updateOne({ _id: new ObjectId(id) }, { $pull: { [`reactions.${type}`]: email } });
     } else {
@@ -47,19 +40,18 @@ export async function POST(request, { params }) {
     }
 
     const updated = await posts.findOne({ _id: new ObjectId(id) });
-    const reactionCounts = {};
-    for (const t of VALID_TYPES) {
-      reactionCounts[t] = (updated.reactions[t] || []).length;
-    }
 
+    const reactions = {};
     const userReactions = {};
     for (const t of VALID_TYPES) {
-      if ((updated.reactions[t] || []).includes(email)) {
+      const emails = updated.reactions?.[t] || [];
+      reactions[t] = emails;
+      if (emails.includes(email)) {
         userReactions[t] = true;
       }
     }
 
-    return NextResponse.json({ success: true, reactions: reactionCounts, userReactions });
+    return NextResponse.json({ success: true, reactions, userReactions });
   } catch (error) {
     console.error('Error toggling reaction:', error);
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
