@@ -22,9 +22,11 @@ const CATEGORIES = [
 ];
 
 const QUICK_LINKS = [
-  { label: 'Dashboard', href: '/dashboard', icon: <FiGrid size={16} /> },
-  { label: 'Events', href: '/dashboard/alumni/events', icon: <FiBookOpen size={16} /> },
+  { label: 'Alumni Dashboard', href: '/dashboard/alumni/overview', icon: <FiUsers size={16} /> },
+  { label: 'Student Dashboard', href: '/dashboard/students/overview', icon: <FiGrid size={16} /> },
+  { label: 'Admin Dashboard', href: '/dashboard/admin', icon: <FiBriefcase size={16} /> },
   { label: 'Job Portal', href: '/job-portal', icon: <FiBriefcase size={16} /> },
+  { label: 'Events', href: '/dashboard/alumni/events', icon: <FiBookOpen size={16} /> },
   { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare size={16} /> },
   { label: 'Notices', href: '/notice', icon: <FiFileText size={16} /> },
 ];
