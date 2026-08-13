@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink } from 'react-icons/fi';
-import { FacebookShareButton, TwitterShareButton, WhatsappShareButton } from 'react-share';
+import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -142,23 +141,11 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const shareMenuRef = useRef(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
 
   const shareUrl = typeof window !== 'undefined' ? window.location.origin + '/blog' : '';
   const shareText = `${post.authorName} posted on NUB Alumni Connect`;
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
-        setShowShareMenu(false);
-      }
-    }
-    if (showShareMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showShareMenu]);
 
   const totalReactions = Object.values(reactions).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
 
@@ -283,7 +270,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
     }
   };
 
-  const handleShare = async () => {
+  const incrementShare = async () => {
     try {
       const data = await apiFetch('/api/blog/share', {
         method: 'POST',
@@ -294,15 +281,62 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
     } catch {}
   };
 
+  const openShareWindow = (url) => {
+    window.open(url, '_blank', 'width=600,height=500,scrollbars=yes');
+  };
+
+  const handleFacebookShare = () => {
+    const msg = shareMessage.trim();
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(msg || shareText)}`;
+    openShareWindow(url);
+    incrementShare();
+    setShowShareModal(false);
+    setShareMessage('');
+    toast.success('Opening Facebook...');
+  };
+
+  const handleTwitterShare = () => {
+    const msg = shareMessage.trim();
+    const text = msg ? `${msg}\n\n${shareText}` : shareText;
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+    openShareWindow(url);
+    incrementShare();
+    setShowShareModal(false);
+    setShareMessage('');
+    toast.success('Opening Twitter...');
+  };
+
+  const handleWhatsappShare = () => {
+    const msg = shareMessage.trim();
+    const text = msg ? `${msg}\n\n${shareText}\n${shareUrl}` : `${shareText}\n${shareUrl}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    openShareWindow(url);
+    incrementShare();
+    setShowShareModal(false);
+    setShareMessage('');
+    toast.success('Opening WhatsApp...');
+  };
+
+  const handleLinkedinShare = () => {
+    const msg = shareMessage.trim();
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(msg || shareText)}`;
+    openShareWindow(url);
+    incrementShare();
+    setShowShareModal(false);
+    setShareMessage('');
+    toast.success('Opening LinkedIn...');
+  };
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link copied!');
-      handleShare();
+      toast.success('Link copied to clipboard!');
+      incrementShare();
     } catch {
       toast.error('Failed to copy link');
     }
-    setShowShareMenu(false);
+    setShowShareModal(false);
+    setShareMessage('');
   };
 
   const activeReaction = REACTIONS.find((r) => userReactions[r.type]);
@@ -431,53 +465,13 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
           <span>Comments</span>
         </button>
 
-        <div className="flex-1 relative" ref={shareMenuRef}>
-          <button
-            onClick={() => setShowShareMenu(!showShareMenu)}
-            className="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
-          >
-            <FiShare2 size={20} />
-            <span>Share</span>
-          </button>
-
-          <AnimatePresence>
-            {showShareMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute bottom-full right-0 mb-2 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-2 min-w-[180px] z-20"
-              >
-                <FacebookShareButton url={shareUrl} quote={shareText} onShareWindowClose={handleShare}>
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
-                    <span className="text-blue-600 font-bold text-sm">f</span>
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">Facebook</span>
-                  </div>
-                </FacebookShareButton>
-                <TwitterShareButton url={shareUrl} title={shareText} onShareWindowClose={handleShare}>
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
-                    <span className="text-sky-500 font-bold text-sm">𝕏</span>
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">Twitter</span>
-                  </div>
-                </TwitterShareButton>
-                <WhatsappShareButton url={shareUrl} title={shareText} onShareWindowClose={handleShare}>
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left cursor-pointer">
-                    <span className="text-green-500 font-bold text-sm">💬</span>
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">WhatsApp</span>
-                  </div>
-                </WhatsappShareButton>
-                <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
-                <button
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors w-full text-left"
-                >
-                  <FiLink size={14} className="text-zinc-500" />
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Copy Link</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <button
+          onClick={() => setShowShareModal(true)}
+          className="flex items-center justify-center gap-2 flex-1 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+        >
+          <FiShare2 size={20} />
+          <span>Share</span>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -545,6 +539,149 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
         )}
       </AnimatePresence>
 
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
+            onClick={() => { setShowShareModal(false); setShareMessage(''); }}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-bold text-lg text-zinc-900 dark:text-white">Share to...</h3>
+                <button
+                  onClick={() => { setShowShareModal(false); setShareMessage(''); }}
+                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              {/* User input */}
+              <div className="p-4 sm:p-5">
+                <div className="flex gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {currentUserEmail?.charAt(0).toUpperCase()}
+                  </div>
+                  <textarea
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    placeholder="Say something about this..."
+                    className="flex-1 min-h-[60px] resize-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-400 text-sm outline-none"
+                  />
+                </div>
+
+                {/* Post preview */}
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3 sm:p-4 border border-zinc-200 dark:border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
+                      {post.authorAvatar ? (
+                        <img src={post.authorAvatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        post.authorName?.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-900 dark:text-white">{post.authorName}</p>
+                      <p className="text-[10px] text-zinc-400">{timeAgo(post.createdAt)}</p>
+                    </div>
+                  </div>
+                  {post.text && (
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 line-clamp-3 mb-2">{post.text}</p>
+                  )}
+                  {post.images && post.images.length > 0 && (
+                    <img src={post.images[0]} alt="" className="w-full h-32 object-cover rounded-lg" />
+                  )}
+                  <p className="text-[10px] text-zinc-400 mt-2 truncate">{shareUrl}</p>
+                </div>
+              </div>
+
+              {/* Share buttons */}
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-2">
+                <button
+                  onClick={handleFacebookShare}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                    f
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Facebook</p>
+                    <p className="text-[11px] text-zinc-400">Share on your timeline</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleTwitterShare}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold text-base shrink-0">
+                    𝕏
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Twitter</p>
+                    <p className="text-[11px] text-zinc-400">Post a tweet</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleWhatsappShare}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                    💬
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">WhatsApp</p>
+                    <p className="text-[11px] text-zinc-400">Send to chat</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleLinkedinShare}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                    in
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">LinkedIn</p>
+                    <p className="text-[11px] text-zinc-400">Share on your feed</p>
+                  </div>
+                </button>
+
+                <div className="border-t border-zinc-200 dark:border-zinc-700 my-2" />
+
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
+                    <FiLink size={18} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Copy Link</p>
+                    <p className="text-[11px] text-zinc-400">Copy to clipboard</p>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
