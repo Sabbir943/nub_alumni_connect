@@ -91,7 +91,7 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             <button
               key={cat.name}
               onClick={() => onCategoryChange(cat.name)}
-              className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 selectedCategory === cat.name
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
                   : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
@@ -119,19 +119,19 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             ))}
           </div>
         ) : trending.length === 0 ? (
-          <p className="text-xs text-zinc-400 text-center py-3">No posts yet</p>
+          <p className="text-sm text-zinc-400 text-center py-3">No posts yet</p>
         ) : (
           <div className="space-y-3">
             {trending.map((post, i) => (
               <div key={post._id} className="flex gap-3 group">
-                <span className="text-xs font-bold text-zinc-300 dark:text-zinc-600 mt-0.5 w-4 text-right shrink-0">
+                <span className="text-sm font-bold text-zinc-300 dark:text-zinc-600 mt-0.5 w-4 text-right shrink-0">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 line-clamp-2 group-hover:text-blue-500 transition-colors cursor-pointer">
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 line-clamp-2 group-hover:text-blue-500 transition-colors cursor-pointer">
                     {post.text?.substring(0, 80)}{post.text?.length > 80 ? '...' : ''}
                   </p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">
+                  <p className="text-xs text-zinc-400 mt-0.5">
                     {post.authorName} · {post.totalReactions} reactions
                   </p>
                 </div>
@@ -156,12 +156,12 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             ))}
           </div>
         ) : contributors.length === 0 ? (
-          <p className="text-xs text-zinc-400 text-center py-3">No contributors yet</p>
+          <p className="text-sm text-zinc-400 text-center py-3">No contributors yet</p>
         ) : (
           <div className="space-y-3">
             {contributors.map((user, i) => (
               <div key={user.email} className="flex items-center gap-3 group">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
                   {user.avatar ? (
                     <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -169,14 +169,14 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate group-hover:text-blue-500 transition-colors">
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate group-hover:text-blue-500 transition-colors">
                     {user.name}
                   </p>
-                  <p className="text-[10px] text-zinc-400">
+                  <p className="text-xs text-zinc-400">
                     {user.postCount} post{user.postCount !== 1 ? 's' : ''} · {user.commentCount} comment{user.commentCount !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <span className="text-[10px] font-bold text-zinc-300 dark:text-zinc-600">
+                <span className="text-xs font-bold text-zinc-300 dark:text-zinc-600">
                   {user.score}
                 </span>
               </div>
@@ -200,12 +200,12 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             ))}
           </div>
         ) : activity.length === 0 ? (
-          <p className="text-xs text-zinc-400 text-center py-3">No activity yet</p>
+          <p className="text-sm text-zinc-400 text-center py-3">No activity yet</p>
         ) : (
           <div className="space-y-3">
             {activity.map((item, i) => (
               <div key={item._id || i} className="flex gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[8px] font-bold shrink-0 overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
                   {item.authorAvatar ? (
                     <img src={item.authorAvatar} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -213,12 +213,12 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
                     <span className="font-semibold text-zinc-700 dark:text-zinc-300">{item.authorName}</span>
                     {' '}commented on{' '}
                     <span className="font-medium text-zinc-700 dark:text-zinc-300">{item.postAuthor}&apos;s post</span>
                   </p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">{timeAgo(item.createdAt)} ago</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">{timeAgo(item.createdAt)} ago</p>
                 </div>
               </div>
             ))}
@@ -233,10 +233,10 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             {allTags.map(({ tag, count }) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg text-[11px] font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
               >
                 #{tag}
-                <span className="text-[9px] text-zinc-400">{count}</span>
+                <span className="text-xs text-zinc-400">{count}</span>
               </span>
             ))}
           </div>
@@ -250,7 +250,7 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
             <Link
               key={link.href}
               href={link.href}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-blue-500 transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-blue-500 transition-colors"
             >
               <span className="text-zinc-400">{link.icon}</span>
               {link.label}
@@ -262,10 +262,10 @@ export default function BlogSidebar({ selectedCategory, onCategoryChange, curren
       {/* About Blog */}
       <Section title="About Blog" icon={<FiInfo size={16} />}>
         <div className="space-y-2.5">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
             Share your knowledge, experiences, and insights with the NUB Alumni community. Post articles, career tips, and stay connected.
           </p>
-          <div className="text-[11px] text-zinc-400 space-y-1">
+          <div className="text-xs text-zinc-400 space-y-1">
             <p>Be respectful and constructive</p>
             <p>No spam or self-promotion</p>
             <p>Keep content relevant to the community</p>
@@ -281,7 +281,7 @@ function Section({ title, icon, children }) {
     <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200/60 dark:border-zinc-800 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
         <span className="text-zinc-400">{icon}</span>
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{title}</h3>
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
       </div>
       <div className="p-4">{children}</div>
     </div>
