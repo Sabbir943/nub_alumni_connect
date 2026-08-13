@@ -12,10 +12,10 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 - `npm run dev` / `npm run build` / `npm run start` — Next.js dev server
 - `npm run socket-server` — standalone Socket.IO server on port 3001 (for WebRTC signaling + calls). Must run alongside Next.js for real-time features.
 - `npm run lint` — ESLint via flat config `eslint.config.mjs`. **No** `next lint`, no test suite, no typecheck script.
-- There is also a separate `server.js` that bundles Next.js + Socket.IO into one process (alternative to running two servers).
+- There is **no** combined server — the socket server (`socket-server.js`) is standalone and must be run separately.
 
 ## Data layer
-- `getCollection(name)` / `findProfileByEmail(email)` from `src/lib/mongodb.js`. Never create a second MongoClient. DB name from `DB_NAME` env, defaults to `nub_alumni`.
+- `getCollection(name)` / `findProfileByEmail(email)` from `src/lib/mongodb.js`. Use this for all app code — don't create additional MongoClient instances. DB name from `DB_NAME` env, defaults to `nub_alumni`. (The only exception is `src/lib/auth.js`, which has its own cached pool.)
 - Client fetch: use `apiFetch(path, opts)` from `src/lib/api.js` (parses JSON, checks `res.ok`, retries 5xx). Don't use raw `fetch` from client components.
 - API route pattern (`src/app/api/*`): try/catch around `getCollection`, serialize `_id` (`serializeId` or `.toString()`), `console.error` + `NextResponse.json({ message }, { status: 500 })` on failure.
 - Collections in code: `user`, `session`, `account`, `verification`, `students`, `alumni_directory`, `jobs`, `follows`, `messages`, `notifications`, `calls`, `mentorships`, `contacts`, `notices`, `events`, `reports`. README's collection table is stale — trust the code.
@@ -31,6 +31,7 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 - `.env` is gitignored — never commit or log it.
 
 ## Quirks
+- **Two MongoClient pools**: `src/lib/auth.js` creates its own `MongoClient` via `globalThis` (top-level await), separate from `mongodb.js`'s cached `connectToDatabase()`. Both target the same DB — don't merge them.
 - React Compiler enabled (`reactCompiler: true`); `optimizePackageImports` covers `react-icons`/`lucide-react`.
 - `README.md` is stale: project structure and API/MongoDB tables omit admin, notices, events, notifications, calls, mentorships, and reports. Trust code, not README.
 - Dashboard route folders mix casing (e.g. `alumni/Profile`) — case-sensitive on disk.

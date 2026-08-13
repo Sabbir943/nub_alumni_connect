@@ -7,16 +7,20 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'nub_alumni';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
-let db = null;
+// Cache the database connection promise to avoid multiple simultaneous connection pools
+let dbPromise = null;
 
 async function connectDB() {
-  if (db) return db;
-  const client = await MongoClient.connect(MONGODB_URI);
-  db = client.db(DB_NAME);
-  return db;
+  if (!dbPromise) {
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is missing.');
+    }
+    dbPromise = MongoClient.connect(MONGODB_URI).then((client) => client.db(DB_NAME));
+  }
+  return dbPromise;
 }
 
-// Create HTTP server for health checks
+// HTTP server for health checks
 const httpServer = http.createServer((req, res) => {
   if (req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -68,17 +72,19 @@ const io = new Server(httpServer, {
   },
 });
 
-const onlineUsers = new Map();
 const activeCalls = new Map();
 
 io.on('connection', (socket) => {
   console.log('[Socket.IO] User connected:', socket.id);
 
+  // Use Socket.IO rooms for user identification (Supports multi-tab naturally)
   socket.on('join', (email) => {
     if (!email) return;
-    onlineUsers.set(email, socket.id);
     socket.data.email = email;
-    console.log(`[Socket.IO] User joined: ${email} (${socket.id})`);
+    socket.join(email);
+    console.log(`[Socket.IO] User joined room: ${email} (${socket.id})`);
+    
+    // Broadcast user online status
     io.emit('user-online', { email, online: true });
   });
 
@@ -86,59 +92,65 @@ io.on('connection', (socket) => {
     const callerEmail = socket.data.email;
     if (!callerEmail || !calleeEmail) return;
 
-    const calleeSocketId = onlineUsers.get(calleeEmail);
-    if (!calleeSocketId) {
+    // Check if callee is connected to their room
+    const calleeRoom = io.sockets.adapter.rooms.get(calleeEmail);
+    if (!calleeRoom || calleeRoom.size === 0) {
       socket.emit('call-failed', { reason: 'User is offline' });
       return;
     }
 
-    for (const [key, call] of activeCalls) {
+    // Prevent duplicate calls
+    for (const [, call] of activeCalls) {
       if (call.calleeEmail === calleeEmail || call.callerEmail === calleeEmail) {
         socket.emit('call-failed', { reason: 'User is already in a call' });
         return;
       }
-      if (call.callerEmail === callerEmail) {
+      if (call.callerEmail === callerEmail || call.calleeEmail === callerEmail) {
         socket.emit('call-failed', { reason: 'You are already in a call' });
         return;
       }
     }
 
+    const callerName = callerEmail.split('@')[0];
     const notificationId = await createCallNotification({
       recipientEmail: calleeEmail,
       callerEmail,
-      callerName: callerEmail.split('@')[0],
+      callerName,
       callType,
     });
 
-    activeCalls.set(callerEmail, {
+    const callData = {
       callerSocketId: socket.id,
       callerEmail,
       calleeEmail,
-      calleeSocketId,
       callType,
       notificationId,
+      answered: false,
       timer: null,
-    });
+    };
 
-    const timer = setTimeout(async () => {
+    // 30-Second Missed Call Timeout
+    callData.timer = setTimeout(async () => {
       const call = activeCalls.get(callerEmail);
       if (call && !call.answered) {
         await updateCallNotification(call.notificationId, {
           callStatus: 'missed',
-          message: `Missed call from ${callerEmail.split('@')[0]}`,
+          message: `Missed call from ${callerName}`,
         });
+
         io.to(call.callerSocketId).emit('call-failed', { reason: 'No answer' });
-        io.to(call.calleeSocketId).emit('call-missed', { callerEmail });
+        io.to(calleeEmail).emit('call-missed', { callerEmail });
         activeCalls.delete(callerEmail);
         console.log(`[Socket.IO] Call missed: ${callerEmail} -> ${calleeEmail}`);
       }
     }, 30000);
 
-    activeCalls.get(callerEmail).timer = timer;
+    activeCalls.set(callerEmail, callData);
 
-    io.to(calleeSocketId).emit('incoming-call', {
+    // Send call alert to all active tabs/devices of the callee
+    io.to(calleeEmail).emit('incoming-call', {
       callerEmail,
-      callerName: callerEmail.split('@')[0],
+      callerName,
       callType,
       notificationId,
     });
@@ -159,17 +171,15 @@ io.on('connection', (socket) => {
     }
 
     call.answered = true;
+    call.calleeSocketId = socket.id; // Lock the active receiving socket ID
 
     await updateCallNotification(call.notificationId, {
       callStatus: 'answered',
       read: true,
     });
 
-    call.calleeSocketId = socket.id;
-    activeCalls.set(callerEmail, call);
-
     io.to(call.callerSocketId).emit('call-answered', { calleeEmail });
-    console.log(`[Socket.IO] Call answered: ${calleeEmail} accepted from ${callerEmail}`);
+    console.log(`[Socket.IO] Call answered: ${calleeEmail} accepted call from ${callerEmail}`);
   });
 
   socket.on('decline-call', async ({ callerEmail }) => {
@@ -191,7 +201,7 @@ io.on('connection', (socket) => {
 
     io.to(call.callerSocketId).emit('call-declined', { calleeEmail });
     activeCalls.delete(callerEmail);
-    console.log(`[Socket.IO] Call declined: ${calleeEmail} declined from ${callerEmail}`);
+    console.log(`[Socket.IO] Call declined: ${calleeEmail} declined call from ${callerEmail}`);
   });
 
   socket.on('end-call', async ({ otherEmail }) => {
@@ -211,86 +221,72 @@ io.on('connection', (socket) => {
       read: true,
     });
 
-    const otherSocketId = call.callerEmail === myEmail
-      ? call.calleeSocketId
-      : call.callerSocketId;
-
-    if (otherSocketId) {
-      io.to(otherSocketId).emit('call-ended', { endedBy: myEmail });
-    }
+    // Notify the other peer's room
+    io.to(otherEmail).emit('call-ended', { endedBy: myEmail });
 
     activeCalls.delete(call.callerEmail);
     console.log(`[Socket.IO] Call ended: ${myEmail} ended call with ${otherEmail}`);
   });
 
+  // Peer-to-Peer WebRTC Signaling Relays
   socket.on('offer', ({ to, sdp }) => {
-    const toSocketId = onlineUsers.get(to);
-    if (toSocketId) {
-      io.to(toSocketId).emit('offer', { from: socket.data.email, sdp });
+    if (to) {
+      io.to(to).emit('offer', { from: socket.data.email, sdp });
     }
   });
 
   socket.on('answer', ({ to, sdp }) => {
-    const toSocketId = onlineUsers.get(to);
-    if (toSocketId) {
-      io.to(toSocketId).emit('answer', { from: socket.data.email, sdp });
+    if (to) {
+      io.to(to).emit('answer', { from: socket.data.email, sdp });
     }
   });
 
   socket.on('ice-candidate', ({ to, candidate }) => {
-    const toSocketId = onlineUsers.get(to);
-    if (toSocketId) {
-      io.to(toSocketId).emit('ice-candidate', { from: socket.data.email, candidate });
+    if (to) {
+      io.to(to).emit('ice-candidate', { from: socket.data.email, candidate });
     }
   });
 
   socket.on('disconnect', async () => {
     const email = socket.data.email;
-    if (email) {
-      onlineUsers.delete(email);
+    if (!email) return;
 
-      const call = activeCalls.get(email);
-      if (call) {
-        if (call.timer) {
-          clearTimeout(call.timer);
-          call.timer = null;
-        }
+    // If caller disconnects during active/ringing call
+    const callAsCaller = activeCalls.get(email);
+    if (callAsCaller) {
+      if (callAsCaller.timer) clearTimeout(callAsCaller.timer);
+
+      await updateCallNotification(callAsCaller.notificationId, {
+        callStatus: 'ended',
+        read: true,
+      });
+
+      io.to(callAsCaller.calleeEmail).emit('call-ended', { endedBy: email });
+      activeCalls.delete(email);
+    }
+
+    // If callee disconnects during active/ringing call
+    for (const [callerEmail, call] of activeCalls) {
+      if (call.calleeEmail === email) {
+        if (call.timer) clearTimeout(call.timer);
 
         await updateCallNotification(call.notificationId, {
-          callStatus: 'ended',
-          read: true,
+          callStatus: 'missed',
+          message: `Missed call - recipient disconnected`,
         });
 
-        const otherSocketId = call.callerEmail === email
-          ? call.calleeSocketId
-          : call.callerSocketId;
-
-        if (otherSocketId) {
-          io.to(otherSocketId).emit('call-ended', { endedBy: email });
-        }
-        activeCalls.delete(call.callerEmail);
+        io.to(call.callerSocketId).emit('call-ended', { endedBy: email });
+        activeCalls.delete(callerEmail);
       }
-
-      for (const [callerEmail, call] of activeCalls) {
-        if (call.calleeEmail === email) {
-          if (call.timer) {
-            clearTimeout(call.timer);
-            call.timer = null;
-          }
-
-          await updateCallNotification(call.notificationId, {
-            callStatus: 'missed',
-            message: `Missed call - ${callerEmail.split('@')[0]} disconnected`,
-          });
-
-          io.to(call.callerSocketId).emit('call-ended', { endedBy: email });
-          activeCalls.delete(callerEmail);
-        }
-      }
-
-      io.emit('user-online', { email, online: false });
-      console.log(`[Socket.IO] User disconnected: ${email}`);
     }
+
+    // Check if user has any remaining active tab sockets connected
+    const remainingSockets = io.sockets.adapter.rooms.get(email);
+    if (!remainingSockets || remainingSockets.size === 0) {
+      io.emit('user-online', { email, online: false });
+    }
+
+    console.log(`[Socket.IO] Socket disconnected: ${email} (${socket.id})`);
   });
 });
 

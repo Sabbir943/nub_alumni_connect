@@ -7,7 +7,7 @@ import {
   FiMenu, FiX, FiBell, FiMessageSquare,
   FiUser, FiLogOut, FiBriefcase, FiUsers,
   FiCompass, FiBookOpen, FiGrid,
-  FiChevronDown
+  FiChevronDown, FiFileText
 } from 'react-icons/fi';
 import { GraduationCap } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
@@ -60,6 +60,7 @@ const Navbar = () => {
     { label: 'Home', href: '/', icon: <FiCompass className="w-4 h-4" /> },
     { label: 'Alumni Directory', href: '/alumni-directory', icon: <FiUsers className="w-4 h-4" /> },
     { label: 'Student Directory', href: '/student-directory', icon: <GraduationCap className="w-4 h-4" /> },
+    { label: 'Blog', href: '/blog', icon: <FiFileText className="w-4 h-4" /> },
   ];
 
   const privateLinks = [
