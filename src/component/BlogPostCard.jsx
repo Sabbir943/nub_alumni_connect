@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
@@ -143,6 +143,23 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
+  const [textExpanded, setTextExpanded] = useState(false);
+  const [isLongText, setIsLongText] = useState(false);
+  const textRef = useRef(null);
+
+  const checkTextLength = useCallback(() => {
+    if (textRef.current) {
+      const lineHeight = parseFloat(getComputedStyle(textRef.current).lineHeight);
+      const maxHeight = lineHeight * 3.5;
+      setIsLongText(textRef.current.scrollHeight > maxHeight + 2);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (post.text) {
+      checkTextLength();
+    }
+  }, [post.text, checkTextLength]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.origin + '/blog' : '';
   const shareText = `${post.authorName} posted on NUB Alumni Connect`;
@@ -386,9 +403,24 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
         )}
 
         {post.text && (
-          <p className="text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap text-sm sm:text-base leading-relaxed mb-4">
-            {post.text}
-          </p>
+          <div className="mb-4">
+            <p
+              ref={textRef}
+              className={`text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap text-sm sm:text-base leading-relaxed ${
+                isLongText && !textExpanded ? 'line-clamp-4' : ''
+              }`}
+            >
+              {post.text}
+            </p>
+            {isLongText && (
+              <button
+                onClick={() => setTextExpanded(!textExpanded)}
+                className="text-sm font-semibold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1 transition-colors"
+              >
+                {textExpanded ? 'See less' : 'See more'}
+              </button>
+            )}
+          </div>
         )}
 
         {post.images && post.images.length > 0 && (
