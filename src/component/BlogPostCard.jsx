@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX } from 'react-icons/fi';
+import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX, FiVideo } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
+import { getVideoEmbedUrl } from '@/lib/upload';
 import toast from 'react-hot-toast';
 
 const REACTIONS = [
@@ -434,6 +435,27 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
                 className="w-full h-48 sm:h-56 lg:h-64 object-cover"
               />
             ))}
+          </div>
+        )}
+
+        {post.videoUrl && (
+          <div className="rounded-xl overflow-hidden bg-black mt-1.5 sm:mt-2">
+            {getVideoEmbedUrl(post.videoUrl)?.includes('youtube.com/embed') || getVideoEmbedUrl(post.videoUrl)?.includes('player.vimeo.com') ? (
+              <iframe
+                src={getVideoEmbedUrl(post.videoUrl)}
+                className="w-full h-56 sm:h-64 lg:h-72"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                src={post.videoUrl}
+                controls
+                className="w-full h-56 sm:h-64 lg:h-72 object-cover"
+                preload="metadata"
+              />
+            )}
           </div>
         )}
       </div>

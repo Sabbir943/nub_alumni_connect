@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiImage, FiX, FiSend, FiChevronDown } from 'react-icons/fi';
-import { uploadImage } from '@/lib/upload';
+import { FiImage, FiX, FiSend, FiChevronDown, FiLink, FiVideo } from 'react-icons/fi';
+import { uploadImage, uploadVideo, getVideoEmbedUrl } from '@/lib/upload';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -14,13 +14,19 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState('');
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [category, setCategory] = useState('General');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const videoUrlRef = useRef(null);
 
   const displayName = authorEmail ? authorEmail.split('@')[0] : '';
 
@@ -44,8 +50,14 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
+    if (videoFile || videoUrl) {
+      toast.error('Remove video first to add images');
+      e.target.value = '';
+      return;
+    }
     if (images.length + files.length > 4) {
       toast.error('Maximum 4 images allowed');
+      e.target.value = '';
       return;
     }
     setImages((prev) => [...prev, ...files]);
@@ -56,6 +68,7 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
       };
       reader.readAsDataURL(file);
     });
+    setMediaPickerOpen(false);
     e.target.value = '';
   };
 
@@ -64,31 +77,103 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoUrlSubmit = () => {
+    const url = videoUrl.trim();
+    if (!url) return;
+
+    const embedUrl = getVideoEmbedUrl(url);
+    if (!embedUrl) {
+      toast.error('Invalid video URL. Use YouTube or Vimeo links.');
+      return;
+    }
+
+    if (images.length > 0) {
+      toast.error('Remove images first to add a video');
+      return;
+    }
+
+    setVideoUrl(embedUrl);
+    setMediaPickerOpen(false);
+    toast.success('Video link added!');
+  };
+
+  const handleVideoFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (images.length > 0) {
+      toast.error('Remove images first to add a video');
+      e.target.value = '';
+      return;
+    }
+
+    if (videoUrl) {
+      toast.error('Remove video URL first to upload a file');
+      e.target.value = '';
+      return;
+    }
+
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Video must be under 50MB');
+      e.target.value = '';
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setMediaPickerOpen(false);
+    toast.success('Video selected! Will upload when you post.');
+    e.target.value = '';
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideoFile(null);
+    setVideoPreview('');
+    setVideoUrl('');
+  };
+
   const handleSubmit = async () => {
-    if (!text.trim() && images.length === 0) {
-      toast.error('Write something or add an image');
+    if (!text.trim() && images.length === 0 && !videoUrl && !videoFile) {
+      toast.error('Write something or add media');
       return;
     }
 
     setPosting(true);
     try {
-      let uploadedUrls = [];
+      let uploadedImages = [];
       if (images.length > 0) {
         setUploading(true);
-        uploadedUrls = await Promise.all(images.map((img) => uploadImage(img)));
-        setUploading(false);
+        uploadedImages = await Promise.all(images.map((img) => uploadImage(img)));
       }
+
+      let finalVideoUrl = videoUrl;
+      if (videoFile) {
+        setUploading(true);
+        const result = await uploadVideo(videoFile);
+        finalVideoUrl = result.url;
+      }
+
+      setUploading(false);
 
       const data = await apiFetch('/api/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorEmail, text: text.trim(), images: uploadedUrls, category }),
+        body: JSON.stringify({
+          authorEmail,
+          text: text.trim(),
+          images: uploadedImages,
+          videoUrl: finalVideoUrl || '',
+          category,
+        }),
       });
 
       toast.success('Post published!');
       setText('');
       setImages([]);
       setPreviews([]);
+      removeVideo();
       setCategory('General');
       setIsOpen(false);
       if (onPostCreated) onPostCreated(data.post);
@@ -120,6 +205,8 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
       </div>
     );
   };
+
+  const hasMedia = images.length > 0 || videoUrl || videoFile;
 
   return (
     <>
@@ -209,6 +296,7 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                   )}
                 </div>
 
+                {/* Image Previews */}
                 {previews.length > 0 && (
                   <div className={`grid gap-2 mt-4 ${previews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                     {previews.map((src, i) => (
@@ -224,28 +312,180 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                     ))}
                   </div>
                 )}
+
+                {/* Video URL Preview */}
+                {videoUrl && !videoFile && (
+                  <div className="mt-4 relative">
+                    <div className="rounded-xl overflow-hidden bg-black">
+                      {videoUrl.includes('youtube.com/embed') || videoUrl.includes('player.vimeo.com') ? (
+                        <iframe
+                          src={videoUrl}
+                          className="w-full h-48 sm:h-56"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={videoUrl} controls className="w-full h-48 sm:h-56 object-cover" />
+                      )}
+                    </div>
+                    <button
+                      onClick={removeVideo}
+                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Video File Preview */}
+                {videoFile && videoPreview && (
+                  <div className="mt-4 relative">
+                    <div className="rounded-xl overflow-hidden bg-black">
+                      <video src={videoPreview} controls className="w-full h-48 sm:h-56 object-cover" />
+                    </div>
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded-lg text-white text-[10px]">
+                      {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                    </div>
+                    <button
+                      onClick={removeVideo}
+                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Video URL Input */}
+                {mediaPickerOpen === 'url' && !videoUrl && !videoFile && (
+                  <div className="mt-4 flex gap-2">
+                    <input
+                      ref={videoUrlRef}
+                      type="url"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="Paste YouTube or Vimeo URL..."
+                      className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                      onKeyDown={(e) => e.key === 'Enter' && handleVideoUrlSubmit()}
+                    />
+                    <button
+                      onClick={handleVideoUrlSubmit}
+                      className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {/* Bottom Bar */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-t border-zinc-200 dark:border-zinc-800">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
-                >
-                  <FiImage size={20} className="text-green-500" />
-                  <span>Photo/Video</span>
-                </button>
+                {/* Media Picker Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setMediaPickerOpen(mediaPickerOpen ? false : 'menu')}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+                  >
+                    <FiImage size={20} className="text-green-500" />
+                    <span className="hidden sm:inline">Photo/Video</span>
+                  </button>
+
+                  {/* Media Picker Dropdown */}
+                  <AnimatePresence>
+                    {mediaPickerOpen === 'menu' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full left-0 mb-2 bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-700 py-2 w-56 z-10"
+                      >
+                        <button
+                          onClick={() => {
+                            if (videoUrl || videoFile) {
+                              toast.error('Remove video first to add images');
+                              setMediaPickerOpen(false);
+                              return;
+                            }
+                            imageInputRef.current?.click();
+                            setMediaPickerOpen(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <FiImage size={18} className="text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-semibold">Image</p>
+                            <p className="text-[11px] text-zinc-400">Upload photos (max 4)</p>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (images.length > 0) {
+                              toast.error('Remove images first to add video');
+                              setMediaPickerOpen(false);
+                              return;
+                            }
+                            setMediaPickerOpen('url');
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <FiLink size={18} className="text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-semibold">Paste Video URL</p>
+                            <p className="text-[11px] text-zinc-400">YouTube or Vimeo link</p>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (images.length > 0) {
+                              toast.error('Remove images first to upload video');
+                              setMediaPickerOpen(false);
+                              return;
+                            }
+                            videoInputRef.current?.click();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <FiVideo size={18} className="text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-semibold">Upload Video</p>
+                            <p className="text-[11px] text-zinc-400">MP4, MOV, WebM (max 50MB)</p>
+                          </div>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Hidden File Inputs */}
                 <input
-                  ref={fileInputRef}
+                  ref={imageInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   multiple
                   onChange={handleImageSelect}
                   className="hidden"
                 />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/mov,video/webm,video/quicktime"
+                  onChange={handleVideoFileSelect}
+                  className="hidden"
+                />
 
+                {/* Post Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={posting || (!text.trim() && images.length === 0)}
+                  disabled={posting || (!text.trim() && !hasMedia)}
                   className="flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
                 >
                   {posting ? (
