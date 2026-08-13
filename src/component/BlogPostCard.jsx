@@ -372,6 +372,19 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
           )}
         </div>
 
+        {post.category && post.category !== 'General' && (
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px] font-semibold">
+              {post.category}
+            </span>
+            {(post.tags || []).map((tag) => (
+              <span key={tag} className="inline-flex items-center px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md text-[10px] font-medium">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {post.text && (
           <p className="text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap text-sm sm:text-base leading-relaxed mb-4">
             {post.text}

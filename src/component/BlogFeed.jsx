@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import CreatePost from './CreatePost';
 import BlogPostCard from './BlogPostCard';
+import BlogSidebar from './BlogSidebar';
 
 function SkeletonCard() {
   return (
@@ -32,10 +33,13 @@ export default function BlogFeed({ currentUserEmail }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialFetched, setInitialFetched] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const fetchPosts = useCallback(async (pageNum, append = false) => {
+  const fetchPosts = useCallback(async (pageNum, append = false, category = 'All') => {
     try {
-      const data = await apiFetch(`/api/blog?page=${pageNum}&limit=10`, {
+      const params = new URLSearchParams({ page: String(pageNum), limit: '10' });
+      if (category && category !== 'All') params.set('category', category);
+      const data = await apiFetch(`/api/blog?${params.toString()}`, {
         headers: { 'x-user-email': currentUserEmail || '' },
       });
       if (append) {
@@ -52,16 +56,27 @@ export default function BlogFeed({ currentUserEmail }) {
   useEffect(() => {
     if (initialFetched) return;
     setLoading(true);
-    fetchPosts(1).then(() => {
+    fetchPosts(1, false, selectedCategory).then(() => {
       setLoading(false);
       setInitialFetched(true);
     });
-  }, [fetchPosts, initialFetched]);
+  }, [fetchPosts, initialFetched, selectedCategory]);
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
+    setPage(1);
+    setLoading(true);
+    setInitialFetched(false);
+    fetchPosts(1, false, cat).then(() => {
+      setLoading(false);
+      setInitialFetched(true);
+    });
+  };
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
     const nextPage = page + 1;
-    await fetchPosts(nextPage, true);
+    await fetchPosts(nextPage, true, selectedCategory);
     setPage(nextPage);
     setLoadingMore(false);
   };
@@ -84,63 +99,88 @@ export default function BlogFeed({ currentUserEmail }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-1">Blog</h1>
           <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">Share your knowledge and insights with the community</p>
         </div>
 
-        <div className="mb-5 sm:mb-6">
-          <CreatePost authorEmail={currentUserEmail} onPostCreated={handlePostCreated} />
-        </div>
-
-        {loading ? (
-          <div className="space-y-5 sm:space-y-6">
-            {[1, 2, 3].map((i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-20 sm:py-24">
-            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-              <span className="text-3xl">✍️</span>
-            </div>
-            <p className="text-zinc-700 dark:text-zinc-300 text-lg sm:text-xl font-semibold">No posts yet</p>
-            <p className="text-zinc-400 dark:text-zinc-500 text-sm sm:text-base mt-2">Be the first to share something with the community!</p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-5 sm:space-y-6">
-              {posts.map((post) => (
-                <BlogPostCard
-                  key={post._id}
-                  post={post}
-                  currentUserEmail={currentUserEmail}
-                  onDelete={handleDelete}
-                />
-              ))}
+        <div className="flex gap-6 items-start">
+          {/* Main Feed */}
+          <div className="flex-1 min-w-0 max-w-2xl">
+            <div className="mb-5 sm:mb-6">
+              <CreatePost authorEmail={currentUserEmail} onPostCreated={handlePostCreated} />
             </div>
 
-            {hasNext && (
-              <div className="mt-6 sm:mt-8 text-center">
+            {selectedCategory !== 'All' && (
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Showing:</span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{selectedCategory}</span>
                 <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="px-8 py-3 text-sm sm:text-base font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all disabled:opacity-50 border border-blue-200 dark:border-blue-800"
+                  onClick={() => handleCategoryChange('All')}
+                  className="text-xs text-zinc-400 hover:text-red-500 transition-colors"
                 >
-                  {loadingMore ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
-                      Loading...
-                    </span>
-                  ) : (
-                    'Load more posts'
-                  )}
+                  ✕ Clear
                 </button>
               </div>
             )}
-          </>
-        )}
+
+            {loading ? (
+              <div className="space-y-5 sm:space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-20 sm:py-24">
+                <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center">
+                  <span className="text-3xl">✍️</span>
+                </div>
+                <p className="text-zinc-700 dark:text-zinc-300 text-lg sm:text-xl font-semibold">No posts yet</p>
+                <p className="text-zinc-400 dark:text-zinc-500 text-sm sm:text-base mt-2">Be the first to share something with the community!</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-5 sm:space-y-6">
+                  {posts.map((post) => (
+                    <BlogPostCard
+                      key={post._id}
+                      post={post}
+                      currentUserEmail={currentUserEmail}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+
+                {hasNext && (
+                  <div className="mt-6 sm:mt-8 text-center">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="px-8 py-3 text-sm sm:text-base font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all disabled:opacity-50 border border-blue-200 dark:border-blue-800"
+                    >
+                      {loadingMore ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                          Loading...
+                        </span>
+                      ) : (
+                        'Load more posts'
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <BlogSidebar
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            currentUserEmail={currentUserEmail}
+          />
+        </div>
       </div>
     </div>
   );

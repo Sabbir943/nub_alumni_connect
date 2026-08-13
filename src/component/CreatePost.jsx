@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiImage, FiX, FiSend } from 'react-icons/fi';
+import { FiImage, FiX, FiSend, FiChevronDown } from 'react-icons/fi';
 import { uploadImage } from '@/lib/upload';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
+
+const CATEGORIES = ['General', 'Career Advice', 'Technology', 'Events', 'Job Opportunities', 'Academic', 'Networking'];
 
 export default function CreatePost({ authorEmail, onPostCreated }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +17,8 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [category, setCategory] = useState('General');
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -78,13 +82,14 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
       const data = await apiFetch('/api/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorEmail, text: text.trim(), images: uploadedUrls }),
+        body: JSON.stringify({ authorEmail, text: text.trim(), images: uploadedUrls, category }),
       });
 
       toast.success('Post published!');
       setText('');
       setImages([]);
       setPreviews([]);
+      setCategory('General');
       setIsOpen(false);
       if (onPostCreated) onPostCreated(data.post);
     } catch (error) {
@@ -176,6 +181,33 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                   className="w-full min-h-[120px] sm:min-h-[140px] resize-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-base sm:text-lg outline-none leading-relaxed"
                   autoFocus
                 />
+
+                <div className="mt-3 relative">
+                  <button
+                    onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    📁 {category}
+                    <FiChevronDown size={14} />
+                  </button>
+                  {showCategoryPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-1 z-10 w-48">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => { setCategory(cat); setShowCategoryPicker(false); }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            category === cat
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                              : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {previews.length > 0 && (
                   <div className={`grid gap-2 mt-4 ${previews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>

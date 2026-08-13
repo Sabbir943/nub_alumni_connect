@@ -9,8 +9,14 @@ export async function GET(request) {
     const authorEmail = searchParams.get('authorEmail');
     const skip = (page - 1) * limit;
 
+    const category = searchParams.get('category');
+    const tag = searchParams.get('tag');
+
     const posts = await getCollection('blog_posts');
-    const filter = authorEmail ? { authorEmail } : {};
+    const filter = {};
+    if (authorEmail) filter.authorEmail = authorEmail;
+    if (category && category !== 'All') filter.category = category;
+    if (tag) filter.tags = tag;
 
     const [items, total] = await Promise.all([
       posts.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
@@ -49,7 +55,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { authorEmail, text, images } = await request.json();
+    const { authorEmail, text, images, category, tags } = await request.json();
 
     if (!authorEmail || !text) {
       return NextResponse.json({ success: false, message: 'Author email and text are required.' }, { status: 400 });
@@ -58,6 +64,10 @@ export async function POST(request) {
     if (images && images.length > 4) {
       return NextResponse.json({ success: false, message: 'Maximum 4 images allowed.' }, { status: 400 });
     }
+
+    const CATEGORIES = ['Career Advice', 'Technology', 'Events', 'General', 'Job Opportunities', 'Academic', 'Networking'];
+    const validCategory = CATEGORIES.includes(category) ? category : 'General';
+    const validTags = Array.isArray(tags) ? tags.filter((t) => typeof t === 'string' && t.trim()).slice(0, 5) : [];
 
     const profile = await findProfileByEmail(authorEmail);
     const authorName = profile?.name || authorEmail.split('@')[0];
@@ -69,6 +79,8 @@ export async function POST(request) {
       authorAvatar,
       text,
       images: images || [],
+      category: validCategory,
+      tags: validTags,
       reactions: { like: [], dislike: [], angry: [], haha: [] },
       commentCount: 0,
       shares: 0,
