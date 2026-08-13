@@ -79,6 +79,11 @@ const SignUpPage = () => {
       return;
     }
 
+    if (!formData.photoUrl) {
+      toast.error('Profile photo is required.');
+      return;
+    }
+
     setLoading(true);
     try {
       const signUpData = {
@@ -166,7 +171,7 @@ const SignUpPage = () => {
 
           {/* Photo Upload field */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Profile Photo</label>
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Profile Photo <span className="text-red-500">*</span></label>
             <div className="relative">
               {preview || formData.photoUrl ? (
                 <div className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">

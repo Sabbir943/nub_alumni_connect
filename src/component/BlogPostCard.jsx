@@ -376,7 +376,22 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
               )}
             </div>
             <div>
-              <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{post.authorName}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{post.authorName}</p>
+                {post.authorRole && (
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${
+                      post.authorRole === 'Admin'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                        : post.authorRole === 'Alumni'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                    }`}
+                  >
+                    {post.authorRole}
+                  </span>
+                )}
+              </div>
               <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">{timeAgo(post.createdAt)}</p>
             </div>
           </div>

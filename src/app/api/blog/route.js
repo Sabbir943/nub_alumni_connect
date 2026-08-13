@@ -57,8 +57,14 @@ export async function POST(request) {
   try {
     const { authorEmail, text, images, videoUrl, category, tags } = await request.json();
 
-    if (!authorEmail || !text) {
-      return NextResponse.json({ success: false, message: 'Author email and text are required.' }, { status: 400 });
+    const hasMedia = (images && images.length > 0) || !!videoUrl;
+
+    if (!authorEmail) {
+      return NextResponse.json({ success: false, message: 'Author email is required.' }, { status: 400 });
+    }
+
+    if (!text && !hasMedia) {
+      return NextResponse.json({ success: false, message: 'Post must include text or media.' }, { status: 400 });
     }
 
     if (images && images.length > 4) {
@@ -77,10 +83,15 @@ export async function POST(request) {
     const authorName = profile?.name || authorEmail.split('@')[0];
     const authorAvatar = profile?.profilePictureUrl || null;
 
+    const userCol = await getCollection('user');
+    const userDoc = await userCol.findOne({ email: authorEmail }, { projection: { role: 1 } });
+    const authorRole = userDoc?.role || (profile?._source === 'student' ? 'Student' : 'Alumni');
+
     const newPost = {
       authorEmail,
       authorName,
       authorAvatar,
+      authorRole,
       text,
       images: images || [],
       videoUrl: videoUrl || '',

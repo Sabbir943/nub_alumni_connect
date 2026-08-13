@@ -145,6 +145,10 @@ export default function StudentProfileForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.profilePictureUrl) {
+      setStatus({ type: 'error', message: 'Profile photo is required.' });
+      return;
+    }
     setLoading(true);
     setStatus({ type: '', message: '' });
 
@@ -386,11 +390,12 @@ export default function StudentProfileForm() {
               </motion.div>
 
               <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Department</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Department *</label>
                 <div className="relative group">
                   <FaGraduationCap className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                   <select
                     name="department"
+                    required
                     value={formData.department}
                     onChange={handleChange}
                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all appearance-none cursor-pointer"
@@ -409,10 +414,11 @@ export default function StudentProfileForm() {
             {/* Row 3: Semester + Batch */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Semester / Year</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Semester / Year *</label>
                 <input
                   type="text"
                   name="semester"
+                  required
                   value={formData.semester}
                   onChange={handleChange}
                   placeholder="e.g. 8th Semester"
@@ -421,10 +427,11 @@ export default function StudentProfileForm() {
               </motion.div>
 
               <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Batch</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Batch *</label>
                 <input
                   type="text"
                   name="batch"
+                  required
                   value={formData.batch}
                   onChange={handleChange}
                   placeholder="e.g. 211"
@@ -436,12 +443,13 @@ export default function StudentProfileForm() {
             {/* Row 4: Phone + Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <motion.div custom={6} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number *</label>
                 <div className="relative group">
                   <FaPhone className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     type="text"
                     name="phone"
+                    required
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+8801700000000"
@@ -451,12 +459,13 @@ export default function StudentProfileForm() {
               </motion.div>
 
               <motion.div custom={7} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Location</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Location *</label>
                 <div className="relative group">
                   <FaMapMarkerAlt className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     type="text"
                     name="location"
+                    required
                     value={formData.location}
                     onChange={handleChange}
                     placeholder="e.g. Dhaka, Bangladesh"
@@ -501,7 +510,7 @@ export default function StudentProfileForm() {
 
             {/* Profile Image Upload */}
             <motion.div custom={10} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profile Photo</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profile Photo *</label>
               <div className="relative group">
                 <FaImage className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 {formData.profilePictureUrl ? (
@@ -529,12 +538,13 @@ export default function StudentProfileForm() {
 
             {/* Skills */}
             <motion.div custom={11} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Skills (Comma separated)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Skills (Comma separated) *</label>
               <div className="relative group">
                 <FaCode className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="text"
                   name="skills"
+                  required
                   value={formData.skills}
                   onChange={handleChange}
                   placeholder="React, Next.js, Node.js, Tailwind CSS"
@@ -554,10 +564,11 @@ export default function StudentProfileForm() {
 
             {/* Bio */}
             <motion.div custom={12} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Bio / About</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Bio / About *</label>
               <textarea
                 name="bio"
                 rows={4}
+                required
                 value={formData.bio}
                 onChange={handleChange}
                 placeholder="Write a brief summary about your background, interests, and goals..."
