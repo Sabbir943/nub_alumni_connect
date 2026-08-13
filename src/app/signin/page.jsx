@@ -32,6 +32,7 @@ const SignIn = () => {
       });
 
       if (error) {
+        console.error('Sign in error:', error);
         toast.error(error.message || 'Invalid email or password.');
         return;
       }

@@ -81,18 +81,32 @@ const SignUpPage = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await authClient.signUp.email({
+      const signUpData = {
         email: formData.email,
         password: formData.password,
         name: formData.name,
-        image: formData.photoUrl,
-        role: formData.role
-      });
+      };
+
+      if (formData.photoUrl) {
+        signUpData.image = formData.photoUrl;
+      }
+
+      const { data, error } = await authClient.signUp.email(signUpData);
 
       if (error) {
+        console.error('Sign up error:', error);
         toast.error(error.message || 'Registration failed. Try again.');
         return;
       }
+
+      // Set role on server side after successful signup
+      try {
+        await fetch('/api/auth/set-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, role: formData.role }),
+        });
+      } catch {}
 
       toast.success('Account registered successfully! Please sign in.');
       setTimeout(() => router.push('/signin'), 1500);
