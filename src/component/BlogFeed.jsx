@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiMenu, FiX } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 import CreatePost from './CreatePost';
 import BlogPostCard from './BlogPostCard';
@@ -34,6 +36,7 @@ export default function BlogFeed({ currentUserEmail }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialFetched, setInitialFetched] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchPosts = useCallback(async (pageNum, append = false, category = 'All') => {
     try {
@@ -71,6 +74,7 @@ export default function BlogFeed({ currentUserEmail }) {
       setLoading(false);
       setInitialFetched(true);
     });
+    setSidebarOpen(false);
   };
 
   const handleLoadMore = async () => {
@@ -100,9 +104,17 @@ export default function BlogFeed({ currentUserEmail }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-1">Blog</h1>
-          <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">Share your knowledge and insights with the community</p>
+        <div className="mb-6 sm:mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-1">Blog</h1>
+            <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">Share your knowledge and insights with the community</p>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <FiMenu size={20} className="text-zinc-600 dark:text-zinc-400" />
+          </button>
         </div>
 
         <div className="flex gap-6 items-start">
@@ -174,7 +186,7 @@ export default function BlogFeed({ currentUserEmail }) {
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Desktop */}
           <BlogSidebar
             selectedCategory={selectedCategory}
             onCategoryChange={handleCategoryChange}
@@ -182,6 +194,46 @@ export default function BlogFeed({ currentUserEmail }) {
           />
         </div>
       </div>
+
+      {/* Sidebar - Mobile Drawer */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-y-0 right-0 w-[320px] max-w-[85vw] bg-zinc-50 dark:bg-zinc-950 z-50 lg:hidden overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+                <h2 className="font-bold text-lg text-zinc-900 dark:text-white">Blog Menu</h2>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                <BlogSidebar
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={handleCategoryChange}
+                  currentUserEmail={currentUserEmail}
+                  isMobile
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
