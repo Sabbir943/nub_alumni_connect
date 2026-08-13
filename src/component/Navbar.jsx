@@ -60,12 +60,12 @@ const Navbar = () => {
     { label: 'Home', href: '/', icon: <FiCompass className="w-4 h-4" /> },
     { label: 'Alumni Directory', href: '/alumni-directory', icon: <FiUsers className="w-4 h-4" /> },
     { label: 'Student Directory', href: '/student-directory', icon: <GraduationCap className="w-4 h-4" /> },
-    { label: 'Blog', href: '/blog', icon: <FiFileText className="w-4 h-4" /> },
   ];
 
   const privateLinks = [
     { label: 'Job Board', href: '/job-portal', icon: <FiBriefcase className="w-4 h-4" /> },
     { label: 'Notice Board', href: '/notice', icon: <FiBookOpen className="w-4 h-4" /> },
+    { label: 'Blog', href: '/blog', icon: <FiFileText className="w-4 h-4" /> },
   ];
 
   const isActive = (path) => pathname === path;

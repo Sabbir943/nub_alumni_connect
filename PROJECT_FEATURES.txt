@@ -1,0 +1,62 @@
+NUB Alumni Connect — Main Features Document
+System Architecture & Technical Overview
+Tech Stack: Next.js 16 App Router | MongoDB | Better Auth | Socket.IO | WebRTC
+1. Authentication & Access Control
+Email/Password Registration: Complete user onboarding supporting name, email, password, profile photo, and role selection.
+Google OAuth Sign-In: One-click single sign-on authentication with automatic account creation.
+Role-Based Access Control (RBAC): Granular permissions tailored specifically for Student, Alumni, and Admin roles.
+Session Management: Secure, stateful session handling with client-side polling and redirect protection.
+2. Alumni Directory
+Advanced Search & Filtering: Filter alumni by degree, graduation year, location, skills, and current employer.
+Profile Detail Modals: Comprehensive profile views displaying career history, contact options, and skills.
+AI-Powered Profile Verification: Verification badges backed by OpenAI analysis of linked professional profiles.
+Direct Engagement: Quick-action buttons to instantly follow or message alumni directly from their directory profile.
+3. Student Directory
+Directory Filtering: Search active students filtered by department, semester, batch, skills, and location.
+Student Profile Modals: Modal views highlighting student academic background, personal projects, and technical skills.
+Verification System: AI-assisted student profile verification status.
+4. Blog & Social Feed
+Content Creation: Rich text posts supporting multi-image uploads via IMGBB API integration.
+Categorization: Filterable feed organized by topics (e.g., Career Advice, Technology, Events, Job Opportunities, Academic, Networking).
+Interactive Reactions & Comments: Emoji reaction engine (Like, Dislike, Angry, Haha) and threaded nested comment replies.
+Social Sharing: Native modal to share posts directly to Facebook, Twitter, WhatsApp, LinkedIn, or copy link.
+5. Direct Messaging
+Real-Time Chat: Instant messaging for both alumni and students with dynamic conversation lists.
+Messaging Features: Includes full message history, unread summaries, read receipts, contextual date dividers, and image attachments.
+Conversation Search: Fast inline search across existing chat threads.
+6. Audio & Video Calling
+Peer-to-Peer WebRTC Calls: Low-latency audio/video calling supported by Google STUN servers.
+Call Controls: Full-screen overlay featuring video streams, audio mute/unmute, camera toggle, and end call controls.
+Real-Time Signaling & Audio: Socket.IO signaling with custom Web Audio API ringtones and incoming call modal overlays.
+7. Notification System
+Notification Center: Dedicated dashboard page for tracking all personal alerts.
+Real-Time Badges: Unread notification counter badge on the sidebar refreshed via background polling.
+Multi-Trigger Support: Alerts for new followers, direct messages, incoming calls, and mentorship status updates.
+8. Follow System
+Social Networking: Follow/unfollow mechanics triggering instant target notifications.
+My Connections: Dedicated manager for followed profiles with quick-message access.
+9. Job Portal
+Public Job Listings: Filterable job board supporting full-time, part-time, remote, hybrid, and contract filters.
+Employer Tools (Alumni Only): Alumni can post, edit, and manage job openings.
+Student Application Hub: Integrated browsing portal for students with detailed job requirements, compensation, and deadlines.
+10. Mentorship System
+Mentorship Hub (Alumni): Interface for alumni to review, accept, decline, or mark mentorship requests as complete.
+Student Requests (Students): Browse opted-in alumni mentors and track application statuses.
+Automated Updates: Instant system notifications dispatched upon state changes.
+11. Admin Dashboard
+User Management: Administrative controls to inspect users, modify roles, or delete accounts.
+Content Moderation: Review user reports, manage site notices, and organize platform events/reunions.
+System Metrics: Analytics overview featuring system stat cards, charts, and platform activity feeds.
+12. AI Chatbot
+Global Floating Assistant: Minimizeable chat widget accessible on every page.
+OpenAI Integration: Automated query answering, directory searches, and navigation guidance.
+13. Notice Board
+Public Announcements: Dedicated notice page displaying admin-created notices.
+Priority Highlights: Visual distinction for urgent and pinned university/network announcements.
+14. Responsive Dashboard Layout
+Role-Aware Navigation: Dynamic sidebar featuring unread badges and mobile drawer navigation.
+App Lifecycle: Animated splash screen on startup and automatic role-based URL redirection.
+15. Profile Management
+Alumni Profile Editor: Manage job title, organization, degree, graduation year, skills, social links, and mentor availability.
+Student Profile Editor: Update department, semester, batch, personal bio, and tech stack.
+Image Uploads: Avatar upload functionality integrated via IMGBB.
