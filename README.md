@@ -8,6 +8,22 @@ A full-stack web platform for professional networking, mentorship, job discovery
 
 ## Features
 
+### Blog & Social Feed
+
+- **Blog Feed** — Paginated feed of posts with category filtering, skeleton loading, and "load more" pagination
+- **Create Post** — Text + media composer with category selector (General, Career Advice, Technology, Events, Job Opportunities, Academic, Networking)
+- **3-Option Media Picker** — When clicking Photo/Video, choose from:
+  1. **Image** — Upload up to 4 photos (via IMGBB)
+  2. **Paste Video URL** — YouTube/Vimeo links embedded as iframe players
+  3. **Upload Video File** — MP4/MOV/WebM up to 50MB (via Cloudinary signed upload)
+- **Reactions** — Like, dislike, angry, haha with per-user tracking and emoji picker
+- **Threaded Comments** — Nested replies, delete own comments, reply to replies
+- **Share Modal** — Facebook-style dialog with post preview, write-your-own message, and buttons for Facebook, Twitter, WhatsApp, LinkedIn, and Copy Link
+- **"See more" Truncation** — Long posts (>3.5 lines) collapse with a "See more" toggle like Facebook
+- **Delete Own Posts** — With confirmation modal
+- **Blog Sidebar** — Categories filter, trending posts, top contributors, recent activity, popular tags, quick links (alumni/student/admin dashboards), and about section. Slide-out drawer on mobile
+- Blog link shown only to **logged-in users** in navbar and both dashboard sidebars
+
 ### Core
 
 - **Alumni Directory** — Search and filter graduates by name, department, batch, graduation year, company, designation, and location
@@ -20,25 +36,25 @@ A full-stack web platform for professional networking, mentorship, job discovery
 
 - **AI Profile Verification** — OpenAI GPT-4o-mini analyzes alumni and student profiles, assigning a trust score (0-100) with verification badges
 - **AI Job Verification** — Validates job posting links (HTTP HEAD checks), scores quality (completeness, quality, consistency, freshness), and flags suspicious content
-- **AI Chatbot** — Floating chat widget on all pages with NUB-focused system prompt and rule-based fallback when OpenAI is unavailable
+- **AI Chatbot** — Floating chat widget on all pages with NUB-focused system prompt, directory search, and rule-based fallback when OpenAI is unavailable
 
 ### Communication
 
 - **Audio Calls** — Peer-to-peer WebRTC audio calls with ringing, connect, decline, and end sound effects
 - **Video Calls** — Peer-to-peer WebRTC video calls with local/remote streams, picture-in-picture local video, toggle audio/video
-- **Private Messaging** — Direct messages between users with image sharing and unread message summaries
-- **Notifications** — Real-time notifications for follows, messages, admin notices, and calls with mark-as-read
+- **Private Messaging** — Direct messages between users with image sharing, read receipts, date dividers, and unread message summaries
+- **Notifications** — Real-time notifications for follows, messages, admin notices, calls, and mentorship status changes with mark-as-read
 
 ### Social
 
-- **Follow System** — Follow/unfollow users, view followers and following lists with real-time counts
+- **Follow System** — Follow/unfollow users, view connections with follower/following counts
 - **Mentorship System** — Students request mentorship from alumni; alumni accept, decline, or mark complete. Request video calls with active mentors
 
 ### Dashboard
 
-- **Alumni Dashboard** — Profile management, job posting, job management, connections, messaging, mentorship hub
-- **Student Dashboard** — Profile creation, job browsing, connections, messaging, mentorship tracking
-- **Admin Dashboard** — User management, reported content, notices CRUD, events/reunion management
+- **Alumni Dashboard** — Overview, profile management, job posting/management, connections, messaging, mentorship hub, notifications
+- **Student Dashboard** — Overview, profile creation, job browsing, connections, messaging, mentorship tracking, notifications
+- **Admin Dashboard** — Overview stats, user management, reported content, notices CRUD, events/reunion management
 
 ---
 
@@ -58,6 +74,7 @@ A full-stack web platform for professional networking, mentorship, job discovery
 | AI | OpenAI GPT-4o-mini |
 | Real-time | WebRTC (peer-to-peer), Socket.IO (signaling) |
 | Image Hosting | IMGBB API |
+| Video Hosting | Cloudinary (signed uploads) |
 | Compiler | React Compiler (enabled) |
 
 ---
@@ -69,6 +86,7 @@ A full-stack web platform for professional networking, mentorship, job discovery
 - Node.js 18+
 - MongoDB database (local or Atlas)
 - OpenAI API key (optional — AI features fall back to rule-based scoring)
+- Cloudinary account (required only for video file uploads)
 
 ### Installation
 
@@ -88,7 +106,10 @@ BETTER_AUTH_SECRET=your-secret-key
 MONGODB_URI=mongodb://localhost:27017/nub_alumni
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+OPENAI_API_KEY=your-openai-api-key
 NEXT_PUBLIC_IMGBB_API_KEY=your-imgbb-api-key
+CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 ADMIN_EMAIL=admin@nub.edu.bd
 ADMIN_PASSWORD=your-admin-password
 DB_NAME=nub_alumni
@@ -97,10 +118,16 @@ SOCKET_PORT=3001
 CORS_ORIGIN=http://localhost:3000
 ```
 
+> Note: `CLOUDINARY_URL` and `CLOUDINARY_API_SECRET` are read **server-side only** (the client gets credentials via the `/api/blog/video-sign` endpoint).
+
 ### Run
 
 ```bash
+# Terminal 1 — Next.js dev server
 npm run dev
+
+# Terminal 2 — Socket.IO signaling server (for calls)
+npm run socket-server
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
@@ -118,6 +145,7 @@ src/
 │   ├── globals.css                # Global styles
 │   ├── signin/page.jsx            # Sign in
 │   ├── signup/page.jsx            # Sign up
+│   ├── blog/page.js               # Blog feed
 │   ├── alumni-directory/page.jsx  # Alumni directory
 │   ├── student-directory/page.jsx # Student directory
 │   ├── job-portal/
@@ -163,29 +191,35 @@ src/
 │   ├── ImpactSection.jsx          # Homepage impact stats
 │   ├── HighlightReviews.jsx       # Homepage reviews
 │   ├── LatestJobOpenings.jsx      # Homepage job previews
+│   ├── CreatePost.jsx             # Blog post composer + media picker
+│   ├── BlogFeed.jsx               # Blog feed with sidebar layout
+│   ├── BlogPostCard.jsx           # Post card (reactions, comments, share)
+│   ├── BlogSidebar.jsx            # Blog sidebar (7 sections)
 │   ├── DashboardLayout.jsx        # Dashboard sidebar layout
 │   ├── DashboardSplash.jsx        # Dashboard loading state
-│   ├── CallContext.jsx             # Global call state + WebRTC
+│   ├── CallContext.jsx            # Global call state + WebRTC
 │   ├── CallOverlay.jsx            # Call UI (video/audio)
 │   └── GlobalIncomingCall.jsx     # Incoming call popup
 ├── lib/
 │   ├── api.js                     # apiFetch wrapper (checks res.ok)
 │   ├── auth.js                    # Server-side auth config
 │   ├── auth-client.js             # Client-side auth config
-│   ├── mongodb.js                 # MongoDB connection
+│   ├── mongodb.js                 # MongoDB connection + helpers
 │   ├── verify.js                  # AI profile analysis
-│   ├── upload.js                  # IMGBB image upload
+│   ├── upload.js                  # IMGBB image upload + Cloudinary video
 │   ├── ringtone.js                # Web Audio call sounds
-│   ├── useSocket.js               # Socket.IO hook (unused)
-│   └── useWebRTC.js               # WebRTC hook (unused)
+│   ├── useSocket.js               # Socket.IO hook
+│   └── useWebRTC.js               # WebRTC hook
 └── app/api/
     ├── auth/[...all]/route.js     # Better Auth catch-all
+    ├── auth/set-role/route.js     # Assign role after signup
     ├── verify-profile/route.js    # AI profile verification
     ├── chat/route.js              # AI chatbot streaming
     ├── contact/route.js           # Contact form
     ├── alumni-directory/          # Alumni CRUD + check
     ├── students/                  # Student CRUD + check
     ├── student-directory/         # Public student directory
+    ├── blog/                      # Blog CRUD, reactions, comments, share, trending, contributors, activity, video-sign
     ├── jobs/                      # Jobs CRUD + verification
     ├── follow/                    # Follow/unfollow + stats
     ├── messages/                  # Send, conversation, unread
@@ -203,6 +237,21 @@ src/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | * | `/api/auth/*` | Better Auth catch-all (sign in, sign up, session, Google OAuth) |
+| POST | `/api/auth/set-role` | Set Student/Alumni role after signup |
+
+### Blog
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/blog` | List (filter by category/tag) / create posts |
+| GET/DELETE | `/api/blog/[id]` | Get single / delete post |
+| POST | `/api/blog/[id]/reactions` | Toggle reaction (like, dislike, angry, haha) |
+| GET/POST | `/api/blog/[id]/comments` | List threaded comments / add comment or reply |
+| DELETE | `/api/blog/[id]/comments/[commentId]` | Delete a comment |
+| POST | `/api/blog/share` | Increment share count |
+| GET | `/api/blog/trending` | Top posts by reactions |
+| GET | `/api/blog/contributors` | Most active users |
+| GET | `/api/blog/activity` | Recent comment activity |
+| POST | `/api/blog/video-sign` | Cloudinary upload signature |
 
 ### Profiles
 | Method | Endpoint | Description |
@@ -293,9 +342,11 @@ src/
 | `alumni_directory` | Alumni profiles (degree, batch, company, etc.) |
 | `students` | Student profiles (department, batch, etc.) |
 | `jobs` | Job postings with verification data |
+| `blog_posts` | Blog posts (text, images, videoUrl, category, tags, reactions, commentCount, shares) |
+| `blog_comments` | Blog comments with threaded replies (parentId) |
 | `follows` | User follow relationships |
 | `messages` | Direct messages between users |
-| `notifications` | Follow, message, admin, and call notifications |
+| `notifications` | Follow, message, admin, call, and mentorship notifications |
 | `calls` | WebRTC call records with signaling data |
 | `mentorships` | Mentorship requests between students and alumni |
 | `contacts` | Contact form submissions |
@@ -323,7 +374,23 @@ src/
 - Floating widget on all pages with streaming responses
 - NUB-focused system prompt for alumni network questions
 - Rule-based fallback when OpenAI API is unavailable
-- Suggested quick questions for common queries
+- Directory search by name returns profile summaries
+
+---
+
+## Media Upload
+
+### Images (IMGBB)
+- Up to 4 images per post, rendered in a responsive grid
+- Uses `NEXT_PUBLIC_IMGBB_API_KEY`
+
+### Videos (Cloudinary)
+- Two ways to add a video to a post:
+  1. **Paste URL** — YouTube/Vimeo links are embedded as iframe players
+  2. **Upload file** — MP4/MOV/WebM up to 50MB via signed upload
+- The `/api/blog/video-sign` endpoint generates a SHA-1 signature server-side
+- Client uploads directly to Cloudinary (cloud name + API key returned by the sign endpoint)
+- Images and video cannot be combined in a single post
 
 ---
 
