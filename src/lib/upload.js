@@ -1,5 +1,4 @@
 const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-const CLOUDINARY_URL = process.env.CLOUDINARY_URL;
 
 export async function uploadImage(file) {
   if (!IMGBB_API_KEY) {
@@ -24,14 +23,6 @@ export async function uploadImage(file) {
 }
 
 export async function uploadVideo(file) {
-  if (!CLOUDINARY_URL) {
-    throw new Error("Cloudinary URL is not configured. Set CLOUDINARY_URL in .env");
-  }
-
-  const cloudName = CLOUDINARY_URL.split('@')[1];
-  const apiKey = CLOUDINARY_URL.split('://')[1].split(':')[0];
-  const apiSecret = CLOUDINARY_URL.split(':')[2].split('@')[0];
-
   const timestamp = Math.round(Date.now() / 1000);
   const folder = 'nub_alumni/videos';
 
@@ -41,7 +32,12 @@ export async function uploadVideo(file) {
     body: JSON.stringify({ timestamp, folder }),
   });
 
-  const { signature } = await signatureRes.json();
+  if (!signatureRes.ok) {
+    const err = await signatureRes.json();
+    throw new Error(err.error || 'Failed to generate upload signature');
+  }
+
+  const { signature, cloudName, apiKey } = await signatureRes.json();
 
   const formData = new FormData();
   formData.append('file', file);
@@ -64,7 +60,7 @@ export async function uploadVideo(file) {
 
   return {
     url: data.secure_url,
-    thumbnail: data.secure_url.replace(/\.(mp4|mov|webm)$/, '.jpg').replace('/upload/', '/upload/w_600,h_400,c_fill/'),
+    thumbnail: data.secure_url.replace(/\.(mp4|mov|webm)$/, '.jpg'),
     duration: data.duration || 0,
   };
 }
