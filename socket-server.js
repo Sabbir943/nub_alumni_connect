@@ -11,6 +11,18 @@ const allowedOrigins = CORS_ORIGIN === '*'
   ? ['*']
   : CORS_ORIGIN.split(',').map((o) => o.trim());
 
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return true;
+  try {
+    const url = new URL(origin);
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+  } catch {
+    // ignore malformed origins
+  }
+  return false;
+}
+
 // Cache the database connection promise to avoid multiple simultaneous connection pools
 let dbPromise = null;
 
@@ -79,9 +91,19 @@ async function updateCallNotification(notificationId, updates) {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: isOriginAllowed,
     methods: ['GET', 'POST'],
   },
+});
+
+httpServer.on('clientError', (err, socket) => {
+  if (err && socket && !socket.destroyed) socket.destroy();
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Socket.IO] Uncaught exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Socket.IO] Unhandled rejection:', reason);
 });
 
 const activeCalls = new Map();
@@ -126,6 +148,9 @@ function broadcastOnlineUsers() {
 
 io.on('connection', (socket) => {
   console.log('[Socket.IO] User connected:', socket.id);
+  socket.on('error', (err) => {
+    console.error('[Socket.IO] Socket error:', err.message);
+  });
 
   // Use Socket.IO rooms for user identification (Supports multi-tab naturally)
   socket.on('join', (email) => {
