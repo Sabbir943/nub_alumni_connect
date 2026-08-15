@@ -7,6 +7,10 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'nub_alumni';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
+const allowedOrigins = CORS_ORIGIN === '*'
+  ? ['*']
+  : CORS_ORIGIN.split(',').map((o) => o.trim());
+
 // Cache the database connection promise to avoid multiple simultaneous connection pools
 let dbPromise = null;
 
@@ -25,7 +29,15 @@ const httpServer = http.createServer((req, res) => {
   if (req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', service: 'socket-server' }));
+    return;
   }
+  if (req.url === '/online-users') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ users: [...onlineUsers.keys()] }));
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'not found' }));
 });
 
 async function createCallNotification({ recipientEmail, callerEmail, callerName, callType }) {
@@ -67,12 +79,50 @@ async function updateCallNotification(notificationId, updates) {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
   },
 });
 
 const activeCalls = new Map();
+const onlineUsers = new Map(); // email -> active socket count (multi-tab safe)
+
+async function resolveOnlineProfiles(emails) {
+  if (!emails || emails.length === 0) return [];
+  const database = await connectDB();
+  const students = database.collection('students');
+  const alumni = database.collection('alumni_directory');
+  const users = database.collection('user');
+
+  const resolved = [];
+  for (const email of emails) {
+    try {
+      const student = await students.findOne({ email }, { projection: { fullName: 1, profilePictureUrl: 1 } });
+      const alumnus = student ? null : await alumni.findOne({ email }, { projection: { name: 1, profilePictureUrl: 1 } });
+      const userDoc = await users.findOne({ email }, { projection: { role: 1, name: 1, image: 1 } });
+
+      const name = student?.fullName || alumnus?.name || userDoc?.name || email.split('@')[0];
+      const avatar = student?.profilePictureUrl || alumnus?.profilePictureUrl || userDoc?.image || '';
+      const role = userDoc?.role || (student ? 'Student' : alumnus ? 'Alumni' : '');
+
+      resolved.push({ email, name, avatar, role });
+    } catch (err) {
+      resolved.push({ email, name: email.split('@')[0], avatar: '', role: '' });
+    }
+  }
+  return resolved;
+}
+
+function broadcastOnlineUsers() {
+  (async () => {
+    try {
+      const users = await resolveOnlineProfiles([...onlineUsers.keys()]);
+      io.emit('online-users', users);
+    } catch (err) {
+      console.error('[Socket.IO] online users broadcast error:', err.message);
+    }
+  })();
+}
 
 io.on('connection', (socket) => {
   console.log('[Socket.IO] User connected:', socket.id);
@@ -84,8 +134,10 @@ io.on('connection', (socket) => {
     socket.join(email);
     console.log(`[Socket.IO] User joined room: ${email} (${socket.id})`);
     
-    // Broadcast user online status
+    // Track online user and broadcast updated list
+    onlineUsers.set(email, (onlineUsers.get(email) || 0) + 1);
     io.emit('user-online', { email, online: true });
+    broadcastOnlineUsers();
   });
 
   socket.on('call-user', async ({ calleeEmail, callType }) => {
@@ -283,7 +335,11 @@ io.on('connection', (socket) => {
     // Check if user has any remaining active tab sockets connected
     const remainingSockets = io.sockets.adapter.rooms.get(email);
     if (!remainingSockets || remainingSockets.size === 0) {
+      const count = (onlineUsers.get(email) || 1) - 1;
+      if (count <= 0) onlineUsers.delete(email);
+      else onlineUsers.set(email, count);
       io.emit('user-online', { email, online: false });
+      broadcastOnlineUsers();
     }
 
     console.log(`[Socket.IO] Socket disconnected: ${email} (${socket.id})`);

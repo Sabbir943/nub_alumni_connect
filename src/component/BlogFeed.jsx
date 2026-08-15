@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api';
 import CreatePost from './CreatePost';
 import BlogPostCard from './BlogPostCard';
 import BlogSidebar from './BlogSidebar';
+import OnlineUsers from './OnlineUsers';
 
 function SkeletonCard() {
   return (
@@ -37,6 +38,7 @@ export default function BlogFeed({ currentUserEmail }) {
   const [initialFetched, setInitialFetched] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [othersCount, setOthersCount] = useState(0);
 
   const fetchPosts = useCallback(async (pageNum, append = false, category = 'All') => {
     try {
@@ -104,14 +106,49 @@ export default function BlogFeed({ currentUserEmail }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-1">Blog</h1>
-            <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400">Share your knowledge and insights with the community</p>
+        {/* Attractive Hero Header */}
+        <div className="relative mb-6 sm:mb-8 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 sm:p-10 shadow-xl shadow-indigo-500/20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.18),transparent_40%)]" />
+          <div className="absolute -bottom-16 -right-10 w-56 h-56 rounded-full bg-white/10" />
+          <div className="absolute -top-12 -left-8 w-40 h-40 rounded-full bg-white/5" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-semibold uppercase tracking-wide mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                Community Hub
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Campus Blog
+              </h1>
+              <p className="text-sm sm:text-base text-indigo-100 mt-2 max-w-lg">
+                Share your knowledge and insights with the NUB Alumni community
+              </p>
+            </div>
+            <div className="flex items-center gap-6 sm:gap-8 shrink-0">
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">{posts.length || '—'}</p>
+                <p className="text-[11px] sm:text-xs text-indigo-200 font-medium uppercase tracking-wider mt-0.5">Posts</p>
+              </div>
+              <div className="w-px h-10 bg-white/20" />
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">{othersCount}</p>
+                <p className="text-[11px] sm:text-xs text-indigo-200 font-medium uppercase tracking-wider mt-0.5">Online</p>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Online Users Strip */}
+        <div className="mb-6 sm:mb-8">
+          <OnlineUsers currentUserEmail={currentUserEmail} onUsersChange={setOthersCount} />
+        </div>
+
+        {/* Mobile menu bar */}
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Browse the community</p>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+            className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
           >
             <FiMenu size={20} className="text-zinc-600 dark:text-zinc-400" />
           </button>

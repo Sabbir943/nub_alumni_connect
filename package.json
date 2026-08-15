@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "socket-server": "node socket-server.js"
+    "socket-server": "node --env-file=.env socket-server.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.23",
