@@ -38,6 +38,7 @@ async function connectDB() {
 
 // HTTP server for health checks
 const httpServer = http.createServer((req, res) => {
+  console.log('[HTTP]', req.method, req.url);
   if (req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', service: 'socket-server' }));
@@ -48,8 +49,7 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify({ users: [...onlineUsers.keys()] }));
     return;
   }
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ status: 'not found' }));
+  // Let socket.io's engine handle every other path — do NOT respond here.
 });
 
 async function createCallNotification({ recipientEmail, callerEmail, callerName, callType }) {
