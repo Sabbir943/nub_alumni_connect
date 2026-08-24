@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
   Search,
@@ -11,7 +10,6 @@ import {
   UserX,
   Loader2,
   AlertTriangle,
-  GraduationCap,
   CheckCheck,
   Phone,
   Video,
@@ -20,9 +18,11 @@ import {
   Paperclip,
   ChevronLeft,
   ImageIcon,
+  UserPlus,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useCall } from '@/component/CallContext';
+import { useSocket } from '@/lib/useSocket';
 import CallOverlay from '@/component/CallOverlay';
 
 const getInitials = (name) => {
@@ -40,7 +40,6 @@ const formatDateDivider = (dateStr) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-
   if (d.toDateString() === today.toDateString()) return 'Today';
   if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -48,15 +47,12 @@ const formatDateDivider = (dateStr) => {
 
 const shouldShowDateDivider = (current, previous) => {
   if (!previous) return true;
-  const a = new Date(current);
-  const b = new Date(previous);
-  return a.toDateString() !== b.toDateString();
+  return new Date(current).toDateString() !== new Date(previous).toDateString();
 };
 
 export default function StudentTextBoxPage() {
   const searchParams = useSearchParams();
   const targetChatEmail = searchParams.get('chatWith');
-
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const currentUserEmail = session?.user?.email;
 
@@ -71,33 +67,34 @@ export default function StudentTextBoxPage() {
   const [sending, setSending] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const typingTimeoutRef = useRef(null);
+  const lastTypingEmitRef = useRef(0);
 
-  // Global call context
   const {
-    incomingCall,
-    callState,
-    callFailed,
-    callEnded,
-    callUser,
-    answerCall,
-    declineCall,
-    endCall,
-    setCallState,
-    localStream,
-    remoteStream,
-    audioEnabled,
-    videoEnabled,
-    toggleAudio,
-    toggleVideo,
-    setupLocalStream,
-    callType,
+    incomingCall, callState, callFailed, callUser, answerCall, declineCall, endCall,
+    localStream, remoteStream, audioEnabled, videoEnabled, toggleAudio, toggleVideo, callType,
   } = useCall();
+
+  const {
+    isConnected: socketConnected,
+    newMessage: socketNewMessage,
+    typingUser: socketTypingUser,
+    readReceipt: socketReadReceipt,
+    messageError: socketMessageError,
+    sendMessage: socketSendMessage,
+    emitTyping,
+    emitStopTyping,
+    markRead,
+    clearNewMessage,
+    clearReadReceipt,
+  } = useSocket(currentUserEmail);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
   const pollingRef = useRef(null);
   const isNearBottomRef = useRef(true);
+  const sendingRef = useRef(false);
 
   const scrollToBottom = (smooth = true) => {
     if (chatEndRef.current) {
@@ -113,9 +110,7 @@ export default function StudentTextBoxPage() {
   };
 
   useEffect(() => {
-    if (isNearBottomRef.current) {
-      scrollToBottom();
-    }
+    if (isNearBottomRef.current) scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
@@ -125,7 +120,6 @@ export default function StudentTextBoxPage() {
     }
   }, [activeFriend, loadingMessages]);
 
-  // Fetch Friends and Unread Count Summary
   useEffect(() => {
     if (!currentUserEmail) return;
     let isMounted = true;
@@ -135,29 +129,18 @@ export default function StudentTextBoxPage() {
       try {
         const friendsData = await apiFetch(`/api/follow/following/${encodeURIComponent(currentUserEmail)}`);
         const connectionsList = friendsData.following || [];
-
         if (!isMounted) return;
         setFriends(connectionsList);
-
         try {
           const unreadData = await apiFetch(`/api/messages/unread-summary/${encodeURIComponent(currentUserEmail)}`);
-          if (isMounted && unreadData.success) {
-            setUnreadCounts(unreadData.unreadCounts || {});
-          }
-        } catch {
-          // Unread fetch failed silently
-        }
-
+          if (isMounted && unreadData.success) setUnreadCounts(unreadData.unreadCounts || {});
+        } catch {}
         if (targetChatEmail && connectionsList.length > 0) {
           const found = connectionsList.find((f) => f.email === targetChatEmail);
-          if (found) {
-            setActiveFriend(found);
-            setShowMobileSidebar(false);
-          }
+          if (found) { setActiveFriend(found); setShowMobileSidebar(false); }
         }
-      } catch (err) {
-        console.error('Error fetching friends list:', err);
-        if (isMounted) setFetchError('Failed to load contacts. Please try again.');
+      } catch {
+        if (isMounted) setFetchError('Failed to load contacts.');
       } finally {
         if (isMounted) setLoadingFriends(false);
       }
@@ -169,70 +152,143 @@ export default function StudentTextBoxPage() {
 
   const fetchConversation = useCallback(async (friendEmail, showLoading = false) => {
     if (!currentUserEmail || !friendEmail) return;
+    if (sendingRef.current) return;
     if (showLoading) setLoadingMessages(true);
     try {
       const data = await apiFetch(
         `/api/messages/conversation?user1=${encodeURIComponent(currentUserEmail)}&user2=${encodeURIComponent(friendEmail)}`
       );
       if (data.success) {
-        setMessages(data.messages || []);
+        const newMessages = data.messages || [];
+        setMessages((prev) => {
+          if (prev.length === 0) return newMessages;
+          if (newMessages.length === 0) return prev;
+          const lastPrevId = prev[prev.length - 1]._id;
+          const lastNewId = newMessages[newMessages.length - 1]._id;
+          if (lastPrevId === lastNewId && prev.length === newMessages.length) return prev;
+          return newMessages;
+        });
         setUnreadCounts((prev) => ({ ...prev, [friendEmail]: 0 }));
         setFetchError(null);
       }
-    } catch (err) {
-      console.error('Error fetching conversation:', err);
-      setFetchError('Could not load messages. Retrying...');
+    } catch {
+      setFetchError('Could not load messages.');
     } finally {
       if (showLoading) setLoadingMessages(false);
     }
   }, [currentUserEmail]);
 
-  // Fetch conversation + set up polling when active friend changes
   useEffect(() => {
     const friendEmail = activeFriend?.email;
     if (!friendEmail || !currentUserEmail) return;
-
     fetchConversation(friendEmail, true);
-
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    pollingRef.current = setInterval(() => {
-      fetchConversation(friendEmail, false);
-    }, 5000);
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
   }, [activeFriend?.email, currentUserEmail, fetchConversation]);
+
+  // Handle incoming socket messages
+  useEffect(() => {
+    if (!socketNewMessage) return;
+    const msg = socketNewMessage;
+    const isRelevant =
+      (msg.senderEmail === currentUserEmail && msg.receiverEmail === activeFriend?.email) ||
+      (msg.senderEmail === activeFriend?.email && msg.receiverEmail === currentUserEmail);
+
+    if (isRelevant) {
+      setMessages((prev) => {
+        if (prev.some((m) => m._id === msg._id)) return prev;
+        // Replace the optimistic pending copy with the confirmed message
+        const withoutPending = prev.filter(
+          (m) => !(m.pending && m.senderEmail === msg.senderEmail && m.text === msg.text)
+        );
+        return [...withoutPending, msg];
+      });
+      isNearBottomRef.current = true;
+    }
+
+    if (msg.senderEmail !== currentUserEmail && msg.senderEmail !== activeFriend?.email) {
+      setUnreadCounts((prev) => ({ ...prev, [msg.senderEmail]: (prev[msg.senderEmail] || 0) + 1 }));
+    }
+
+    // Chat is open and the message came from the active friend -> mark it read immediately
+    if (msg.senderEmail !== currentUserEmail && msg.senderEmail === activeFriend?.email) {
+      markRead(msg.senderEmail);
+    }
+
+    clearNewMessage();
+  }, [socketNewMessage, currentUserEmail, activeFriend?.email, markRead, clearNewMessage]);
+
+  // Typing indicator derived from socket state — auto-clears when it resets
+  const isTyping = !!activeFriend && socketTypingUser === activeFriend.email;
+
+  // Handle read receipts
+  useEffect(() => {
+    if (!socketReadReceipt) return;
+    clearReadReceipt();
+  }, [socketReadReceipt, clearReadReceipt]);
+
+  // Handle socket errors
+  useEffect(() => {
+    if (!socketMessageError) return;
+    setFetchError(socketMessageError);
+  }, [socketMessageError]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessageText.trim() || !activeFriend || !currentUserEmail || sending) return;
 
-    const payload = {
-      senderEmail: currentUserEmail,
-      receiverEmail: activeFriend.email,
-      text: newMessageText,
-    };
+    const text = newMessageText.trim();
+    setNewMessageText('');
 
-    setSending(true);
-    try {
-      const data = await apiFetch(`/api/messages/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (data.success) {
-        setMessages((prev) => [...prev, data.message]);
-        setNewMessageText('');
-        setFetchError(null);
-        isNearBottomRef.current = true;
-        setTimeout(() => scrollToBottom(), 50);
+    // Optimistic UI: show the bubble instantly; the socket echo confirms it
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        _id: tempId,
+        senderEmail: currentUserEmail,
+        receiverEmail: activeFriend.email,
+        text,
+        read: false,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      },
+    ]);
+    isNearBottomRef.current = true;
+    setTimeout(() => scrollToBottom(), 50);
+
+    // Socket persists AND delivers in real time; REST is only a fallback when offline
+    const sentViaSocket = socketSendMessage(activeFriend.email, text);
+
+    if (!sentViaSocket) {
+      setSending(true);
+      try {
+        const data = await apiFetch('/api/messages/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderEmail: currentUserEmail,
+            receiverEmail: activeFriend.email,
+            text,
+          }),
+        });
+        if (data.success && data.message) {
+          setMessages((prev) =>
+            prev.some((m) => m._id === data.message._id)
+              ? prev
+              : [
+                  ...prev.filter(
+                    (m) => !(m.pending && m.senderEmail === currentUserEmail && m.text === text)
+                  ),
+                  data.message,
+                ]
+          );
+        }
+      } catch {
+        setFetchError('Failed to send message.');
+        setMessages((prev) => prev.filter((m) => m._id !== tempId));
+        setNewMessageText(text);
+      } finally {
+        setSending(false);
       }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setFetchError('Message not sent. Please try again.');
-    } finally {
-      setSending(false);
     }
   };
 
@@ -241,520 +297,388 @@ export default function StudentTextBoxPage() {
     setShowMobileSidebar(false);
     setFetchError(null);
     setLoadingMessages(true);
+    if (friend.email) markRead(friend.email);
   };
 
-  const filteredFriends = friends.filter((friend) => {
-    const name = friend.fullName?.toLowerCase() || '';
-    const dept = friend.department?.toLowerCase() || '';
-    const id = friend.studentId?.toLowerCase() || '';
-    return name.includes(searchTerm.toLowerCase()) || dept.includes(searchTerm.toLowerCase()) || id.includes(searchTerm.toLowerCase());
+  const handleInputChange = (e) => {
+    setNewMessageText(e.target.value);
+    if (activeFriend?.email) {
+      // Throttle typing events — one per 1.5s instead of one per keystroke
+      const now = Date.now();
+      if (now - lastTypingEmitRef.current > 1500) {
+        lastTypingEmitRef.current = now;
+        emitTyping(activeFriend.email);
+      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        lastTypingEmitRef.current = 0;
+        emitStopTyping(activeFriend.email);
+      }, 1200);
+    }
+  };
+
+  const filteredFriends = friends.filter((f) => {
+    const q = searchTerm.toLowerCase();
+    return (f.fullName?.toLowerCase() || '').includes(q)
+      || (f.department?.toLowerCase() || '').includes(q)
+      || (f.studentId?.toLowerCase() || '').includes(q);
   });
 
   const sortedFriends = [...filteredFriends].sort((a, b) => {
-    const aUnread = unreadCounts[a.email] || 0;
-    const bUnread = unreadCounts[b.email] || 0;
-    if (aUnread && !bUnread) return -1;
-    if (!aUnread && bUnread) return 1;
-    return 0;
+    const aU = unreadCounts[a.email] || 0;
+    const bU = unreadCounts[b.email] || 0;
+    if (aU && !bU) return -1;
+    if (!aU && bU) return 1;
+    return (a.fullName || '').localeCompare(b.fullName || '');
   });
 
   if (sessionLoading) {
     return (
-      <div className="h-[calc(100vh-5rem)] flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-3"
-        >
-          <div className="relative">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-            <div className="absolute inset-0 w-10 h-10 border-4 border-emerald-200 rounded-full animate-ping opacity-30" />
-          </div>
-          <p className="text-sm text-slate-500 font-medium">Loading messenger...</p>
-        </motion.div>
+      <div className="h-[calc(100vh-5rem)] flex items-center justify-center bg-[#f0f2f5]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-[#0084ff] animate-spin" />
+          <p className="text-sm text-gray-500">Loading messenger...</p>
+        </div>
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="h-[calc(100vh-5rem)] flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl border border-slate-200/60 text-center max-w-md shadow-xl shadow-slate-200/50"
-        >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-white" />
+      <div className="h-[calc(100vh-5rem)] flex items-center justify-center bg-[#f0f2f5] p-4">
+        <div className="bg-white p-10 rounded-2xl border border-gray-200 text-center max-w-md shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-7 h-7 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Access Restricted</h2>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">Please log in to access the messenger and connect with your network.</p>
-        </motion.div>
+          <h2 className="text-xl font-bold text-gray-900">Access Restricted</h2>
+          <p className="text-sm text-gray-500 mt-2">Please log in to access the messenger.</p>
+        </div>
       </div>
     );
   }
 
-  const handleAcceptCall = async (callerEmail) => {
-    await answerCall(callerEmail);
-  };
-
-  const handleDeclineCall = (callerEmail) => {
-    declineCall(callerEmail);
-  };
-
-  const handleEndCall = () => {
-    endCall();
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="h-[calc(100vh-5rem)] bg-gradient-to-br from-slate-100 via-emerald-50/30 to-slate-100 p-2 sm:p-3 lg:p-4 flex flex-col"
-    >
-      <div className="max-w-[1400px] w-full mx-auto bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-xl shadow-slate-200/40 flex-1 flex overflow-hidden">
+    <div className="h-[calc(100vh-5rem)] bg-[#f0f2f5] flex flex-col">
+      <div className="max-w-[1400px] w-full mx-auto flex-1 flex overflow-hidden bg-white shadow-sm rounded-none sm:rounded-2xl sm:my-0 border-0 sm:border border-gray-200">
 
         {/* ===== SIDEBAR ===== */}
-        <motion.div
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className={`
-            ${showMobileSidebar ? 'flex' : 'hidden'}
-            md:flex flex-col w-full md:w-80 lg:w-[340px] border-r border-slate-200/60 bg-white/60 backdrop-blur-sm
-            absolute md:relative inset-0 z-20 md:z-auto
-          `}
-        >
-          {/* Sidebar Header */}
-          <div className="p-5 pb-3">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <MessageSquare className="w-4.5 h-4.5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-slate-900 leading-tight">Chats</h1>
-                  <p className="text-[11px] text-slate-400 font-medium">{friends.length} contact{friends.length !== 1 ? 's' : ''}</p>
-                </div>
-              </div>
+        <div className={`
+          ${showMobileSidebar ? 'flex' : 'hidden'}
+          md:flex flex-col w-full md:w-80 lg:w-[340px] border-r border-gray-200 bg-white
+          absolute md:relative inset-0 z-20 md:z-auto
+        `}>
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
             </div>
-
-            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search Messenger"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-slate-200/50 rounded-2xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-[#f0f2f5] rounded-full text-sm placeholder:text-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#0084ff]/20 focus:border-[#0084ff] border border-transparent transition-all"
               />
             </div>
           </div>
 
-          {/* Friend List */}
-          <div className="flex-1 overflow-y-auto px-2 pb-2">
+          <div className="flex-1 overflow-y-auto">
             {loadingFriends ? (
               <div className="p-10 text-center">
-                <Loader2 className="w-7 h-7 text-emerald-500 animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400 font-medium">Loading contacts...</p>
+                <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
+                <p className="text-xs text-gray-400">Loading contacts...</p>
               </div>
             ) : sortedFriends.length === 0 ? (
               <div className="p-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                  <UserX className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm font-semibold text-slate-500">No contacts found</p>
-                <p className="text-xs text-slate-400 mt-1">Connect with students or alumni to start chatting</p>
+                <UserX className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-gray-500">No contacts found</p>
+                <p className="text-xs text-gray-400 mt-1">Connect with students to start chatting</p>
               </div>
             ) : (
-              <AnimatePresence>
-                {sortedFriends.map((friend, idx) => {
-                  const isSelected = activeFriend?.email === friend.email;
-                  const unread = unreadCounts[friend.email] || 0;
-
-                  return (
-                    <motion.button
-                      key={friend._id || friend.email}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: idx * 0.03 }}
-                      onClick={() => handleSelectFriend(friend)}
-                      className={`
-                        w-full p-3 flex items-center gap-3 rounded-2xl text-left transition-all duration-200 mb-0.5 group
-                        ${isSelected
-                          ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 shadow-sm'
-                          : 'hover:bg-slate-100/80 border border-transparent'
-                        }
-                      `}
-                    >
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0">
-                        {friend.profilePictureUrl ? (
-                          <img
-                            src={friend.profilePictureUrl}
-                            alt={friend.fullName}
-                            className={`w-12 h-12 rounded-full object-cover ring-2 transition-all ${
-                              isSelected ? 'ring-emerald-400 shadow-md shadow-emerald-400/20' : 'ring-white group-hover:ring-slate-200'
-                            }`}
-                          />
-                        ) : (
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white ring-2 transition-all ${
-                            isSelected
-                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 ring-emerald-400 shadow-md shadow-emerald-400/20'
-                              : 'bg-gradient-to-br from-slate-400 to-slate-500 ring-white group-hover:ring-slate-200'
-                          }`}>
-                            {getInitials(friend.fullName)}
-                          </div>
-                        )}
-                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-sm truncate ${unread > 0 ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
-                            {friend.fullName}
-                          </p>
-                          {unread > 0 && (
-                            <motion.span
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="ml-2 flex-shrink-0 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-emerald-500/25"
-                            >
-                              {unread}
-                            </motion.span>
-                          )}
+              sortedFriends.map((friend) => {
+                const isSelected = activeFriend?.email === friend.email;
+                const unread = unreadCounts[friend.email] || 0;
+                return (
+                  <button
+                    key={friend._id || friend.email}
+                    onClick={() => handleSelectFriend(friend)}
+                    className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-gray-100 ${isSelected ? 'bg-gray-100' : ''}`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      {friend.profilePictureUrl ? (
+                        <img src={friend.profilePictureUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-base font-bold text-white">
+                          {getInitials(friend.fullName)}
                         </div>
-                        <p className={`text-xs truncate mt-0.5 ${unread > 0 ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
+                      )}
+                      {friend.isMutual && (
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
+                      <div className="flex items-center justify-between">
+                        <p className={`text-[15px] truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                          {friend.fullName}
+                        </p>
+                        {unread > 0 && (
+                          <span className="ml-2 flex-shrink-0 bg-[#0084ff] text-white text-[11px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">
+                            {unread}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <p className={`text-[13px] truncate ${unread > 0 ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
                           {friend.department || friend.studentId || 'Student Member'}
                         </p>
+                        {!friend.isMutual && (
+                          <span className="ml-2 flex-shrink-0 text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <UserPlus className="w-2.5 h-2.5" /> Follows you
+                          </span>
+                        )}
                       </div>
-                    </motion.button>
-                  );
-                })}
-              </AnimatePresence>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* ===== CHAT AREA ===== */}
-        <div className={`flex-1 flex flex-col ${showMobileSidebar ? 'hidden md:flex' : 'flex'}`}>
-          <AnimatePresence mode="wait">
-            {activeFriend ? (
-              <motion.div
-                key={activeFriend.email}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 flex flex-col"
-              >
-                {/* Chat Header */}
-                <motion.div
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                  className="px-4 sm:px-6 py-3 border-b border-slate-200/60 bg-white/70 backdrop-blur-md flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setShowMobileSidebar(true)}
-                      className="md:hidden p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <div className="relative">
-                      {activeFriend.profilePictureUrl ? (
-                        <img
-                          src={activeFriend.profilePictureUrl}
-                          alt={activeFriend.fullName}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br from-emerald-500 to-teal-600 ring-2 ring-white shadow-sm">
-                          {getInitials(activeFriend.fullName)}
-                        </div>
-                      )}
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
+        <div className={`flex-1 flex flex-col bg-white ${showMobileSidebar ? 'hidden md:flex' : 'flex'}`}>
+          {activeFriend ? (
+            <>
+              {/* Chat Header */}
+              <div className="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between bg-white">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowMobileSidebar(true)}
+                    className="md:hidden p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="relative">
+                    {activeFriend.profilePictureUrl ? (
+                      <img src={activeFriend.profilePictureUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white">
+                        {getInitials(activeFriend.fullName)}
+                      </div>
+                    )}
+                    {activeFriend.isMutual && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-gray-900 text-[15px] leading-tight">{activeFriend.fullName}</h2>
+                    <p className="text-xs text-gray-500">
+                      {activeFriend.department || activeFriend.studentId || 'Student'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => { if (activeFriend?.email) callUser(activeFriend.email, 'audio'); }}
+                    disabled={!!callState}
+                    className="p-2.5 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors disabled:opacity-50"
+                    title="Audio Call"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => { if (activeFriend?.email) callUser(activeFriend.email, 'video'); }}
+                    disabled={!!callState}
+                    className="p-2.5 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors disabled:opacity-50"
+                    title="Video Call"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                  <button className="p-2.5 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 px-4 sm:px-6 py-4 overflow-y-auto bg-white">
+                {loadingMessages ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 rounded-full bg-[#e4e6eb] flex items-center justify-center mb-4">
+                      <MessageSquare className="w-10 h-10 text-gray-400" />
                     </div>
-                    <div>
-                      <h2 className="font-bold text-slate-900 text-sm sm:text-base leading-tight">{activeFriend.fullName}</h2>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{activeFriend.department || 'Student'}</span>
-                        {activeFriend.studentId && (
-                          <>
-                            <span className="text-slate-300">|</span>
-                            <span>#{activeFriend.studentId}</span>
-                          </>
+                    <p className="text-[17px] font-bold text-gray-900">Start a conversation</p>
+                    <p className="text-sm text-gray-500 mt-1 max-w-xs">
+                      Send a message to {activeFriend.fullName}
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => {
+                    const isMe = msg.senderEmail === currentUserEmail;
+                    const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                    const showDivider = shouldShowDateDivider(msg.createdAt, prevMsg?.createdAt);
+                    const nextMsg = idx < messages.length - 1 ? messages[idx + 1] : null;
+                    const isLastInGroup = !nextMsg || nextMsg.senderEmail !== msg.senderEmail;
+                    const isFirstInGroup = !prevMsg || prevMsg.senderEmail !== msg.senderEmail;
+
+                    return (
+                      <React.Fragment key={msg._id || idx}>
+                        {showDivider && (
+                          <div className="flex items-center justify-center py-3">
+                            <span className="text-[11px] font-semibold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
+                              {formatDateDivider(msg.createdAt)}
+                            </span>
+                          </div>
                         )}
-                        <span className="text-slate-300">|</span>
-                        <span className="text-emerald-500 font-medium">Online</span>
+                        <div className={`flex items-end gap-1.5 ${isMe ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-2' : 'mt-0.5'}`}>
+                          {!isMe && (
+                            <div className="flex-shrink-0 w-7">
+                              {isLastInGroup ? (
+                                activeFriend.profilePictureUrl ? (
+                                  <img src={activeFriend.profilePictureUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-[9px] font-bold text-white">
+                                    {getInitials(activeFriend.fullName)}
+                                  </div>
+                                )
+                              ) : null}
+                            </div>
+                          )}
+                          <div
+                            className={`max-w-[65%] px-3 py-2 text-[15px] leading-[1.35] ${msg.pending ? 'opacity-70 ' : ''}${
+                              isMe
+                                ? `bg-[#0084ff] text-white ${
+                                    isFirstInGroup && isLastInGroup ? 'rounded-[18px]' :
+                                    isFirstInGroup ? 'rounded-[18px] rounded-br-[4px]' :
+                                    isLastInGroup ? 'rounded-[18px] rounded-tr-[4px]' :
+                                    'rounded-[18px] rounded-r-[4px]'
+                                  }`
+                                : `bg-[#e4e6eb] text-gray-900 ${
+                                    isFirstInGroup && isLastInGroup ? 'rounded-[18px]' :
+                                    isFirstInGroup ? 'rounded-[18px] rounded-bl-[4px]' :
+                                    isLastInGroup ? 'rounded-[18px] rounded-tl-[4px]' :
+                                    'rounded-[18px] rounded-l-[4px]'
+                                  }`
+                            }`}
+                          >
+                            <p>{msg.text}</p>
+                          </div>
+                          {isMe && isLastInGroup && !msg.pending && (
+                            <CheckCheck className="w-4 h-4 text-[#0084ff] flex-shrink-0 mb-0.5" />
+                          )}
+                        </div>
+                        {isLastInGroup && (
+                          <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ml-8 mt-0.5`}>
+                            <span className="text-[11px] text-gray-500">{formatTime(msg.createdAt)}</span>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="px-4 sm:px-6 py-2 flex items-center gap-2">
+                  <div className="flex-shrink-0 w-7">
+                    {activeFriend.profilePictureUrl ? (
+                      <img src={activeFriend.profilePictureUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-[9px] font-bold text-white">
+                        {getInitials(activeFriend.fullName)}
                       </div>
+                    )}
+                  </div>
+                  <div className="bg-[#e4e6eb] rounded-full px-4 py-2 flex items-center gap-1">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => {
-                        if (!activeFriend?.email || !currentUserEmail) return;
-                        callUser(activeFriend.email, 'audio');
-                      }}
-                      disabled={!!callState}
-                      className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all disabled:opacity-50"
-                      title="Start Audio Call"
-                    >
-                      <Phone className="w-4.5 h-4.5" />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (!activeFriend?.email || !currentUserEmail) return;
-                        callUser(activeFriend.email, 'video');
-                      }}
-                      disabled={!!callState}
-                      className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all disabled:opacity-50"
-                      title="Start Video Call"
-                    >
-                      <Video className="w-4.5 h-4.5" />
-                    </button>
-                    <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all">
-                      <MoreVertical className="w-4.5 h-4.5" />
-                    </button>
+                </div>
+              )}
+
+              {/* Error Toast */}
+              {fetchError && (
+                <div className="mx-4 mb-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {fetchError}
+                </div>
+              )}
+
+              {/* Message Input */}
+              <div className="px-4 py-3 border-t border-gray-200 bg-white">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                  <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors flex-shrink-0">
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors flex-shrink-0">
+                    <ImageIcon className="w-5 h-5" />
+                  </button>
+                  <div className="flex-1 relative">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder="Aa"
+                      value={newMessageText}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
+                      className="w-full bg-[#f0f2f5] rounded-full px-4 py-2.5 text-[15px] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0084ff]/30 border border-transparent focus:border-[#0084ff]/40 transition-all"
+                    />
                   </div>
-                </motion.div>
-
-                {/* Messages Area */}
-                <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 px-4 sm:px-6 py-4 overflow-y-auto space-y-1 bg-gradient-to-b from-slate-50/50 to-emerald-50/20">
-                  {loadingMessages ? (
-                    <div className="h-full flex items-center justify-center">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-2"
-                      >
-                        <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
-                        <p className="text-xs text-slate-400 font-medium">Loading messages...</p>
-                      </motion.div>
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="h-full flex flex-col items-center justify-center text-center"
-                    >
-                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4">
-                        <MessageSquare className="w-9 h-9 text-emerald-400" />
-                      </div>
-                      <p className="text-base font-bold text-slate-700">Start a conversation</p>
-                      <p className="text-sm text-slate-400 mt-1 max-w-xs">
-                        Send a message to {activeFriend.fullName} to begin your conversation
-                      </p>
-                    </motion.div>
-                  ) : (
-                    <>
-                      {messages.map((msg, idx) => {
-                        const isMe = msg.senderEmail === currentUserEmail;
-                        const prevMsg = idx > 0 ? messages[idx - 1] : null;
-                        const showDivider = shouldShowDateDivider(msg.createdAt, prevMsg?.createdAt);
-                        const nextMsg = idx < messages.length - 1 ? messages[idx + 1] : null;
-                        const isLastInGroup = !nextMsg || nextMsg.senderEmail !== msg.senderEmail;
-                        const isFirstInGroup = !prevMsg || prevMsg.senderEmail !== msg.senderEmail;
-
-                        return (
-                          <React.Fragment key={msg._id || idx}>
-                            {showDivider && (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex items-center justify-center py-3"
-                              >
-                                <div className="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-sm">
-                                  <span className="text-[11px] font-semibold text-slate-400">
-                                    {formatDateDivider(msg.createdAt)}
-                                  </span>
-                                </div>
-                              </motion.div>
-                            )}
-                            <motion.div
-                              initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ duration: 0.2, delay: 0.02 }}
-                              className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}
-                            >
-                              {!isMe && (
-                                <div className="flex-shrink-0 mr-2 self-end">
-                                  {isLastInGroup ? (
-                                    activeFriend.profilePictureUrl ? (
-                                      <img
-                                        src={activeFriend.profilePictureUrl}
-                                        alt=""
-                                        className="w-7 h-7 rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br from-slate-400 to-slate-500">
-                                        {getInitials(activeFriend.fullName)}
-                                      </div>
-                                    )
-                                  ) : <div className="w-7" />}
-                                </div>
-                              )}
-                              <div
-                                className={`max-w-[70%] sm:max-w-[65%] px-4 py-2.5 text-sm leading-relaxed transition-all
-                                  ${isMe
-                                    ? `bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/15 ${
-                                        isFirstInGroup && isLastInGroup ? 'rounded-2xl' :
-                                        isFirstInGroup ? 'rounded-2xl rounded-br-lg' :
-                                        isLastInGroup ? 'rounded-2xl rounded-tr-lg' :
-                                        'rounded-2xl rounded-r-lg'
-                                      }`
-                                    : `bg-white text-slate-800 border border-slate-100 shadow-sm ${
-                                        isFirstInGroup && isLastInGroup ? 'rounded-2xl' :
-                                        isFirstInGroup ? 'rounded-2xl rounded-bl-lg' :
-                                        isLastInGroup ? 'rounded-2xl rounded-tl-lg' :
-                                        'rounded-2xl rounded-l-lg'
-                                      }`
-                                  }
-                                `}
-                              >
-                                <p>{msg.text}</p>
-                                <div className={`flex items-center justify-end gap-1 mt-1 ${
-                                  isMe ? 'text-emerald-100' : 'text-slate-400'
-                                }`}>
-                                  <span className="text-[10px]">{formatTime(msg.createdAt)}</span>
-                                  {isMe && <CheckCheck className="w-3.5 h-3.5" />}
-                                </div>
-                              </div>
-                            </motion.div>
-                          </React.Fragment>
-                        );
-                      })}
-                    </>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-
-                {/* Error Toast */}
-                <AnimatePresence>
-                  {fetchError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="mx-4 mb-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium flex items-center gap-2"
-                    >
-                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                      {fetchError}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Message Input */}
-                <motion.div
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="px-4 sm:px-6 py-3 border-t border-slate-200/60 bg-white/70 backdrop-blur-md"
-                >
-                  <form onSubmit={handleSendMessage} className="flex items-end gap-2">
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all">
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-                      <button type="button" className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all">
-                        <ImageIcon className="w-5 h-5" />
-                      </button>
-                      <button type="button" className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-emerald-500 transition-all">
-                        <Smile className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <div className="flex-1 relative">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        placeholder={`Message ${activeFriend.fullName}...`}
-                        value={newMessageText}
-                        onChange={(e) => setNewMessageText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage(e);
-                          }
-                        }}
-                        className="w-full bg-slate-100/80 border border-slate-200/50 rounded-2xl px-4 py-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 focus:bg-white transition-all"
-                      />
-                    </div>
-                    <motion.button
-                      type="submit"
-                      disabled={sending || !newMessageText.trim()}
-                      whileTap={{ scale: 0.92 }}
-                      className={`p-3 rounded-2xl transition-all flex-shrink-0 ${
-                        newMessageText.trim()
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {sending ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Send className="w-5 h-5" />
-                      )}
-                    </motion.button>
-                  </form>
-                </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-slate-50/50 to-emerald-50/20"
-              >
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-5">
-                  <MessageSquare className="w-11 h-11 text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-700 mb-1">Welcome to Messenger</h3>
-                <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
-                  Select a conversation from the sidebar to start chatting with your network
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors flex-shrink-0">
+                    <Smile className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sending || !newMessageText.trim()}
+                    className={`p-2.5 rounded-full transition-colors flex-shrink-0 ${
+                      newMessageText.trim()
+                        ? 'bg-[#0084ff] text-white hover:bg-[#0073e6]'
+                        : 'text-[#0084ff] hover:bg-gray-100'
+                    }`}
+                  >
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white">
+              <div className="w-24 h-24 rounded-full bg-[#e4e6eb] flex items-center justify-center mb-5">
+                <MessageSquare className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-[22px] font-bold text-gray-900 mb-1">Your Messenger</h3>
+              <p className="text-sm text-gray-500 max-w-xs">
+                Select a conversation from the sidebar to start chatting
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Call Overlay */}
       <CallOverlay
-        callState={callState}
-        incomingCall={incomingCall}
-        localStream={localStream}
-        remoteStream={remoteStream}
-        audioEnabled={audioEnabled}
-        videoEnabled={videoEnabled}
-        callType={callType}
+        callState={callState} incomingCall={incomingCall} localStream={localStream} remoteStream={remoteStream}
+        audioEnabled={audioEnabled} videoEnabled={videoEnabled} callType={callType}
         callerName={activeFriend?.fullName || incomingCall?.callerEmail?.split('@')[0]}
         calleeName={activeFriend?.fullName || currentUserEmail?.split('@')[0]}
-        onAccept={handleAcceptCall}
-        onDecline={handleDeclineCall}
-        onEndCall={handleEndCall}
-        onToggleAudio={toggleAudio}
-        onToggleVideo={toggleVideo}
+        onAccept={answerCall} onDecline={declineCall} onEndCall={endCall}
+        onToggleAudio={toggleAudio} onToggleVideo={toggleVideo}
       />
 
-      {/* Call Failed Toast */}
-      <AnimatePresence>
-        {callFailed && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[110] bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold"
-          >
-            {callFailed}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {callFailed && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[110] bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold">
+          {callFailed}
+        </div>
+      )}
+    </div>
   );
 }

@@ -11,16 +11,25 @@ const allowedOrigins = CORS_ORIGIN === '*'
   ? ['*']
   : CORS_ORIGIN.split(',').map((o) => o.trim());
 
-function isOriginAllowed(origin) {
-  if (!origin) return true;
-  if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return true;
+function isLocalhostOrigin(origin) {
   try {
     const url = new URL(origin);
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+    return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   } catch {
-    // ignore malformed origins
+    return false;
   }
-  return false;
+}
+
+// The `cors` package invokes origin functions as (originHeader, callback).
+// A plain boolean-returning function never resolves the middleware and hangs
+// every Socket.IO handshake, so this MUST be callback-style.
+function isOriginAllowed(origin, callback) {
+  const allowed =
+    !origin ||
+    allowedOrigins.includes('*') ||
+    allowedOrigins.includes(origin) ||
+    isLocalhostOrigin(origin);
+  callback(null, allowed);
 }
 
 // Cache the database connection promise to avoid multiple simultaneous connection pools
@@ -36,6 +45,32 @@ async function connectDB() {
   return dbPromise;
 }
 
+// Create indexes once at startup so message/unread/notification queries stay fast as data grows
+let indexesReady = null;
+
+function ensureIndexes() {
+  if (!indexesReady) {
+    indexesReady = (async () => {
+      try {
+        const database = await connectDB();
+        await Promise.all([
+          database.collection('messages').createIndex({ senderEmail: 1, receiverEmail: 1, createdAt: -1 }),
+          database.collection('messages').createIndex({ receiverEmail: 1, read: 1 }),
+          database.collection('notifications').createIndex({ recipientEmail: 1, read: 1, createdAt: -1 }),
+          database.collection('notifications').createIndex({ recipientEmail: 1, type: 1, actorEmail: 1, read: 1 }),
+          database.collection('students').createIndex({ email: 1 }),
+          database.collection('alumni_directory').createIndex({ email: 1 }),
+        ]);
+        console.log('[Socket.IO] Database indexes ready');
+      } catch (err) {
+        indexesReady = null;
+        console.error('[Socket.IO] Index creation failed:', err.message);
+      }
+    })();
+  }
+  return indexesReady;
+}
+
 // HTTP server for health checks
 const httpServer = http.createServer((req, res) => {
   console.log('[HTTP]', req.method, req.url);
@@ -49,6 +84,11 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify({ users: [...onlineUsers.keys()] }));
     return;
   }
+  if (!req.url.startsWith('/socket.io')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
   // Let socket.io's engine handle every other path — do NOT respond here.
 });
 
@@ -56,6 +96,11 @@ async function createCallNotification({ recipientEmail, callerEmail, callerName,
   try {
     const database = await connectDB();
     const notifications = database.collection('notifications');
+    const students = database.collection('students');
+    const recipientStudent = await students.findOne({ email: recipientEmail });
+    const messagingPath = recipientStudent
+      ? '/dashboard/students/text-box'
+      : '/dashboard/alumni/text';
     const result = await notifications.insertOne({
       recipientEmail,
       type: 'call_incoming',
@@ -63,7 +108,7 @@ async function createCallNotification({ recipientEmail, callerEmail, callerName,
       actorName: callerName,
       callType: callType || 'video',
       message: `${callerName} is calling you (${callType || 'video'})`,
-      link: `/dashboard/alumni/text?chatWith=${callerEmail}`,
+      link: `${messagingPath}?chatWith=${callerEmail}`,
       read: false,
       callStatus: 'ringing',
       createdAt: new Date(),
@@ -109,41 +154,60 @@ process.on('unhandledRejection', (reason) => {
 const activeCalls = new Map();
 const onlineUsers = new Map(); // email -> active socket count (multi-tab safe)
 
+const PROFILE_CACHE_TTL = 60000;
+const profileCache = new Map(); // email -> { profile, expiresAt }
+
 async function resolveOnlineProfiles(emails) {
-  if (!emails || emails.length === 0) return [];
-  const database = await connectDB();
-  const students = database.collection('students');
-  const alumni = database.collection('alumni_directory');
-  const users = database.collection('user');
+  if (!emails || emails.length === 0) return Promise.resolve([]);
+  const databaseP = connectDB();
+  return Promise.all(
+    emails.map(async (email) => {
+      const cached = profileCache.get(email);
+      if (cached && cached.expiresAt > Date.now()) return cached.profile;
 
-  const resolved = [];
-  for (const email of emails) {
-    try {
-      const student = await students.findOne({ email }, { projection: { fullName: 1, profilePictureUrl: 1 } });
-      const alumnus = student ? null : await alumni.findOne({ email }, { projection: { name: 1, profilePictureUrl: 1 } });
-      const userDoc = await users.findOne({ email }, { projection: { role: 1, name: 1, image: 1 } });
+      try {
+        const database = await databaseP;
+        const students = database.collection('students');
+        const alumni = database.collection('alumni_directory');
+        const users = database.collection('user');
 
-      const name = student?.fullName || alumnus?.name || userDoc?.name || email.split('@')[0];
-      const avatar = student?.profilePictureUrl || alumnus?.profilePictureUrl || userDoc?.image || '';
-      const role = userDoc?.role || (student ? 'Student' : alumnus ? 'Alumni' : '');
+        // Parallel lookups — previously these ran one after another (3x latency)
+        const [student, alumnus, userDoc] = await Promise.all([
+          students.findOne({ email }, { projection: { fullName: 1, profilePictureUrl: 1 } }),
+          alumni.findOne({ email }, { projection: { name: 1, profilePictureUrl: 1 } }),
+          users.findOne({ email }, { projection: { role: 1, name: 1, image: 1 } }),
+        ]);
 
-      resolved.push({ email, name, avatar, role });
-    } catch (err) {
-      resolved.push({ email, name: email.split('@')[0], avatar: '', role: '' });
-    }
-  }
-  return resolved;
+        const name = student?.fullName || alumnus?.name || userDoc?.name || email.split('@')[0];
+        const avatar = student?.profilePictureUrl || alumnus?.profilePictureUrl || userDoc?.image || '';
+        const role = userDoc?.role || (student ? 'Student' : alumnus ? 'Alumni' : '');
+
+        const profile = { email, name, avatar, role };
+        profileCache.set(email, { profile, expiresAt: Date.now() + PROFILE_CACHE_TTL });
+        return profile;
+      } catch (err) {
+        return { email, name: email.split('@')[0], avatar: '', role: '' };
+      }
+    })
+  );
 }
 
+// Debounced so a burst of joins/disconnects triggers ONE broadcast instead of many
+let broadcastTimer = null;
+
 function broadcastOnlineUsers() {
-  (async () => {
-    try {
-      const users = await resolveOnlineProfiles([...onlineUsers.keys()]);
-      io.emit('online-users', users);
-    } catch (err) {
-      console.error('[Socket.IO] online users broadcast error:', err.message);
-    }
-  })();
+  if (broadcastTimer) return;
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null;
+    (async () => {
+      try {
+        const users = await resolveOnlineProfiles([...onlineUsers.keys()]);
+        io.emit('online-users', users);
+      } catch (err) {
+        console.error('[Socket.IO] online users broadcast error:', err.message);
+      }
+    })();
+  }, 300);
 }
 
 io.on('connection', (socket) => {
@@ -324,6 +388,121 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ==================== REAL-TIME MESSAGING ====================
+
+  socket.on('send-message', async ({ receiverEmail, text }) => {
+    const senderEmail = socket.data.email;
+    if (!senderEmail || !receiverEmail || !text) return;
+
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0 || trimmedText.length > 2000) return;
+
+    try {
+      const database = await connectDB();
+      const messages = database.collection('messages');
+
+      const newMessage = {
+        senderEmail,
+        receiverEmail,
+        text: trimmedText,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      const result = await messages.insertOne(newMessage);
+      const messageWithId = { ...newMessage, _id: result.insertedId.toString() };
+
+      // Emit to recipient's room (all their tabs/devices)
+      io.to(receiverEmail).emit('new-message', messageWithId);
+
+      // Also emit back to sender so other tabs of sender get it
+      io.to(senderEmail).emit('new-message', messageWithId);
+
+      // Notification is fire-and-forget: message delivery must never wait on it
+      (async () => {
+        try {
+          const students = database.collection('students');
+          const alumni = database.collection('alumni_directory');
+          const notifications = database.collection('notifications');
+
+          // Parallel lookups — previously up to 4 sequential queries per message
+          const [recipientStudent, senderStudent, senderAlumni] = await Promise.all([
+            students.findOne({ email: receiverEmail }, { projection: { _id: 1 } }),
+            senderEmail === receiverEmail
+              ? Promise.resolve(null)
+              : students.findOne({ email: senderEmail }, { projection: { fullName: 1 } }),
+            senderEmail === receiverEmail
+              ? Promise.resolve(null)
+              : alumni.findOne({ email: senderEmail }, { projection: { fullName: 1 } }),
+          ]);
+          const messagingPath = recipientStudent
+            ? '/dashboard/students/text-box'
+            : '/dashboard/alumni/text';
+
+          const senderName = senderStudent?.fullName || senderAlumni?.fullName || senderEmail.split('@')[0];
+
+          // Only create notification if no recent unread one from this sender
+          const recent = await notifications.findOne({
+            recipientEmail: receiverEmail,
+            type: 'message',
+            actorEmail: senderEmail,
+            read: false,
+          });
+
+          if (!recent) {
+            await notifications.insertOne({
+              recipientEmail: receiverEmail,
+              type: 'message',
+              actorEmail: senderEmail,
+              actorName: senderName,
+              message: `${senderName} sent you a message`,
+              link: `${messagingPath}?chatWith=${senderEmail}`,
+              read: false,
+              createdAt: new Date(),
+            });
+          }
+        } catch (e) {
+          console.error('[Socket.IO] Message notification error:', e.message);
+        }
+      })();
+
+      console.log(`[Socket.IO] Message: ${senderEmail} -> ${receiverEmail}`);
+    } catch (err) {
+      console.error('[Socket.IO] Failed to send message:', err.message);
+      socket.emit('message-error', { error: 'Failed to send message' });
+    }
+  });
+
+  socket.on('typing', ({ to }) => {
+    const from = socket.data.email;
+    if (!from || !to) return;
+    io.to(to).emit('user-typing', { from });
+  });
+
+  socket.on('stop-typing', ({ to }) => {
+    const from = socket.data.email;
+    if (!from || !to) return;
+    io.to(to).emit('user-stopped-typing', { from });
+  });
+
+  socket.on('mark-read', async ({ from: senderEmail }) => {
+    const receiverEmail = socket.data.email;
+    if (!receiverEmail || !senderEmail) return;
+
+    try {
+      const database = await connectDB();
+      const messages = database.collection('messages');
+      await messages.updateMany(
+        { senderEmail, receiverEmail, read: false },
+        { $set: { read: true } }
+      );
+      // Notify sender that their messages were read
+      io.to(senderEmail).emit('messages-read', { by: receiverEmail });
+    } catch (err) {
+      console.error('[Socket.IO] Mark read error:', err.message);
+    }
+  });
+
   socket.on('disconnect', async () => {
     const email = socket.data.email;
     if (!email) return;
@@ -360,9 +539,7 @@ io.on('connection', (socket) => {
     // Check if user has any remaining active tab sockets connected
     const remainingSockets = io.sockets.adapter.rooms.get(email);
     if (!remainingSockets || remainingSockets.size === 0) {
-      const count = (onlineUsers.get(email) || 1) - 1;
-      if (count <= 0) onlineUsers.delete(email);
-      else onlineUsers.set(email, count);
+      onlineUsers.delete(email);
       io.emit('user-online', { email, online: false });
       broadcastOnlineUsers();
     }
@@ -374,4 +551,5 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`[Socket.IO] Server running on port ${PORT}`);
   console.log(`[Socket.IO] Health check: http://localhost:${PORT}/`);
+  ensureIndexes();
 });

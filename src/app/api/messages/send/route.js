@@ -8,9 +8,17 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "senderEmail, receiverEmail, and text are required" }, { status: 400 });
     }
 
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0) {
+      return NextResponse.json({ success: false, message: "Message cannot be empty" }, { status: 400 });
+    }
+    if (trimmedText.length > 2000) {
+      return NextResponse.json({ success: false, message: "Message too long (max 2000 characters)" }, { status: 400 });
+    }
+
     const collection = await getCollection('messages');
     const newMessage = {
-      senderEmail, receiverEmail, text,
+      senderEmail, receiverEmail, text: trimmedText,
       read: false,
       createdAt: new Date().toISOString()
     };

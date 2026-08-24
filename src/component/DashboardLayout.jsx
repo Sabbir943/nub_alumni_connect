@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
   FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
@@ -11,8 +12,9 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { CallProvider } from '@/component/CallContext';
-import GlobalIncomingCall from '@/component/GlobalIncomingCall';
+
+const CallProvider = dynamic(() => import('@/component/CallContext').then(m => m.CallProvider), { ssr: false });
+const GlobalIncomingCall = dynamic(() => import('@/component/GlobalIncomingCall'), { ssr: false });
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
@@ -49,7 +51,7 @@ const DashboardLayout = ({ children }) => {
   const alumniLinks = [
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Notifications', href: '/dashboard/alumni/notifications', icon: <FiBell />, badge: unreadNotifCount || null },
-    { label: 'Create Profile', href: '/dashboard/alumni/Profile', icon: <FiUserPlus /> },
+    { label: 'Create Profile', href: '/dashboard/alumni/profile', icon: <FiUserPlus /> },
     { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
@@ -140,7 +142,7 @@ const DashboardLayout = ({ children }) => {
                 <span className="hidden sm:inline">Home</span>
               </Link>
               <Link
-                href="/profile"
+                href={user?.role?.toLowerCase() === 'alumni' ? '/dashboard/alumni/profile' : '/dashboard/students/create-profile'}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <FiUser className="w-4 h-4" />

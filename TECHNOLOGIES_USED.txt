@@ -1,0 +1,55 @@
+NUB Alumni Connect — Technologies Used
+========================================
+
+1. Core Framework
+Next.js 16.2.9 (App Router): Full-stack React framework for SSR/SSG, API routes, and file-based routing.
+React 19.2.4: UI library and runtime.
+JavaScript (JS/JSX): Plain JavaScript — no TypeScript.
+
+2. Frontend Technologies
+react-dom 19.2.4: React DOM rendering.
+react-hook-form 7.80.0: Form handling and validation.
+react-hot-toast 2.6.0: Toast/notification messages.
+react-share 5.3.0: Social share buttons (Facebook, Twitter, WhatsApp, LinkedIn).
+lucide-react 1.27.0: Icon set.
+react-icons 5.6.0: Icon library.
+@gravity-ui/icons 2.19.0: Additional icon set.
+
+3. Backend Technologies
+Next.js API Routes (/src/app/api/*): Serverless backend endpoints.
+Better Auth 1.6.23: Authentication framework with MongoDB adapter.
+socket.io 4.8.3: Real-time signaling server (standalone on port 3001).
+socket.io-client 4.8.3: Client-side real-time socket connection.
+OpenAI GPT-4o-mini: AI profile/job verification and chatbot (via direct REST API calls — no SDK).
+cloudinary 2.10.0: Signed video uploads and media management.
+IMGBB API: Image hosting and uploads.
+
+4. Database Technology
+MongoDB 7.4.0 (Native Driver): Primary database with native mongodb driver.
+@better-auth/mongo-adapter 1.6.23: Better Auth integration with MongoDB.
+
+5. Authentication Technology
+Better Auth 1.6.23: Complete auth solution.
+Email/Password Authentication: Local credential sign-in/registration.
+Google OAuth: Single sign-on via Google social provider.
+Role-Based Access Control (RBAC): Student, Alumni, and Admin roles with user.role field.
+Session Management: Secure stateful sessions via Better Auth.
+
+6. UI Design & Animation
+Tailwind CSS 4: Utility-first styling.
+@tailwindcss/postcss 4: PostCSS plugin for Tailwind.
+@heroui/react 3.2.1: HeroUI component library.
+@heroui/styles 3.2.1: HeroUI base styles.
+framer-motion 12.42.2: Animation and motion library.
+React Compiler (enabled): Automatic memoization and optimization.
+
+7. Build, Development & Quality Tools
+Webpack/Turbopack (Next.js 16): Build and dev bundling (turbopack configured in next.config.mjs).
+ESLint 9: Linting via flat config (eslint.config.mjs).
+eslint-config-next 16.2.9: Next.js lint rules.
+babel-plugin-react-compiler 1.0.0: React Compiler Babel plugin.
+
+8. Real-Time Communication Stack
+WebRTC: Peer-to-peer audio/video calls (Google STUN servers).
+Socket.IO: WebRTC signaling and call state coordination.
+Web Audio API: Custom ringtone, connect, and decline call sounds (src/lib/ringtone.js).

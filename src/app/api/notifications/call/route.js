@@ -9,6 +9,13 @@ export async function POST(request) {
     const notifications = await getCollection("notifications");
 
     if (action === "create") {
+      const db = await (await import("@/lib/mongodb")).getCollection("students");
+      const alumniCol = await (await import("@/lib/mongodb")).getCollection("alumni_directory");
+      const recipientStudent = await db.findOne({ email: recipientEmail });
+      const messagingPath = recipientStudent
+        ? "/dashboard/students/text-box"
+        : "/dashboard/alumni/text";
+
       const doc = {
         recipientEmail,
         type: "call_incoming",
@@ -16,7 +23,7 @@ export async function POST(request) {
         actorName: callerName,
         callType: callType || "video",
         message: message || `${callerName} is calling you (${callType || "video"})`,
-        link: `/dashboard/alumni/text?chatWith=${callerEmail}`,
+        link: `${messagingPath}?chatWith=${callerEmail}`,
         read: false,
         callStatus: "ringing",
         createdAt: new Date(),
