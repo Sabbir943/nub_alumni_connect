@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
 import { uploadImage } from '@/lib/upload';
@@ -24,91 +23,151 @@ import {
   FaCamera,
   FaShieldAlt,
   FaSyncAlt,
-  FaTimes
+  FaTimes,
+  FaEdit,
 } from 'react-icons/fa';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: 'easeOut' },
-  }),
+function VerificationBadgeInline({ verification }) {
+  if (!verification) {
+    return (
+      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-500 text-xs font-semibold border border-zinc-200">
+        <FaShieldAlt className="w-3.5 h-3.5" />
+        Not Verified
+      </span>
+    );
+  }
+  const { badge, trustScore, breakdown, analysis, linkValidation } = verification;
+  const colors = {
+    Verified: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-500' },
+    Unverified: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', bar: 'bg-amber-500' },
+    Suspicious: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', bar: 'bg-red-500' },
+  };
+  const c = colors[badge] || colors.Unverified;
+
+  return (
+    <div className={`p-4 rounded-xl border ${c.border} ${c.bg}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <FaShieldAlt className={`w-4 h-4 ${c.text}`} />
+        <span className={`text-sm font-bold ${c.text}`}>{badge} ({trustScore}%)</span>
+      </div>
+      <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden mb-2">
+        <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${trustScore}%` }} />
+      </div>
+
+      {linkValidation && linkValidation.length > 0 && (
+        <div className="mb-3 p-3 bg-white rounded-lg border border-zinc-100">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Link Status</p>
+          <div className="space-y-1.5">
+            {linkValidation.map((link, i) => (
+              <div key={i} className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  {link.valid ? (
+                    <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <FaCheckCircle className="w-2.5 h-2.5 text-emerald-600" />
+                    </span>
+                  ) : link.url ? (
+                    <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
+                      <FaExclamationCircle className="w-2.5 h-2.5 text-red-600" />
+                    </span>
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                      <FaExclamationCircle className="w-2.5 h-2.5 text-zinc-400" />
+                    </span>
+                  )}
+                  <span className="font-semibold text-zinc-600">{link.label}</span>
+                </div>
+                <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-zinc-400'}`}>
+                  {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {breakdown && (
+        <div className="grid grid-cols-2 gap-1 mb-2">
+          {Object.entries(breakdown).map(([key, val]) => (
+            <div key={key} className="flex justify-between text-[10px] text-zinc-600">
+              <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+              <span className="font-semibold">{val}/25</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {analysis && <p className="text-xs text-zinc-600 mt-1">{analysis}</p>}
+    </div>
+  );
+}
+
+const DEPARTMENT_OPTIONS = [
+  { value: 'CSE', label: 'Computer Science & Engineering' },
+  { value: 'EEE', label: 'Electrical & Electronic Engineering' },
+  { value: 'BBA', label: 'Business Administration' },
+  { value: 'English', label: 'English' },
+  { value: 'MBA', label: 'MBA' },
+];
+
+const INITIAL_FORM = {
+  fullName: '',
+  email: '',
+  studentId: '',
+  department: '',
+  semester: '',
+  batch: '',
+  phone: '',
+  profilePictureUrl: '',
+  githubUrl: '',
+  linkedinUrl: '',
+  skills: '',
+  bio: '',
+  location: '',
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
-};
+function fieldClass(extra = '') {
+  return `w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none dark:text-white transition-all ${extra}`;
+}
 
 export default function StudentProfileForm() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const userEmail = session?.user?.email;
+  const userName = session?.user?.name;
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    studentId: '',
-    department: '',
-    semester: '',
-    batch: '',
-    phone: '',
-    profilePictureUrl: '',
-    githubUrl: '',
-    linkedinUrl: '',
-    skills: '',
-    bio: '',
-    location: ''
-  });
-
+  const [view, setView] = useState('loading');
+  const [formData, setFormData] = useState(INITIAL_FORM);
   const [isExisting, setIsExisting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
-  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
   const [reverifyLoading, setReverifyLoading] = useState(false);
 
   useEffect(() => {
-    if (sessionLoading || !userEmail) return undefined;
+    if (sessionLoading || !userEmail) return;
     let cancelled = false;
     async function load() {
       try {
         const data = await apiFetch(`/api/students/check/${encodeURIComponent(userEmail)}`);
         if (cancelled) return;
         if (data.exists && data.profile) {
+          setFormData((prev) => ({ ...prev, ...data.profile, email: userEmail }));
           setIsExisting(true);
-          setFormData({
-            fullName: data.profile.fullName || '',
-            email: userEmail,
-            studentId: data.profile.studentId || '',
-            department: data.profile.department || '',
-            semester: data.profile.semester || '',
-            batch: data.profile.batch || '',
-            phone: data.profile.phone || '',
-            profilePictureUrl: data.profile.profilePictureUrl || '',
-            githubUrl: data.profile.githubUrl || '',
-            linkedinUrl: data.profile.linkedinUrl || '',
-            skills: data.profile.skills || '',
-            bio: data.profile.bio || '',
-            location: data.profile.location || '',
-            verification: data.profile.verification || null
-          });
+          setView('view');
         } else {
           setFormData((prev) => ({ ...prev, email: userEmail }));
+          setView('create');
         }
-      } catch (err) {
-        console.error('Failed to fetch student data:', err);
-      } finally {
-        if (!cancelled) setHasLoadedProfile(true);
+      } catch {
+        setFormData((prev) => ({ ...prev, email: userEmail }));
+        setView('create');
       }
     }
     load();
     return () => { cancelled = true; };
   }, [userEmail, sessionLoading]);
 
-  const isLoading = sessionLoading || (!hasLoadedProfile && !!userEmail);
-  const isNotSignedIn = !sessionLoading && !userEmail;
+  useEffect(() => {
+    if (!sessionLoading && !userEmail) setView('not-signed-in');
+  }, [sessionLoading, userEmail]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -146,23 +205,21 @@ export default function StudentProfileForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.profilePictureUrl) {
-      setStatus({ type: 'error', message: 'Profile photo is required.' });
+      toast.error('Profile photo is required.');
       return;
     }
     setLoading(true);
-    setStatus({ type: '', message: '' });
 
     const endpoint = isExisting
       ? `/api/students/${encodeURIComponent(formData.email)}`
       : `/api/students`;
-
     const method = isExisting ? 'PATCH' : 'POST';
 
     try {
       const data = await apiFetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (data.profile) {
@@ -170,15 +227,10 @@ export default function StudentProfileForm() {
       }
 
       setIsExisting(true);
-      setStatus({
-        type: 'success',
-        message: isExisting ? 'Profile updated successfully!' : 'Profile created successfully!'
-      });
+      toast.success(isExisting ? 'Profile updated!' : 'Profile created!');
+      setView('view');
     } catch (err) {
-      setStatus({
-        type: 'error',
-        message: err.message || 'Server connection failed. Please try again.'
-      });
+      toast.error(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -188,21 +240,23 @@ export default function StudentProfileForm() {
     if (!isExisting) return;
     setReverifyLoading(true);
     try {
-      const data = await apiFetch("/api/verify-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile: formData, type: "student" }),
+      const data = await apiFetch('/api/verify-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: { ...formData, email: userEmail, fullName: userName }, type: 'student' }),
       });
-      setFormData((prev) => ({ ...prev, verification: data.verification }));
-      setStatus({ type: 'success', message: 'Profile re-verified successfully!' });
+      if (data.verification) {
+        setFormData((prev) => ({ ...prev, verification: data.verification }));
+      }
+      toast.success('Profile re-verified!');
     } catch {
-      setStatus({ type: 'error', message: 'Verification failed.' });
+      toast.error('Verification failed.');
     } finally {
       setReverifyLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (view === 'loading' || sessionLoading) {
     return (
       <div className="flex flex-col justify-center items-center py-20 gap-4">
         <div className="relative">
@@ -214,492 +268,434 @@ export default function StudentProfileForm() {
     );
   }
 
-  if (isNotSignedIn) {
+  if (view === 'not-signed-in') {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl mx-auto my-8 p-8 sm:p-12 text-center bg-white rounded-3xl shadow-xl border border-gray-100"
-      >
+      <div className="max-w-2xl mx-auto my-8 p-8 sm:p-12 text-center bg-white rounded-3xl shadow-xl border border-gray-100">
         <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-6">
           <FaUser className="w-10 h-10 text-indigo-400" />
         </div>
         <h3 className="text-xl font-bold text-gray-800 mb-2">Sign In Required</h3>
         <p className="text-gray-500 text-sm">Please sign in to create your student profile.</p>
-      </motion.div>
+      </div>
     );
   }
 
-  return (
-    <div className="max-w-3xl mx-auto my-8">
-      <Toaster position="top-center" />
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 text-center"
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold tracking-wide uppercase mb-4">
-          <FaGraduationCap className="w-3.5 h-3.5" />
-          Student Profile
-        </div>
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-          {isExisting ? 'Update Your' : 'Create Your'}{' '}
-          <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Profile
-          </span>
-        </h1>
-        <p className="mt-2 text-gray-500 text-sm max-w-lg mx-auto">
-          {isExisting
-            ? 'Modify your academic information and keep your profile up to date.'
-            : 'Fill out your profile details to appear in the student directory.'}
-        </p>
-      </motion.div>
+  if (view === 'view') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Toaster position="top-center" />
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-5 sm:p-8 text-center">
+          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5">
+            <FaCheckCircle className="w-8 h-8" />
+          </div>
 
-      {/* Status Alert */}
-      <AnimatePresence>
-        {status.message && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className={`p-4 mb-6 rounded-2xl flex items-center gap-3 text-sm font-medium shadow-sm ${
-              status.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}
-          >
-            {status.type === 'success' ? <FaCheckCircle size={18} /> : <FaExclamationCircle size={18} />}
-            {status.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
+            Profile is Live
+          </h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
+            Your student profile has been saved successfully. You can update it
+            anytime.
+          </p>
 
-      {/* Form Card */}
-      <motion.form
-        variants={scaleIn}
-        initial="hidden"
-        animate="visible"
-        onSubmit={handleSubmit}
-        className="bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden"
-      >
-        {/* Profile Picture Preview */}
-        <div className="relative h-32 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.15),transparent)]" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-white/10" />
-          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/5" />
-        </div>
-
-        <div className="px-5 sm:px-8 pb-8 -mt-14">
-          <div className="relative w-28 h-28 mx-auto mb-6">
-            {formData.profilePictureUrl ? (
+          <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+            {formData.profilePictureUrl && (
               <img
                 src={formData.profilePictureUrl}
-                alt="Profile"
-                className="w-28 h-28 rounded-full border-4 border-white object-cover shadow-xl"
+                alt={userName}
+                className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-2 border-indigo-500"
+                onError={(e) => (e.target.style.display = 'none')}
               />
-            ) : (
-              <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl">
-                <span className="text-4xl font-bold text-white">
-                  {formData.fullName?.charAt(0) || '?'}
+            )}
+
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+              {formData.fullName || userName}
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {formData.studentId && `ID: ${formData.studentId}`}
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {formData.department && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  <FaGraduationCap className="w-3 h-3" />
+                  {DEPARTMENT_OPTIONS.find((d) => d.value === formData.department)?.label || formData.department}
                 </span>
+              )}
+              {formData.semester && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  {formData.semester}
+                </span>
+              )}
+              {formData.batch && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  Batch {formData.batch}
+                </span>
+              )}
+              {formData.location && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  <FaMapMarkerAlt className="w-3 h-3" />
+                  {formData.location}
+                </span>
+              )}
+            </div>
+
+            {formData.skills && (
+              <div className="flex flex-wrap justify-center gap-1.5 mt-3">
+                {formData.skills.split(',').map((s, i) => s.trim() && (
+                  <span key={i} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">
+                    {s.trim()}
+                  </span>
+                ))}
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors"
-            >
-              {uploading ? <FaSpinner className="w-4 h-4 text-indigo-500 animate-spin" /> : <FaCamera className="w-4 h-4 text-gray-400" />}
-            </button>
-            {formData.profilePictureUrl && (
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="absolute -top-1 -right-1 p-1.5 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors"
-              >
-                <FaTimes className="w-3 h-3 text-gray-400" />
-              </button>
+
+            {formData.bio && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3 max-w-md mx-auto">
+                {formData.bio}
+              </p>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
+
+            <div className="flex flex-wrap justify-center gap-3 mt-3">
+              {formData.githubUrl && (
+                <a href={formData.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-indigo-600 transition-colors">
+                  <FaGithub className="w-3.5 h-3.5" /> GitHub
+                </a>
+              )}
+              {formData.linkedinUrl && (
+                <a href={formData.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-indigo-600 transition-colors">
+                  <FaLinkedin className="w-3.5 h-3.5" /> LinkedIn
+                </a>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <VerificationBadgeInline verification={formData.verification} />
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setView('edit')}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors"
+            >
+              <FaEdit className="w-4 h-4" /> Edit Profile
+            </button>
+            <button
+              onClick={handleReverify}
+              disabled={reverifyLoading}
+              className="inline-flex items-center gap-2 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-semibold px-6 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-colors disabled:opacity-50"
+            >
+              {reverifyLoading ? (
+                <FaSpinner className="w-4 h-4 animate-spin" />
+              ) : (
+                <FaSyncAlt className="w-4 h-4" />
+              )}
+              Re-verify
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isEdit = view === 'edit';
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <Toaster position="top-center" />
+
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+        <div className="px-6 md:px-8 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+              {isEdit ? 'Edit Student Profile' : 'Create Student Profile'}
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+              {isEdit
+                ? 'Update your academic details.'
+                : 'Fill in your details to appear in the student directory.'}
+            </p>
+          </div>
+          {isEdit && (
+            <button
+              onClick={() => setView('view')}
+              className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-white underline"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          {/* Profile Picture */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60">
+            <div className="w-20 h-20 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-indigo-500 shrink-0">
+              {formData.profilePictureUrl ? (
+                <img
+                  src={formData.profilePictureUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <FaUser className="w-8 h-8 text-zinc-400" />
+              )}
+            </div>
+            <div className="space-y-1.5 w-full text-center sm:text-left">
+              <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                Profile Photo <span className="text-red-500">*</span>
+              </h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Choose a photo from your computer
+              </p>
+              {formData.profilePictureUrl ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-500 truncate max-w-[200px]">Photo selected</span>
+                  <button type="button" onClick={handleRemoveImage} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors">
+                    <FaTimes className="w-3.5 h-3.5 text-zinc-400" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
+                >
+                  <FaCamera className="w-4 h-4 text-zinc-400" />
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {uploading ? 'Uploading...' : 'Browse Photo'}
+                  </span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Full Name *</label>
+              <div className="relative">
+                <FaUser className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="text"
+                  name="fullName"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Email *</label>
+              <div className="relative">
+                <FaEnvelope className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  disabled
+                  value={formData.email}
+                  className={fieldClass('bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 cursor-not-allowed')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Student ID *</label>
+              <div className="relative">
+                <FaIdCard className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="text"
+                  name="studentId"
+                  required
+                  value={formData.studentId}
+                  onChange={handleChange}
+                  placeholder="e.g. 011201001"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Department *</label>
+              <div className="relative">
+                <FaGraduationCap className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <select
+                  name="department"
+                  required
+                  value={formData.department}
+                  onChange={handleChange}
+                  className={`${fieldClass()} appearance-none cursor-pointer`}
+                >
+                  <option value="">Select Department</option>
+                  {DEPARTMENT_OPTIONS.map((d) => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Semester / Year *</label>
+              <input
+                type="text"
+                name="semester"
+                required
+                value={formData.semester}
+                onChange={handleChange}
+                placeholder="e.g. 8th Semester"
+                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none dark:text-white transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Batch *</label>
+              <input
+                type="text"
+                name="batch"
+                required
+                value={formData.batch}
+                onChange={handleChange}
+                placeholder="e.g. 211"
+                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none dark:text-white transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Phone *</label>
+              <div className="relative">
+                <FaPhone className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="text"
+                  name="phone"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+8801700000000"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Location *</label>
+              <div className="relative">
+                <FaMapMarkerAlt className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="text"
+                  name="location"
+                  required
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="e.g. Dhaka, Bangladesh"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">GitHub</label>
+              <div className="relative">
+                <FaGithub className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="url"
+                  name="githubUrl"
+                  value={formData.githubUrl}
+                  onChange={handleChange}
+                  placeholder="https://github.com/username"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">LinkedIn</label>
+              <div className="relative">
+                <FaLinkedin className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+                <input
+                  type="url"
+                  name="linkedinUrl"
+                  value={formData.linkedinUrl}
+                  onChange={handleChange}
+                  placeholder="https://linkedin.com/in/username"
+                  className={fieldClass()}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Skills (Comma separated) *</label>
+            <div className="relative">
+              <FaCode className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+              <input
+                type="text"
+                name="skills"
+                required
+                value={formData.skills}
+                onChange={handleChange}
+                placeholder="React, Next.js, Node.js, Tailwind CSS"
+                className={fieldClass()}
+              />
+            </div>
+            {formData.skills && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {formData.skills.split(',').map((s, i) => s.trim() && (
+                  <span key={i} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">
+                    {s.trim()}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Bio / About *</label>
+            <textarea
+              name="bio"
+              rows={3}
+              required
+              value={formData.bio}
+              onChange={handleChange}
+              placeholder="Write a brief summary about your background, interests, and goals..."
+              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none dark:text-white resize-none transition-all"
             />
           </div>
 
-          <div className="space-y-6">
-            {/* Row 1: Name + Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Full Name *</label>
-                <div className="relative group">
-                  <FaUser className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    required
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    placeholder="John Doe"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address *</label>
-                <div className="relative group">
-                  <FaEnvelope className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    disabled={isExisting}
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 outline-none text-sm transition-all ${
-                      isExisting
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200'
-                        : 'bg-gray-50 border-gray-200 focus:bg-white'
-                    }`}
-                  />
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Row 2: Student ID + Department */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <motion.div custom={2} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Student ID *</label>
-                <div className="relative group">
-                  <FaIdCard className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="text"
-                    name="studentId"
-                    required
-                    value={formData.studentId}
-                    onChange={handleChange}
-                    placeholder="e.g. 011201001"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Department *</label>
-                <div className="relative group">
-                  <FaGraduationCap className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <select
-                    name="department"
-                    required
-                    value={formData.department}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">Select Department</option>
-                    <option value="CSE">Computer Science & Engineering</option>
-                    <option value="EEE">Electrical & Electronic Engineering</option>
-                    <option value="BBA">Business Administration</option>
-                    <option value="English">English</option>
-                    <option value="MBA">MBA</option>
-                  </select>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Row 3: Semester + Batch */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Semester / Year *</label>
-                <input
-                  type="text"
-                  name="semester"
-                  required
-                  value={formData.semester}
-                  onChange={handleChange}
-                  placeholder="e.g. 8th Semester"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                />
-              </motion.div>
-
-              <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Batch *</label>
-                <input
-                  type="text"
-                  name="batch"
-                  required
-                  value={formData.batch}
-                  onChange={handleChange}
-                  placeholder="e.g. 211"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                />
-              </motion.div>
-            </div>
-
-            {/* Row 4: Phone + Location */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <motion.div custom={6} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number *</label>
-                <div className="relative group">
-                  <FaPhone className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="text"
-                    name="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+8801700000000"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div custom={7} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Location *</label>
-                <div className="relative group">
-                  <FaMapMarkerAlt className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="text"
-                    name="location"
-                    required
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="e.g. Dhaka, Bangladesh"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Row 5: GitHub + LinkedIn */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <motion.div custom={8} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">GitHub Profile</label>
-                <div className="relative group">
-                  <FaGithub className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="url"
-                    name="githubUrl"
-                    value={formData.githubUrl}
-                    onChange={handleChange}
-                    placeholder="https://github.com/username"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div custom={9} variants={fadeUp} initial="hidden" animate="visible">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">LinkedIn Profile</label>
-                <div className="relative group">
-                  <FaLinkedin className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                  <input
-                    type="url"
-                    name="linkedinUrl"
-                    value={formData.linkedinUrl}
-                    onChange={handleChange}
-                    placeholder="https://linkedin.com/in/username"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                  />
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Profile Image Upload */}
-            <motion.div custom={10} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profile Photo *</label>
-              <div className="relative group">
-                <FaImage className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                {formData.profilePictureUrl ? (
-                  <div className="flex items-center gap-3 w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl">
-                    <img src={formData.profilePictureUrl} alt="Preview" className="w-10 h-10 rounded-lg object-cover" />
-                    <span className="flex-1 text-xs text-gray-500 truncate">Photo selected</span>
-                    <button type="button" onClick={handleRemoveImage} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
-                      <FaTimes className="w-3 h-3 text-gray-400" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="w-full flex items-center gap-3 pl-11 pr-4 py-3 bg-gray-50 border border-dashed border-gray-300 rounded-2xl text-sm hover:border-indigo-400 transition-colors"
-                  >
-                    <span className="text-gray-400">
-                      {uploading ? 'Uploading...' : 'Choose a photo from your computer'}
-                    </span>
-                  </button>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Skills */}
-            <motion.div custom={11} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Skills (Comma separated) *</label>
-              <div className="relative group">
-                <FaCode className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input
-                  type="text"
-                  name="skills"
-                  required
-                  value={formData.skills}
-                  onChange={handleChange}
-                  placeholder="React, Next.js, Node.js, Tailwind CSS"
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all"
-                />
-              </div>
-              {formData.skills && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {formData.skills.split(',').map((s, i) => s.trim() && (
-                    <span key={i} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100">
-                      {s.trim()}
-                    </span>
-                  ))}
-                </div>
+          {/* Submit */}
+          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-8 py-3 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <FaSpinner className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <FaSave className="w-4 h-4" />
+                  {isEdit ? 'Save Changes' : 'Publish Profile'}
+                </>
               )}
-            </motion.div>
-
-            {/* Bio */}
-            <motion.div custom={12} variants={fadeUp} initial="hidden" animate="visible">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Bio / About *</label>
-              <textarea
-                name="bio"
-                rows={4}
-                required
-                value={formData.bio}
-                onChange={handleChange}
-                placeholder="Write a brief summary about your background, interests, and goals..."
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all resize-none"
-              />
-            </motion.div>
-
-            {/* Submit Button */}
-            <motion.div custom={13} variants={fadeUp} initial="hidden" animate="visible">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl disabled:opacity-50 transition-all duration-300 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 flex items-center justify-center gap-2 text-sm"
-              >
-                {loading ? (
-                  <>
-                    <FaSpinner className="animate-spin" />
-                    Processing...
-                  </>
-                ) : isExisting ? (
-                  <>
-                    <FaSave />
-                    Update Profile
-                  </>
-                ) : (
-                  <>
-                    <FaSave />
-                    Save Profile
-                  </>
-                )}
-              </button>
-            </motion.div>
-
-            {/* Verification Status & Re-verify */}
-            {isExisting && (
-              <motion.div custom={14} variants={fadeUp} initial="hidden" animate="visible">
-                {formData.verification ? (
-                  <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FaShieldAlt className={`w-4 h-4 ${
-                        formData.verification.badge === 'Verified' ? 'text-emerald-500' :
-                        formData.verification.badge === 'Suspicious' ? 'text-red-500' : 'text-amber-500'
-                      }`} />
-                      <span className={`text-sm font-bold ${
-                        formData.verification.badge === 'Verified' ? 'text-emerald-600' :
-                        formData.verification.badge === 'Suspicious' ? 'text-red-600' : 'text-amber-600'
-                      }`}>
-                        {formData.verification.badge} ({formData.verification.trustScore}%)
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
-                      <div className={`h-full rounded-full ${
-                        formData.verification.badge === 'Verified' ? 'bg-emerald-500' :
-                        formData.verification.badge === 'Suspicious' ? 'bg-red-500' : 'bg-amber-500'
-                      }`} style={{ width: `${formData.verification.trustScore}%` }} />
-                    </div>
-
-                    {formData.verification.linkValidation && formData.verification.linkValidation.length > 0 && (
-                      <div className="mb-3 p-3 bg-white rounded-lg border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Link Status</p>
-                        <div className="space-y-1.5">
-                          {formData.verification.linkValidation.map((link, i) => (
-                            <div key={i} className="flex items-center justify-between text-[10px]">
-                              <div className="flex items-center gap-1.5">
-                                {link.valid ? (
-                                  <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
-                                    <FaCheckCircle className="w-2.5 h-2.5 text-emerald-600" />
-                                  </span>
-                                ) : link.url ? (
-                                  <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
-                                    <FaExclamationCircle className="w-2.5 h-2.5 text-red-600" />
-                                  </span>
-                                ) : (
-                                  <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <FaExclamationCircle className="w-2.5 h-2.5 text-gray-400" />
-                                  </span>
-                                )}
-                                <span className="font-semibold text-gray-600">{link.label}</span>
-                              </div>
-                              <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-gray-400'}`}>
-                                {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {formData.verification.breakdown && (
-                      <div className="grid grid-cols-2 gap-1 mb-2">
-                        {Object.entries(formData.verification.breakdown).map(([key, val]) => (
-                          <div key={key} className="flex justify-between text-[10px] text-gray-500">
-                            <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                            <span className="font-semibold">{val}/25</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {formData.verification.analysis && (
-                      <p className="text-xs text-gray-500 mt-1">{formData.verification.analysis}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl flex items-center gap-3">
-                    <FaShieldAlt className="w-5 h-5 text-gray-400" />
-                    <p className="text-sm text-gray-500">Not verified yet</p>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleReverify}
-                  disabled={reverifyLoading}
-                  className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-2xl disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
-                >
-                  {reverifyLoading ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <FaSyncAlt />
-                      Re-verify Profile
-                    </>
-                  )}
-                </button>
-              </motion.div>
-            )}
+            </button>
           </div>
-        </div>
-      </motion.form>
+        </form>
+      </div>
     </div>
   );
 }

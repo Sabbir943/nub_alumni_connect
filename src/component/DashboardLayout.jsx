@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
-  FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
+  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare,
+  FiFileText, FiShield, FiAlertTriangle,
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
   FiBell, FiUser, FiHome
 } from 'react-icons/fi';
@@ -52,10 +52,9 @@ const DashboardLayout = ({ children }) => {
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Notifications', href: '/dashboard/alumni/notifications', icon: <FiBell />, badge: unreadNotifCount || null },
     { label: 'Create Profile', href: '/dashboard/alumni/profile', icon: <FiUserPlus /> },
-    { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
-    { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
+    { label: 'ChatBox', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
     { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> },
     { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> },
     { label: 'Blog', href: '/blog', icon: <FiFileText /> }
@@ -67,7 +66,7 @@ const DashboardLayout = ({ children }) => {
     { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare /> },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
     { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiBriefcase /> },
-    { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> },
+    { label: 'ChatBox', href: '/dashboard/students/text-box', icon: <FiMessageSquare /> },
     { label: 'My Mentorship', href: '/dashboard/students/my-mentorship', icon: <FiBookOpen /> },
     { label: 'Blog', href: '/blog', icon: <FiFileText /> }
   ];
