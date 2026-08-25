@@ -1,0 +1,16 @@
+{
+  "name": "nub-alumni-socket-server",
+  "version": "1.0.0",
+  "description": "Socket.IO signaling server for NUB Alumni Connect",
+  "main": "socket-server.js",
+  "scripts": {
+    "start": "node socket-server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3",
+    "mongodb": "^7.4.0"
+  }
+}

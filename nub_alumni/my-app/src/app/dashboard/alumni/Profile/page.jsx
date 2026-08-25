@@ -225,6 +225,7 @@ export default function ProfilePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return toast.error("You must be logged in.");
+    if (!formData.profilePictureUrl) return toast.error("Profile photo is required.");
     setSaving(true);
 
     const payload = { ...formData, fullName: user.name, email: user.email };
@@ -428,7 +429,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1.5 w-full text-center sm:text-left">
               <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Profile Photo
+                Profile Photo <span className="text-red-500">*</span>
               </h4>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Choose a photo from your computer
@@ -591,11 +592,10 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <InputField label="LinkedIn" icon={FiLinkedin} required>
+            <InputField label="LinkedIn" icon={FiLinkedin}>
               <input
                 type="url"
                 name="linkedinUrl"
-                required
                 value={formData.linkedinUrl}
                 onChange={handleChange}
                 className={fieldClass()}

@@ -7,7 +7,7 @@ import {
   FiMenu, FiX, FiBell, FiMessageSquare,
   FiUser, FiLogOut, FiBriefcase, FiUsers,
   FiCompass, FiBookOpen, FiGrid,
-  FiChevronDown
+  FiChevronDown, FiFileText
 } from 'react-icons/fi';
 import { GraduationCap } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
@@ -65,6 +65,7 @@ const Navbar = () => {
   const privateLinks = [
     { label: 'Job Board', href: '/job-portal', icon: <FiBriefcase className="w-4 h-4" /> },
     { label: 'Notice Board', href: '/notice', icon: <FiBookOpen className="w-4 h-4" /> },
+    { label: 'Blog', href: '/blog', icon: <FiFileText className="w-4 h-4" /> },
   ];
 
   const isActive = (path) => pathname === path;
@@ -217,7 +218,7 @@ const Navbar = () => {
 
                         <div className="p-2">
                           <Link
-                            href="/profile"
+                            href={user?.role?.toLowerCase() === 'alumni' ? '/dashboard/alumni/profile' : '/dashboard/students/create-profile'}
                             onClick={() => setIsProfileDropdownOpen(false)}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                           >
@@ -367,7 +368,7 @@ const Navbar = () => {
                     )}
 
                     <Link
-                      href="/profile"
+                      href={user?.role?.toLowerCase() === 'alumni' ? '/dashboard/alumni/profile' : '/dashboard/students/create-profile'}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >

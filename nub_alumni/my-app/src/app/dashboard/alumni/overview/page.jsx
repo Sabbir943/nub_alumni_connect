@@ -236,7 +236,7 @@ function ProfileCompletionCard({ completion, user, hasProfile }) {
 
       {!hasProfile && (
         <Link
-          href="/dashboard/alumni/Profile"
+          href="/dashboard/alumni/profile"
           className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 hover:-translate-y-0.5"
         >
           <FiEdit3 className="w-4 h-4" />
@@ -606,7 +606,7 @@ export default function AlumniOverviewPage() {
               Quick Actions
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <QuickActionCard icon={FiEdit3} label="Edit Profile" description="Update your professional details" href="/dashboard/alumni/Profile" color="blue" index={0} />
+              <QuickActionCard icon={FiEdit3} label="Edit Profile" description="Update your professional details" href="/dashboard/alumni/profile" color="blue" index={0} />
               <QuickActionCard icon={FiUserPlus} label="Find Alumni" description="Browse and connect with alumni" href="/alumni-directory" color="indigo" index={1} />
               <QuickActionCard icon={FiBriefcase} label="Post a Job" description="Share opportunities with the network" href="/dashboard/alumni/jobPost" color="emerald" index={2} />
               <QuickActionCard icon={FiMessageSquare} label="Messages" description="Check your inbox" href="/dashboard/alumni/text" color="amber" index={3} />

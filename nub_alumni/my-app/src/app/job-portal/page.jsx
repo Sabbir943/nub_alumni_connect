@@ -227,6 +227,7 @@ function JobVerificationBadge({ verification }) {
       </div>
     );
   }
+  //added some code 
 
   const { badge, trustScore, linkStatus } = verification;
   const config = {

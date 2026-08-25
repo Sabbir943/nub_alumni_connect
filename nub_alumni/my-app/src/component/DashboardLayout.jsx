@@ -2,17 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
-  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare, FiEdit,
-  FiFileText, FiCheckSquare, FiShield, FiAlertTriangle,
+  FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare,
+  FiFileText, FiShield, FiAlertTriangle,
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
   FiBell, FiUser, FiHome
 } from 'react-icons/fi';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { CallProvider } from '@/component/CallContext';
-import GlobalIncomingCall from '@/component/GlobalIncomingCall';
+
+const CallProvider = dynamic(() => import('@/component/CallContext').then(m => m.CallProvider), { ssr: false });
+const GlobalIncomingCall = dynamic(() => import('@/component/GlobalIncomingCall'), { ssr: false });
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
@@ -49,13 +51,13 @@ const DashboardLayout = ({ children }) => {
   const alumniLinks = [
     { label: 'Overview', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Notifications', href: '/dashboard/alumni/notifications', icon: <FiBell />, badge: unreadNotifCount || null },
-    { label: 'Create Profile', href: '/dashboard/alumni/Profile', icon: <FiUserPlus /> },
-    { label: 'Edit Profile', href: '/dashboard/alumni/editprofile', icon: <FiEdit /> },
+    { label: 'Create Profile', href: '/dashboard/alumni/profile', icon: <FiUserPlus /> },
     { label: 'My Connections', href: '/dashboard/alumni/my-connection', icon: <FiUsers /> },
     { label: 'Post Jobs/Internships', href: '/dashboard/alumni/jobPost', icon: <FiBriefcase /> },
-    { label: 'Messages', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
+    { label: 'ChatBox', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
     { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> },
-    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> }
+    { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> },
+    { label: 'Blog', href: '/blog', icon: <FiFileText /> }
   ];
 
   const studentLinks = [
@@ -64,8 +66,9 @@ const DashboardLayout = ({ children }) => {
     { label: 'My Connection', href: '/dashboard/students/my-connection', icon: <FiMessageSquare /> },
     { label: 'Job Portal', href: '/dashboard/students/job-portal', icon: <FiFileText /> },
     { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiBriefcase /> },
-    { label: 'Text Box', href: '/dashboard/students/text-box', icon: <FiCheckSquare /> },
-    { label: 'My Mentorship', href: '/dashboard/students/my-mentorship', icon: <FiBookOpen /> }
+    { label: 'ChatBox', href: '/dashboard/students/text-box', icon: <FiMessageSquare /> },
+    { label: 'My Mentorship', href: '/dashboard/students/my-mentorship', icon: <FiBookOpen /> },
+    { label: 'Blog', href: '/blog', icon: <FiFileText /> }
   ];
 
   const adminLinks = [
@@ -138,7 +141,7 @@ const DashboardLayout = ({ children }) => {
                 <span className="hidden sm:inline">Home</span>
               </Link>
               <Link
-                href="/profile"
+                href={user?.role?.toLowerCase() === 'alumni' ? '/dashboard/alumni/profile' : '/dashboard/students/create-profile'}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <FiUser className="w-4 h-4" />

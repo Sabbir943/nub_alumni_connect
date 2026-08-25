@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
-import { FiGrid, FiUsers, FiBriefcase, FiShield } from 'react-icons/fi';
+import { FiUsers, FiBriefcase, FiShield } from 'react-icons/fi';
 
 export default function DashboardPage() {
   const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
   const user = session?.user;
   const role = user?.role?.toLowerCase();
 
@@ -21,10 +22,10 @@ export default function DashboardPage() {
 
     const target = routes[role];
     if (target) {
-      const timer = setTimeout(() => window.location.replace(target), 800);
+      const timer = setTimeout(() => router.push(target), 300);
       return () => clearTimeout(timer);
     }
-  }, [role, isPending]);
+  }, [role, isPending, router]);
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -41,101 +42,49 @@ export default function DashboardPage() {
   const RoleIcon = config.icon;
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center relative overflow-hidden">
-      {/* Background Orbs */}
-      <motion.div
-        className="absolute w-96 h-96 bg-blue-400/15 rounded-full blur-3xl"
-        animate={{ y: [0, -30, 0, 30, 0], x: [0, 20, 0, -20, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ top: '-10%', left: '-10%' }}
-      />
-      <motion.div
-        className="absolute w-80 h-80 bg-violet-400/15 rounded-full blur-3xl"
-        animate={{ y: [0, 20, 0, -20, 0], x: [0, -15, 0, 15, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        style={{ bottom: '-10%', right: '-10%' }}
-      />
-
-      {/* Main Content */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative flex flex-col items-center gap-6"
-      >
-        {/* Avatar + Role Badge */}
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-6">
         <div className="relative">
           {user?.image ? (
-            <motion.img
+            <img
               src={user.image}
               alt={user.name}
               className="w-20 h-20 rounded-2xl object-cover shadow-2xl ring-4 ring-white dark:ring-zinc-800"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
             />
           ) : (
-            <motion.div
-              className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white text-2xl font-black shadow-2xl ${config.glow}`}
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
-            >
+            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white text-2xl font-black shadow-2xl ${config.glow}`}>
               {getInitials(user?.name)}
-            </motion.div>
+            </div>
           )}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.3 }}
-            className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}
-          >
+          <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}>
             <RoleIcon className="w-4 h-4 text-white" />
-          </motion.div>
-          <motion.div
-            className="absolute -inset-3 rounded-3xl border-2 border-blue-400/20"
-            animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.2, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          </div>
         </div>
 
-        {/* Welcome Text */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="text-center space-y-2"
-        >
+        <div className="text-center space-y-2">
           <h1 className="text-2xl font-black text-zinc-900 dark:text-white">
             Welcome, {user?.name || 'User'}
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {isPending ? 'Verifying your session...' : `Redirecting to your ${config.label} dashboard...`}
           </p>
-        </motion.div>
+        </div>
 
-        {/* Loading Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex items-center gap-3"
-        >
+        <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
-              <motion.div
+              <div
                 key={i}
-                className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${config.gradient}`}
-                animate={{ y: [0, -8, 0], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+                className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${config.gradient} animate-bounce`}
+                style={{ animationDelay: `${i * 0.15}s` }}
               />
             ))}
           </div>
           <span className="text-xs font-semibold text-zinc-400 ml-2">
             {isPending ? 'Loading...' : 'Almost there...'}
           </span>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }
