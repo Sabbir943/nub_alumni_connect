@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
 const http = require('http');
+const { initFirebaseAdmin, sendPushToUser } = require('./socket-push');
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -296,6 +297,24 @@ io.on('connection', (socket) => {
       notificationId,
     });
 
+    (async () => {
+      try {
+        const database = await connectDB();
+        const callerStudent = await database.collection('students').findOne({ email: callerEmail }, { projection: { fullName: 1 } });
+        const callerAlumni = await database.collection('alumni_directory').findOne({ email: callerEmail }, { projection: { fullName: 1 } });
+        const callerDisplayName = callerStudent?.fullName || callerAlumni?.fullName || callerName;
+
+        sendPushToUser(database, calleeEmail, {
+          title: `Incoming ${callType} call`,
+          body: `${callerDisplayName} is calling you`,
+          url: `/dashboard/alumni/text?chatWith=${callerEmail}`,
+          data: { type: 'call', callerEmail, callType },
+        });
+      } catch (e) {
+        console.error('[Socket.IO] Call push notification error:', e.message);
+      }
+    })();
+
     console.log(`[Socket.IO] Call initiated: ${callerEmail} -> ${calleeEmail} (${callType})`);
   });
 
@@ -461,6 +480,14 @@ io.on('connection', (socket) => {
               createdAt: new Date(),
             });
           }
+
+          const database2 = await connectDB();
+          sendPushToUser(database2, receiverEmail, {
+            title: senderName,
+            body: trimmedText.length > 100 ? trimmedText.substring(0, 100) + '...' : trimmedText,
+            url: `${messagingPath}?chatWith=${senderEmail}`,
+            data: { type: 'message', senderEmail },
+          });
         } catch (e) {
           console.error('[Socket.IO] Message notification error:', e.message);
         }
@@ -552,4 +579,5 @@ httpServer.listen(PORT, () => {
   console.log(`[Socket.IO] Server running on port ${PORT}`);
   console.log(`[Socket.IO] Health check: http://localhost:${PORT}/`);
   ensureIndexes();
+  initFirebaseAdmin();
 });

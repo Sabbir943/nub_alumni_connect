@@ -10,7 +10,7 @@ import {
   playDeclineSound,
 } from "./ringtone";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
 
 let socket = null;
 
@@ -238,9 +238,21 @@ export function useSocket(email) {
   const clearNewMessage = useCallback(() => setNewMessage(null), []);
   const clearReadReceipt = useCallback(() => setReadReceipt(null), []);
 
+  const forceReconnect = useCallback(() => {
+    const s = socketRef.current;
+    if (!s) return;
+    if (!s.connected) {
+      s.connect();
+    } else {
+      s.disconnect();
+      s.connect();
+    }
+  }, []);
+
   return {
     // Connection
     isConnected,
+    forceReconnect,
     // Call
     incomingCall,
     callState,

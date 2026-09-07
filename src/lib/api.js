@@ -1,5 +1,6 @@
 export async function apiFetch(path, options = {}, retries = 2) {
   let lastError;
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(path, options);

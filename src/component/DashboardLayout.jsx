@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 
 const CallProvider = dynamic(() => import('@/component/CallContext').then(m => m.CallProvider), { ssr: false });
 const GlobalIncomingCall = dynamic(() => import('@/component/GlobalIncomingCall'), { ssr: false });
+const PushNotificationManager = dynamic(() => import('@/component/PushNotificationManager'), { ssr: false });
 
 const DashboardLayout = ({ children }) => {
   const pathname = usePathname();
@@ -106,6 +107,7 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <CallProvider email={email}>
+      <PushNotificationManager email={email} />
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 flex flex-col transition-colors duration-300">
         {/* Global Incoming Call Popup */}
         <GlobalIncomingCall />

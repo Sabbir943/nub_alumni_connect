@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<h2>NUB Alumni Connect Icon Generator</h2>
+<p>Open this file in a browser, click "Generate" to download icons at each size.</p>
+<canvas id="canvas"></canvas>
+<script>
+const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function drawIcon(size) {
+  canvas.width = size;
+  canvas.height = size;
+  const r = size * 0.18;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Background rounded rect
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, r);
+  ctx.fillStyle = '#4f46e5';
+  ctx.fill();
+
+  // Letter N
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${size * 0.5}px Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', cx, cy);
+}
+
+sizes.forEach(size => {
+  const btn = document.createElement('button');
+  btn.textContent = `Download ${size}x${size}`;
+  btn.onclick = () => {
+    drawIcon(size);
+    const a = document.createElement('a');
+    a.download = `icon-${size}x${size}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  document.body.appendChild(btn);
+  document.body.appendChild(document.createElement('br'));
+});
+</script>
+</body>
+</html>

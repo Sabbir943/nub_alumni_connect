@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { getVideoConstraints, getAudioConstraints } from "@/lib/mobileMedia";
 import {
   playRingtone,
   playIncomingRingtone,
@@ -47,8 +48,8 @@ export function CallProvider({ children, email }) {
   const setupLocalStream = useCallback(async (type = "video") => {
     try {
       const constraints = {
-        audio: true,
-        video: type === "video" ? { width: 1280, height: 720, facingMode: "user" } : false,
+        audio: getAudioConstraints(),
+        video: getVideoConstraints(type),
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       setLocalStream(stream);

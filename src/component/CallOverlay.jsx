@@ -137,7 +137,7 @@ function IncomingCallUI({ callerName, callType, onAccept, onDecline }) {
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50"
+      className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]"
     >
       <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl min-w-[300px]">
         <div className="text-center mb-4">
@@ -337,7 +337,7 @@ export default function CallOverlay({
         )}
 
         {/* Controls */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 pb-[env(safe-area-inset-bottom)]">
           <CallControls
             audioEnabled={audioEnabled}
             videoEnabled={videoEnabled}
