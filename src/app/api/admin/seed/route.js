@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getCollection } from '@/lib/mongodb';
 
 export async function GET() {
   try {
@@ -19,12 +18,6 @@ export async function GET() {
       },
     });
 
-    const users = await getCollection('user');
-    await users.updateOne(
-      { email: adminEmail },
-      { $set: { emailVerified: true, role: 'Admin' } }
-    );
-
     if (result && result.user) {
       return NextResponse.json({
         message: 'Admin account ready',
@@ -35,11 +28,6 @@ export async function GET() {
     return NextResponse.json({ message: 'Admin account setup complete' });
   } catch (error) {
     if (error.message?.includes('already') || error.message?.includes('exist')) {
-      const users = await getCollection('user');
-      await users.updateOne(
-        { email: process.env.ADMIN_EMAIL },
-        { $set: { emailVerified: true, role: 'Admin' } }
-      );
       return NextResponse.json({ message: 'Admin account already exists', email: process.env.ADMIN_EMAIL });
     }
     console.error('Admin seed error:', error);

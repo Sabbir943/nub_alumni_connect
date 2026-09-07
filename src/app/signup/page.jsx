@@ -16,7 +16,6 @@ const SignUpPage = () => {
     role: 'Student',
     password: ''
   });
-  const [showCheckEmail, setShowCheckEmail] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -70,7 +69,8 @@ const SignUpPage = () => {
         });
       } catch {}
 
-      setShowCheckEmail(true);
+      toast.success('Account registered successfully! Please sign in.');
+      setTimeout(() => router.push('/signin'), 1500);
     } catch (err) {
       toast.error(err.message || 'Registration failed. Try again.');
     } finally {
@@ -92,33 +92,7 @@ const SignUpPage = () => {
       <Toaster position="top-center" reverseOrder={false} />
 
       <div className="w-full max-w-md space-y-5 bg-zinc-50 dark:bg-zinc-900/40 p-8 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-xl shadow-zinc-100/10 dark:shadow-none">
-        {showCheckEmail ? (
-          <div className="text-center space-y-4 py-4">
-            <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mx-auto">
-              <FiMail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Check your email</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              We sent a verification link to <span className="font-semibold text-zinc-700 dark:text-zinc-200">{formData.email}</span>.
-              Click the link in the email to activate your account, then sign in.
-            </p>
-            <div className="flex flex-col gap-2 pt-2">
-              <Link
-                href="/signin"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all"
-              >
-                Go to Sign In <FiArrowRight />
-              </Link>
-              <button
-                onClick={() => setShowCheckEmail(false)}
-                className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
-              >
-                Didn&apos;t receive it? Try again
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
+        
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Create Account</h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Join Northern University Bangladesh web network</p>
@@ -206,8 +180,6 @@ const SignUpPage = () => {
             Login here
           </Link>
         </p>
-          </>
-        )}
 
       </div>
     </div>

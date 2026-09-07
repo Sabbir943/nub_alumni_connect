@@ -11,37 +11,14 @@ const SignIn = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin/seed').catch(() => {});
   }, []);
 
-  const handleResend = async () => {
-    setResending(true);
-    try {
-      const { error } = await authClient.sendVerificationEmail({
-        email: formData.email,
-        callbackURL: "/verify-email",
-      });
-      if (error) throw error;
-      setResent(true);
-    } catch (err) {
-      toast.error(err.message || 'Failed to resend verification email');
-    } finally {
-      setResending(false);
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (name === 'email' || name === 'password') {
-      setNeedsVerification(false);
-      setResent(false);
-    }
   };
 
   const handleLogin = async (e) => {
@@ -56,10 +33,6 @@ const SignIn = () => {
 
       if (error) {
         console.error('Sign in error:', JSON.stringify(error));
-        if (error.code === 'EMAIL_NOT_VERIFIED' || error.message === 'Email not verified') {
-          setNeedsVerification(true);
-          return;
-        }
         const msg = error.message || error.statusText || 'Invalid email or password.';
         toast.error(msg);
         return;
@@ -138,22 +111,6 @@ const SignIn = () => {
           >
             {loading ? 'Authenticating...' : 'Sign In'} <FiArrowRight />
           </button>
-
-          {needsVerification && (
-            <div className="mt-2 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-xs text-amber-800 dark:text-amber-300 space-y-3">
-              <p className="font-semibold">Your email hasn&apos;t been verified yet.</p>
-              <p>Please check your inbox for the verification link we sent you{resent ? '' : ' (or request a new one below)'}.</p>
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending || resent}
-                className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg transition-all"
-              >
-                <FiMail />
-                {resending ? 'Sending…' : resent ? 'Verification email sent!' : 'Resend verification email'}
-              </button>
-            </div>
-          )}
         </form>
 
         {/* Separator Divider Line */}
