@@ -1,13 +1,23 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || "NUB Alumni Connect <no-reply@nub-alumni-connect.com>";
+const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const EMAIL_FROM = process.env.EMAIL_FROM || `NUB Alumni Connect <${SMTP_USER || "no-reply@nub-alumni-connect.com"}>`;
 
-let resendClient;
-function getResend() {
-  if (!RESEND_API_KEY) return null;
-  if (!resendClient) resendClient = new Resend(RESEND_API_KEY);
-  return resendClient;
+let transporter;
+function getTransporter() {
+  if (!SMTP_USER || !SMTP_PASS) return null;
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+    });
+  }
+  return transporter;
 }
 
 function wrapper(innerHtml) {
@@ -78,22 +88,25 @@ function emailVerificationHtml({ name, url, expiresInHours }) {
 }
 
 export async function sendVerificationEmail({ user, url, token }) {
-  const resend = getResend();
-  if (!resend) {
-    console.warn("[email] RESEND_API_KEY not set. Verification email NOT sent for", user?.email, "\n  link:", url);
+  const mailer = getTransporter();
+  if (!mailer) {
+    console.warn("[email] SMTP_USER/SMTP_PASS not set. Verification email NOT sent for", user?.email, "\n  link:", url);
     return null;
   }
   const base = process.env.BETTER_AUTH_URL || "http://localhost:3000";
   const callbackURL = encodeURIComponent("/verify-email");
   const verifyUrl = `${base}/api/auth/verify-email?token=${token}&callbackURL=${callbackURL}`;
-  const { error } = await resend.emails.send({
-    from: EMAIL_FROM,
-    to: user?.email,
-    subject: "Verify your email — NUB Bridge",
-    html: emailVerificationHtml({ name: user?.name, url: verifyUrl }),
-  });
-  if (error) {
-    console.error("[email] Resend error:", error);
+  try {
+    const info = await mailer.sendMail({
+      from: EMAIL_FROM,
+      to: user?.email,
+      subject: "Verify your email — NUB Bridge",
+      html: emailVerificationHtml({ name: user?.name, url: verifyUrl }),
+    });
+    console.log("[email] Verification email sent to", user?.email, "| messageId:", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("[email] SMTP send error:", error.message);
+    return null;
   }
-  return error ? null : true;
 }
