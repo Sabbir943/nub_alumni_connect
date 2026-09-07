@@ -7,5 +7,16 @@ const Toaster = dynamic(() => import("react-hot-toast").then((m) => m.Toaster), 
 });
 
 export default function ToasterLoader() {
-  return <Toaster />;
+  return (
+    <Toaster
+      position="top-center"
+      toastOptions={{
+        duration: 2000,
+        style: {
+          fontSize: "14px",
+          fontWeight: 500,
+        },
+      }}
+    />
+  );
 }
