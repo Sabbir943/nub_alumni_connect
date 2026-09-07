@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 
-const CATEGORIES = [
+export const CATEGORIES = [
   { name: 'All', icon: <FiGrid size={14} />, color: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' },
   { name: 'Career Advice', icon: <FiBriefcase size={14} />, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
   { name: 'Technology', icon: <FiCompass size={14} />, color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },

@@ -25,8 +25,6 @@ export default function OnlineUsers({ currentUserEmail, onUsersChange }) {
   }, [others.length, onUsersChange]);
 
   useEffect(() => {
-    if (!currentUserEmail) return;
-
     const socket = io(SOCKET_URL, {
       autoConnect: false,
       reconnection: true,
@@ -37,7 +35,8 @@ export default function OnlineUsers({ currentUserEmail, onUsersChange }) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      socket.emit('join', currentUserEmail);
+      // Only logged-in members are tracked in the presence list.
+      if (currentUserEmail) socket.emit('join', currentUserEmail);
       setStatus('online');
     });
 

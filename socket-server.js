@@ -213,6 +213,17 @@ function broadcastOnlineUsers() {
 
 io.on('connection', (socket) => {
   console.log('[Socket.IO] User connected:', socket.id);
+  // Send presence snapshot immediately so every fresh client sees who's
+  // online without waiting for the next join/disconnect broadcast.
+  (async () => {
+    try {
+      const users = await resolveOnlineProfiles([...onlineUsers.keys()]);
+      socket.emit('online-users', users);
+    } catch (err) {
+      console.error('[Socket.IO] presence snapshot error:', err.message);
+    }
+  })();
+
   socket.on('error', (err) => {
     console.error('[Socket.IO] Socket error:', err.message);
   });

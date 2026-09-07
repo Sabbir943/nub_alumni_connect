@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX } from 'react-icons/fi';
+import { FiMenu, FiX, FiFileText, FiUsers, FiActivity } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 import CreatePost from './CreatePost';
 import BlogPostCard from './BlogPostCard';
-import BlogSidebar from './BlogSidebar';
+import BlogSidebar, { CATEGORIES } from './BlogSidebar';
 import OnlineUsers from './OnlineUsers';
 
 function SkeletonCard() {
@@ -31,6 +31,7 @@ function SkeletonCard() {
 
 export default function BlogFeed({ currentUserEmail }) {
   const [posts, setPosts] = useState([]);
+  const [totalPosts, setTotalPosts] = useState(0);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,7 @@ export default function BlogFeed({ currentUserEmail }) {
       } else {
         setPosts(data.posts);
       }
+      setTotalPosts(data.pagination?.total ?? 0);
       setHasNext(data.pagination.hasNext);
     } catch {
       // silent
@@ -68,6 +70,7 @@ export default function BlogFeed({ currentUserEmail }) {
   }, [fetchPosts, initialFetched, selectedCategory]);
 
   const handleCategoryChange = (cat) => {
+    if (cat === selectedCategory) return;
     setSelectedCategory(cat);
     setPage(1);
     setLoading(true);
@@ -89,6 +92,7 @@ export default function BlogFeed({ currentUserEmail }) {
 
   const handlePostCreated = (newPost) => {
     setPosts((prev) => [newPost, ...prev]);
+    setTotalPosts((prev) => prev + 1);
   };
 
   const handleDelete = async (postId) => {
@@ -98,43 +102,101 @@ export default function BlogFeed({ currentUserEmail }) {
         headers: { 'x-user-email': currentUserEmail },
       });
       setPosts((prev) => prev.filter((p) => p._id !== postId));
+      setTotalPosts((prev) => Math.max(0, prev - 1));
     } catch {
       // silent
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Attractive Hero Header */}
-        <div className="relative mb-6 sm:mb-8 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 sm:p-10 shadow-xl shadow-indigo-500/20">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.18),transparent_40%)]" />
-          <div className="absolute -bottom-16 -right-10 w-56 h-56 rounded-full bg-white/10" />
-          <div className="absolute -top-12 -left-8 w-40 h-40 rounded-full bg-white/5" />
-          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-semibold uppercase tracking-wide mb-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-slate-50 to-white dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-9">
+        {/* ===== Hero ===== */}
+        <div className="relative mb-7 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 sm:p-10 shadow-2xl shadow-indigo-500/25">
+          {/* Decorative layers */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(255,255,255,0.22),transparent_45%)]" />
+          <div className="absolute -bottom-24 -right-14 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -top-16 -left-10 w-56 h-56 rounded-full bg-fuchsia-400/20 blur-2xl" />
+          <div className="absolute top-8 right-8 hidden sm:block w-20 h-20 rounded-2xl border border-white/10 rotate-12" />
+          <div className="absolute bottom-6 left-1/3 hidden md:block w-14 h-14 rounded-full border border-white/10" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="max-w-xl">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-4 ring-1 ring-inset ring-white/20"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300" />
+                </span>
                 Community Hub
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white tracking-tight leading-tight"
+              >
                 Campus Blog
-              </h1>
-              <p className="text-sm sm:text-base text-indigo-100 mt-2 max-w-lg">
-                Share your knowledge and insights with the NUB Alumni community
-              </p>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-sm sm:text-base text-indigo-100 mt-2.5 leading-relaxed"
+              >
+                Share your knowledge, experiences and insights with the NUB Alumni community.
+              </motion.p>
             </div>
-            <div className="flex items-center gap-6 sm:gap-8 shrink-0">
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">{posts.length || '—'}</p>
-                <p className="text-[11px] sm:text-xs text-indigo-200 font-medium uppercase tracking-wider mt-0.5">Posts</p>
-              </div>
-              <div className="w-px h-10 bg-white/20" />
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">{othersCount}</p>
-                <p className="text-[11px] sm:text-xs text-indigo-200 font-medium uppercase tracking-wider mt-0.5">Online</p>
-              </div>
+
+            {/* Stats */}
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+              <StatCard
+                delay={0.15}
+                icon={<FiFileText className="w-4 h-4" />}
+                value={totalPosts}
+                label="Posts"
+              />
+              <StatCard
+                delay={0.2}
+                icon={<FiUsers className="w-4 h-4" />}
+                value={othersCount}
+                label="Online"
+                live
+              />
+              <StatCard
+                delay={0.25}
+                icon={<FiActivity className="w-4 h-4" />}
+                value={posts.length}
+                label="On Feed"
+              />
             </div>
+          </div>
+        </div>
+
+        {/* ===== Category chips ===== */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+            {CATEGORIES.map((cat) => {
+              const active = selectedCategory === cat.name;
+              return (
+                <button
+                  key={cat.name}
+                  onClick={() => handleCategoryChange(cat.name)}
+                  className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-[13px] font-semibold whitespace-nowrap transition-all duration-200 shrink-0 ${
+                    active
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200/70 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md hover:shadow-indigo-500/10'
+                  }`}
+                >
+                  <span className={active ? 'text-white' : cat.color}>{cat.icon}</span>
+                  {cat.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -272,5 +334,34 @@ export default function BlogFeed({ currentUserEmail }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function StatCard({ icon, value, label, live, delay = 0 }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4, ease: 'easeOut' }}
+      className="flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-inset ring-white/20 shadow-lg shadow-black/10"
+    >
+      <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
+        {icon}
+      </div>
+      <div className="leading-tight">
+        <p className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-1.5">
+          {value}
+          {live && (
+            <span className="relative flex h-1.5 w-1.5 mt-1">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+            </span>
+          )}
+        </p>
+        <p className="text-[10px] sm:text-[11px] text-indigo-100 font-semibold uppercase tracking-wider mt-0.5">
+          {label}
+        </p>
+      </div>
+    </motion.div>
   );
 }
