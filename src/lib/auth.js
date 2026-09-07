@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { sendVerificationEmail } from "@/lib/email";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -22,6 +23,16 @@ export const auth = betterAuth({
   trustHost: true,
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    expiresIn: 3600,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url, token }) => {
+      await sendVerificationEmail({ user, url, token });
+    },
   },
   socialProviders: {
     google: {

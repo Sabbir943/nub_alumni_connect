@@ -16,7 +16,7 @@ export async function POST(request) {
       const users = await getCollection('user');
       await users.updateOne(
         { email },
-        { $set: { role: 'Admin' } }
+        { $set: { role: 'Admin', emailVerified: true } }
       );
       return NextResponse.json({ isAdmin: true, message: 'Admin role assigned' });
     }
