@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX, FiFileText, FiUsers, FiActivity } from 'react-icons/fi';
+import { FiMenu, FiX, FiFileText, FiUsers } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 import CreatePost from './CreatePost';
 import BlogPostCard from './BlogPostCard';
@@ -153,7 +153,7 @@ export default function BlogFeed({ currentUserEmail }) {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 shrink-0">
               <StatCard
                 delay={0.15}
                 icon={<FiFileText className="w-4 h-4" />}
@@ -166,12 +166,6 @@ export default function BlogFeed({ currentUserEmail }) {
                 value={othersCount}
                 label="Online"
                 live
-              />
-              <StatCard
-                delay={0.25}
-                icon={<FiActivity className="w-4 h-4" />}
-                value={posts.length}
-                label="On Feed"
               />
             </div>
           </div>
@@ -343,13 +337,13 @@ function StatCard({ icon, value, label, live, delay = 0 }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: 'easeOut' }}
-      className="flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-inset ring-white/20 shadow-lg shadow-black/10"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 sm:px-5 sm:py-3.5 rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-inset ring-white/20 shadow-lg shadow-black/10"
     >
-      <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
+      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
         {icon}
       </div>
       <div className="leading-tight">
-        <p className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-1.5">
+        <p className="text-lg sm:text-2xl font-extrabold text-white flex items-center gap-1.5">
           {value}
           {live && (
             <span className="relative flex h-1.5 w-1.5 mt-1">
