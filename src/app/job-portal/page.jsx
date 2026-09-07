@@ -18,9 +18,11 @@ import {
   FiAlertTriangle,
   FiZap,
   FiCpu,
+  FiLock,
 } from "react-icons/fi";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -265,7 +267,7 @@ function JobVerificationBadge({ verification }) {
   );
 }
 
-function JobCard({ job, onVerified }) {
+function JobCard({ job, onVerified, isLoggedIn }) {
   const [verifying, setVerifying] = React.useState(false);
   const [verification, setVerification] = React.useState(job.verification || null);
 
@@ -410,12 +412,21 @@ function JobCard({ job, onVerified }) {
               <FiClock className="w-3 h-3" />
               <span>{timeAgo(job.createdAt)}</span>
             </div>
-            <Link
-              href={`/job-portal/${job?._id}`}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              View Details <FiExternalLink className="w-3 h-3" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href={`/job-portal/${job?._id}`}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                View Details <FiExternalLink className="w-3 h-3" />
+              </Link>
+            ) : (
+              <Link
+                href="/signin"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                Log in to View Details <FiLock className="w-3 h-3" />
+              </Link>
+            )}
           </div>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -457,6 +468,7 @@ function JobCard({ job, onVerified }) {
 }
 
 export default function JobPortalPage() {
+  const { data: session } = authClient.useSession();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -698,7 +710,7 @@ export default function JobPortalPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {filteredJobs.map((job) => (
-              <JobCard key={job._id} job={job} onVerified={handleVerifyComplete} />
+              <JobCard key={job._id} job={job} onVerified={handleVerifyComplete} isLoggedIn={!!session?.user} />
             ))}
           </motion.div>
         )}

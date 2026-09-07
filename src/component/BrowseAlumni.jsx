@@ -18,6 +18,7 @@ import {
   FiCheck,
   FiEye,
   FiLinkedin,
+  FiLock,
   FiPhone,
   FiMail,
   FiGlobe,
@@ -38,6 +39,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 const DEGREE_OPTIONS = [
   "B.Sc. in CSE",
@@ -1440,15 +1442,25 @@ export default function BrowseAlumni() {
 
                   {/* Action */}
                   <div className="mt-4 flex gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedProfile(profile)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200"
-                    >
-                      <FiEye className="w-3.5 h-3.5" />
-                      View Details
-                    </motion.button>
+                    {currentUser?.email ? (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setSelectedProfile(profile)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200"
+                      >
+                        <FiEye className="w-3.5 h-3.5" />
+                        View Details
+                      </motion.button>
+                    ) : (
+                      <Link
+                        href="/signin"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-zinc-500 to-zinc-600 hover:from-zinc-600 hover:to-zinc-700 text-white rounded-xl text-xs font-semibold shadow-lg shadow-zinc-500/20 hover:shadow-zinc-500/30 transition-all duration-200"
+                      >
+                        <FiLock className="w-3.5 h-3.5" />
+                        Log in to View Details
+                      </Link>
+                    )}
                   </div>
                   <div className="mt-2">
                     <FollowButton
