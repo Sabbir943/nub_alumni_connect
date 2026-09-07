@@ -10,3 +10,58 @@
   }
 }
 
+/* Tell the browser which native color scheme to use for form controls.
+   Without this, mobile browsers force their own dark/black styling on
+   inputs regardless of the Tailwind dark: classes. */
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* Default readable colors so the UA's dark form styles can never paint
+   fields black-with-black-text. Tailwind utility classes still override
+   these where the app styles them more specifically. */
+input,
+select,
+textarea {
+  background-color: #ffffff;
+  color: #09090b;
+  caret-color: #09090b;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  input,
+  select,
+  textarea {
+    background-color: #09090b;
+    color: #f4f4f5;
+    caret-color: #f4f4f5;
+    border-color: #27272a;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #a1a1aa;
+  }
+
+  /* Kill the browser's aggressive autofill recolor (the classic black-out) */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: #f4f4f5 !important;
+    -webkit-box-shadow: 0 0 0 1000px #09090b inset !important;
+    box-shadow: 0 0 0 1000px #09090b inset !important;
+    caret-color: #f4f4f5 !important;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+}
+
