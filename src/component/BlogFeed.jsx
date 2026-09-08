@@ -62,7 +62,7 @@ export default function BlogFeed({ currentUserEmail }) {
 
   useEffect(() => {
     if (initialFetched) return;
-    setLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchPosts is async; setState runs after await
     fetchPosts(1, false, selectedCategory).then(() => {
       setLoading(false);
       setInitialFetched(true);
@@ -106,6 +106,10 @@ export default function BlogFeed({ currentUserEmail }) {
     } catch {
       // silent
     }
+  };
+
+  const handleEdit = (postId, updated) => {
+    setPosts((prev) => prev.map((p) => (p._id === postId ? { ...p, ...updated } : p)));
   };
 
   return (
@@ -260,6 +264,7 @@ export default function BlogFeed({ currentUserEmail }) {
                       post={post}
                       currentUserEmail={currentUserEmail}
                       onDelete={handleDelete}
+                      onEdit={handleEdit}
                     />
                   ))}
                 </div>

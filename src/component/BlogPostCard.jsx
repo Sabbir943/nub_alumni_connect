@@ -2,16 +2,21 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX, FiVideo } from 'react-icons/fi';
+import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX, FiVideo, FiZoomIn, FiEdit2, FiChevronDown, FiImage } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
-import { getVideoEmbedUrl } from '@/lib/upload';
+import { getVideoEmbedUrl, uploadImage, uploadVideo } from '@/lib/upload';
+import { CATEGORIES } from './BlogSidebar';
+import MediaLightbox from './MediaLightbox';
 import toast from 'react-hot-toast';
 
 const REACTIONS = [
   { type: 'like', emoji: '👍', label: 'Like', color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
-  { type: 'dislike', emoji: '👎', label: 'Dislike', color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
-  { type: 'angry', emoji: '😡', label: 'Angry', color: 'text-red-600 bg-red-50 dark:bg-red-900/30' },
+  { type: 'love', emoji: '❤️', label: 'Love', color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' },
   { type: 'haha', emoji: '😂', label: 'Haha', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30' },
+  { type: 'wow', emoji: '😮', label: 'Wow', color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
+  { type: 'sad', emoji: '😢', label: 'Sad', color: 'text-sky-600 bg-sky-50 dark:bg-sky-900/30' },
+  { type: 'angry', emoji: '😡', label: 'Angry', color: 'text-red-600 bg-red-50 dark:bg-red-900/30' },
+  { type: 'dislike', emoji: '👎', label: 'Dislike', color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
 ];
 
 function timeAgo(dateStr) {
@@ -130,7 +135,7 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
   );
 }
 
-export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
+export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit }) {
   const [reactions, setReactions] = useState(post.reactions || {});
   const [userReactions, setUserReactions] = useState(post.userReactions || {});
   const [commentCount, setCommentCount] = useState(post.commentCount || 0);
@@ -141,12 +146,173 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [reactionPeople, setReactionPeople] = useState([]);
+  const [showReactionPopover, setShowReactionPopover] = useState(false);
+  const [loadingReactionPeople, setLoadingReactionPeople] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
   const [textExpanded, setTextExpanded] = useState(false);
   const [isLongText, setIsLongText] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [lightboxVideo, setLightboxVideo] = useState(null);
   const textRef = useRef(null);
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editText, setEditText] = useState(post.text || '');
+  const [editCategory, setEditCategory] = useState(post.category || 'General');
+  const [showEditCategoryPicker, setShowEditCategoryPicker] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editImages, setEditImages] = useState([]);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [newVideoFile, setNewVideoFile] = useState(null);
+  const [newVideoPreview, setNewVideoPreview] = useState('');
+  const [editMediaPicker, setEditMediaPicker] = useState(false);
+  const editImageInputRef = useRef(null);
+  const editVideoInputRef = useRef(null);
+
+  const openEdit = () => {
+    if (newVideoPreview) URL.revokeObjectURL(newVideoPreview);
+    setEditText(post.text || '');
+    setEditCategory(post.category || 'General');
+    setEditImages(post.images || []);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
+    setEditVideoUrl(post.videoUrl || '');
+    setNewVideoFile(null);
+    setNewVideoPreview('');
+    setShowEditCategoryPicker(false);
+    setEditMediaPicker(false);
+    setShowEdit(true);
+  };
+
+  const handleEditImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (editVideoUrl || newVideoFile) {
+      toast.error('Remove video first to add images');
+      e.target.value = '';
+      return;
+    }
+    if (editImages.length + newImageFiles.length + files.length > 4) {
+      toast.error('Maximum 4 images allowed');
+      e.target.value = '';
+      return;
+    }
+    setNewImageFiles((prev) => [...prev, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setNewImagePreviews((prev) => [...prev, ev.target.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+    setEditMediaPicker(false);
+    e.target.value = '';
+  };
+
+  const removeEditImage = (index) => {
+    setEditImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditVideoUrlSubmit = () => {
+    const url = editVideoUrl.trim();
+    if (!url) return;
+    const embedUrl = getVideoEmbedUrl(url);
+    if (!embedUrl) {
+      toast.error('Invalid video URL. Use YouTube or Vimeo links.');
+      return;
+    }
+    if (editImages.length > 0 || newImageFiles.length > 0) {
+      toast.error('Remove images first to add a video');
+      return;
+    }
+    setEditVideoUrl(embedUrl);
+    setEditMediaPicker(false);
+    toast.success('Video link added!');
+  };
+
+  const handleEditVideoFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (editImages.length > 0 || newImageFiles.length > 0) {
+      toast.error('Remove images first to add a video');
+      e.target.value = '';
+      return;
+    }
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Video must be under 50MB');
+      e.target.value = '';
+      return;
+    }
+    if (newVideoPreview) URL.revokeObjectURL(newVideoPreview);
+    setNewVideoFile(file);
+    setNewVideoPreview(URL.createObjectURL(file));
+    setEditMediaPicker(false);
+    toast.success('Video selected! Will upload when you save.');
+    e.target.value = '';
+  };
+
+  const removeEditVideo = () => {
+    if (newVideoPreview) URL.revokeObjectURL(newVideoPreview);
+    setNewVideoFile(null);
+    setNewVideoPreview('');
+    setEditVideoUrl('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (
+      !editText.trim() &&
+      editImages.length === 0 &&
+      newImageFiles.length === 0 &&
+      !editVideoUrl &&
+      !newVideoFile
+    ) {
+      toast.error('Post must have some text or media');
+      return;
+    }
+    if (editImages.length + newImageFiles.length > 4) {
+      toast.error('Maximum 4 images allowed');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const uploaded = [...editImages];
+      if (newImageFiles.length > 0) {
+        const uploadedNew = await Promise.all(newImageFiles.map((img) => uploadImage(img)));
+        uploaded.push(...uploadedNew);
+      }
+      let video = editVideoUrl;
+      if (newVideoFile) {
+        const result = await uploadVideo(newVideoFile);
+        video = result.url;
+      }
+      const data = await apiFetch(`/api/blog/${post._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': currentUserEmail },
+        body: JSON.stringify({
+          text: editText.trim(),
+          category: editCategory,
+          images: uploaded,
+          videoUrl: video || '',
+        }),
+      });
+      onEdit?.(post._id, data.post);
+      setShowEdit(false);
+      toast.success('Post updated');
+    } catch {
+      toast.error('Failed to update post');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const checkTextLength = useCallback(() => {
     if (textRef.current) {
@@ -358,6 +524,22 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
   };
 
   const activeReaction = REACTIONS.find((r) => userReactions[r.type]);
+  const usedReactions = REACTIONS.filter((r) => (Array.isArray(reactions[r.type]) ? reactions[r.type].length > 0 : false));
+
+  const reactionEmoji = (type) => REACTIONS.find((r) => r.type === type)?.emoji || '👍';
+
+  const loadReactionPeople = useCallback(async () => {
+    if (reactionPeople.length > 0 || totalReactions === 0) return;
+    setLoadingReactionPeople(true);
+    try {
+      const data = await apiFetch(`/api/blog/${post._id}/reactions/people`);
+      setReactionPeople(data.people || []);
+    } catch {
+      // silent
+    } finally {
+      setLoadingReactionPeople(false);
+    }
+  }, [post._id, reactionPeople.length, totalReactions]);
 
   return (
     <motion.div
@@ -392,16 +574,31 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">{timeAgo(post.createdAt)}</p>
+              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                {timeAgo(post.createdAt)}
+                {post.updatedAt && post.updatedAt !== post.createdAt && (
+                  <span className="text-zinc-400 dark:text-zinc-500"> · Edited</span>
+                )}
+              </p>
             </div>
           </div>
           {currentUserEmail === post.authorEmail && (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-            >
-              <FiTrash2 size={18} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={openEdit}
+                title="Edit post"
+                className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
+              >
+                <FiEdit2 size={18} />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                title="Delete post"
+                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+              >
+                <FiTrash2 size={18} />
+              </button>
+            </div>
           )}
         </div>
 
@@ -442,23 +639,43 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
         {post.images && post.images.length > 0 && (
           <div className={`grid gap-1.5 sm:gap-2 rounded-xl overflow-hidden ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {post.images.map((url, i) => (
-              <img
+              <button
                 key={i}
-                src={url}
-                alt=""
-                loading="lazy"
-                className="w-full h-48 sm:h-56 lg:h-64 object-cover"
-              />
+                onClick={() => { setLightboxVideo(null); setLightboxIndex(i); }}
+                className={`group relative block w-full overflow-hidden ${post.images.length === 1 ? '' : (post.images.length === 3 && i === 0 ? 'col-span-2' : '')}`}
+                title="Click to view"
+              >
+                <img
+                  src={url}
+                  alt=""
+                  loading="lazy"
+                  className={`w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
+                    post.images.length === 1
+                      ? 'h-auto max-h-[520px] cursor-zoom-in'
+                      : post.images.length === 3 && i === 0
+                      ? 'h-48 sm:h-56 lg:h-72 cursor-zoom-in'
+                      : 'h-48 sm:h-56 lg:h-64 cursor-zoom-in'
+                  }`}
+                />
+                <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                <span className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/45 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <FiZoomIn className="w-4 h-4" />
+                </span>
+              </button>
             ))}
           </div>
         )}
 
         {post.videoUrl && (
-          <div className="rounded-xl overflow-hidden bg-black mt-1.5 sm:mt-2">
+          <button
+            onClick={() => { setLightboxIndex(null); setLightboxVideo(post.videoUrl); }}
+            className="group relative block w-full rounded-xl overflow-hidden bg-black mt-1.5 sm:mt-2"
+            title="Click to view"
+          >
             {getVideoEmbedUrl(post.videoUrl)?.includes('youtube.com/embed') || getVideoEmbedUrl(post.videoUrl)?.includes('player.vimeo.com') ? (
               <iframe
                 src={getVideoEmbedUrl(post.videoUrl)}
-                className="w-full h-56 sm:h-64 lg:h-72"
+                className="w-full h-56 sm:h-64 lg:h-72 pointer-events-none"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -466,23 +683,101 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
             ) : (
               <video
                 src={post.videoUrl}
-                controls
-                className="w-full h-56 sm:h-64 lg:h-72 object-cover"
+                className="w-full h-56 sm:h-64 lg:h-72 object-cover pointer-events-none"
                 preload="metadata"
               />
             )}
-          </div>
+            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
+            <span className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <FiZoomIn className="w-4 h-4" />
+            </span>
+          </button>
         )}
       </div>
 
       <div className="px-4 sm:px-5 lg:px-6 py-2.5 flex items-center justify-between text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800">
-        {totalReactions > 0 && (
-          <span className="flex items-center gap-1.5">
-            <span className="text-base">
-              {activeReaction ? activeReaction.emoji : '👍'}
-            </span>
-            <span className="font-medium">{totalReactions}</span>
-          </span>
+        {totalReactions > 0 ? (
+          <div
+            className="relative flex items-center"
+            onMouseEnter={() => { setShowReactionPopover(true); loadReactionPeople(); }}
+            onMouseLeave={() => setShowReactionPopover(false)}
+          >
+            <button className="flex items-center gap-1.5 group">
+              <span className="flex -space-x-1.5">
+                {usedReactions.slice(0, 4).map((r) => (
+                  <span
+                    key={r.type}
+                    className="w-5 h-5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-[11px] leading-none shadow-sm"
+                    title={r.label}
+                  >
+                    {r.emoji}
+                  </span>
+                ))}
+              </span>
+              <span className="font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 underline-offset-2 group-hover:underline transition-colors">
+                {totalReactions}
+              </span>
+            </button>
+
+            {/* Who reacted popover */}
+            <AnimatePresence>
+              {showReactionPopover && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  onMouseEnter={() => { setShowReactionPopover(true); loadReactionPeople(); }}
+                  onMouseLeave={() => setShowReactionPopover(false)}
+                  className="absolute bottom-full left-0 mb-2 w-60 sm:w-72 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl shadow-black/15 border border-zinc-200 dark:border-zinc-700 z-30 overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 bg-gradient-to-r from-zinc-50 to-zinc-100 dark:from-zinc-800/50 dark:to-zinc-800/50">
+                    <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Reactions</h4>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                      {totalReactions}
+                    </span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-2">
+                    {loadingReactionPeople ? (
+                      <div className="space-y-2 p-1">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="flex items-center gap-3 animate-pulse">
+                            <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                            <div className="flex-1 h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-2/3" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : reactionPeople.length === 0 ? (
+                      <p className="text-sm text-zinc-400 text-center py-3">No reactions yet</p>
+                    ) : (
+                      reactionPeople.map((p) => (
+                        <div
+                          key={p.email}
+                          className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
+                            {p.avatar ? (
+                              <img src={p.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              p.name?.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <p className="flex-1 min-w-0 text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                            {p.email === currentUserEmail ? 'You' : p.name}
+                          </p>
+                          <span className="text-lg shrink-0" title={p.type}>
+                            {reactionEmoji(p.type)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <span />
         )}
         <div className="flex gap-4 ml-auto">
           {commentCount > 0 && (
@@ -495,11 +790,10 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
       </div>
 
       <div className="px-3 sm:px-4 lg:px-5 py-1 flex items-center border-t border-zinc-100 dark:border-zinc-800">
-        <div className="relative flex-1">
+        <div className="relative flex-1" onMouseLeave={() => setShowReactions(false)}>
           <button
             onClick={() => handleReaction(activeReaction?.type || 'like')}
             onMouseEnter={() => setShowReactions(true)}
-            onMouseLeave={() => setShowReactions(false)}
             className={`flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-xl transition-colors ${
               activeReaction
                 ? `${activeReaction.color}`
@@ -514,25 +808,35 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
             <span>{activeReaction ? activeReaction.label : 'Like'}</span>
           </button>
 
+          {/* Facebook-style reaction picker */}
           <AnimatePresence>
             {showReactions && (
               <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                initial={{ opacity: 0, y: 18, scale: 0.6 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                exit={{ opacity: 0, y: 18, scale: 0.6 }}
+                transition={{ type: 'spring', damping: 16, stiffness: 320 }}
                 onMouseEnter={() => setShowReactions(true)}
                 onMouseLeave={() => setShowReactions(false)}
-                className="absolute bottom-full left-0 mb-2 flex gap-1 bg-white dark:bg-zinc-800 rounded-full shadow-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2 z-10"
+                className="absolute bottom-full left-0 mb-2.5 flex items-end gap-0.5 sm:gap-1 bg-white dark:bg-zinc-800 rounded-full shadow-2xl shadow-black/20 border border-zinc-200 dark:border-zinc-700 px-3 py-2 z-20"
               >
-                {REACTIONS.map((r) => (
-                  <button
+                {REACTIONS.map((r, i) => (
+                  <motion.button
                     key={r.type}
+                    initial={{ opacity: 0, y: 26, scale: 0.4 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 26, scale: 0.4 }}
+                    transition={{ delay: i * 0.045, type: 'spring', damping: 13, stiffness: 340 }}
+                    whileHover={{ scale: 1.35, y: -7, rotate: -8 }}
                     onClick={() => handleReaction(r.type)}
-                    className="text-2xl sm:text-3xl hover:scale-125 transition-transform p-1"
+                    className="relative text-2xl sm:text-3xl p-1 cursor-pointer will-change-transform"
                     title={r.label}
                   >
                     {r.emoji}
-                  </button>
+                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[9px] font-semibold rounded-md opacity-0 pointer-events-none whitespace-nowrap transition-opacity">
+                      {r.label}
+                    </span>
+                  </motion.button>
                 ))}
               </motion.div>
             )}
@@ -763,6 +1067,292 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
         )}
       </AnimatePresence>
 
+      {/* Edit Post Modal */}
+      <AnimatePresence>
+        {showEdit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
+            onClick={() => setShowEdit(false)}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-bold text-lg sm:text-xl text-zinc-900 dark:text-white">Edit Post</h3>
+                <button
+                  onClick={() => setShowEdit(false)}
+                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                >
+                  <FiX size={22} />
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-sm overflow-hidden">
+                    {post.authorAvatar ? (
+                      <img src={post.authorAvatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      post.authorName?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{post.authorName}</p>
+                    <p className="text-xs text-zinc-400">
+                      {post.category} · Edited just now
+                    </p>
+                  </div>
+                </div>
+
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  placeholder="What's on your mind?"
+                  className="w-full min-h-[120px] sm:min-h-[140px] resize-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-base sm:text-lg outline-none leading-relaxed"
+                  autoFocus
+                />
+
+                {/* Media editor */}
+                <div className="mt-4">
+                  {/* Existing + new images */}
+                  {(editImages.length > 0 || newImagePreviews.length > 0) && (
+                    <div className={`grid gap-1.5 sm:gap-2 ${editImages.length + newImagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                      {editImages.map((url, i) => (
+                        <div key={`e-${i}`} className="relative group">
+                          <img src={url} alt="" className="w-full h-24 sm:h-28 object-cover rounded-lg" />
+                          <button
+                            onClick={() => removeEditImage(i)}
+                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove image"
+                          >
+                            <FiX size={13} />
+                          </button>
+                        </div>
+                      ))}
+                      {newImagePreviews.map((src, i) => (
+                        <div key={`n-${i}`} className="relative group">
+                          <img src={src} alt="" className="w-full h-24 sm:h-28 object-cover rounded-lg" />
+                          <button
+                            onClick={() => removeNewImage(i)}
+                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove image"
+                          >
+                            <FiX size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Current / new video */}
+                  {(editVideoUrl || (newVideoFile && newVideoPreview)) && (
+                    <div className="relative mt-2">
+                      <div className="rounded-xl overflow-hidden bg-black">
+                        {newVideoFile ? (
+                          <video src={newVideoPreview} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
+                        ) : editVideoUrl.includes('youtube.com/embed') || editVideoUrl.includes('player.vimeo.com') ? (
+                          <iframe
+                            src={editVideoUrl}
+                            className="w-full h-44 sm:h-52 pointer-events-none"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <video src={editVideoUrl} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
+                        )}
+                      </div>
+                      <button
+                        onClick={removeEditVideo}
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                        title="Remove video"
+                      >
+                        <FiX size={13} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Add / replace media */}
+                  {!editVideoUrl && !newVideoFile && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => setEditMediaPicker(editMediaPicker ? false : 'menu')}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                      >
+                        <FiImage size={15} className="text-green-500" />
+                        Add Photo/Video
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Edit media picker */}
+                  <AnimatePresence>
+                    {editMediaPicker === 'menu' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="mt-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl py-1.5 w-56"
+                      >
+                        <button
+                          onClick={() => {
+                            if (editImages.length + newImageFiles.length >= 4) {
+                              toast.error('Maximum 4 images allowed');
+                              setEditMediaPicker(false);
+                              return;
+                            }
+                            editImageInputRef.current?.click();
+                            setEditMediaPicker(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <FiImage size={16} className="text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="text-left text-xs">
+                            <p className="font-semibold">Image</p>
+                            <p className="text-[10px] text-zinc-400">Add photos (max 4)</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditVideoUrl('');
+                            setEditMediaPicker('url');
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <FiLink size={16} className="text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="text-left text-xs">
+                            <p className="font-semibold">Paste Video URL</p>
+                            <p className="text-[10px] text-zinc-400">YouTube or Vimeo</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditMediaPicker(false);
+                            editVideoInputRef.current?.click();
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <FiVideo size={16} className="text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="text-left text-xs">
+                            <p className="font-semibold">Upload Video</p>
+                            <p className="text-[10px] text-zinc-400">MP4, MOV, WebM (max 50MB)</p>
+                          </div>
+                        </button>
+                      </motion.div>
+                    )}
+                    {editMediaPicker === 'url' && !editVideoUrl && !newVideoFile && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="mt-2 flex gap-2"
+                      >
+                        <input
+                          type="url"
+                          value={editVideoUrl}
+                          onChange={(e) => setEditVideoUrl(e.target.value)}
+                          placeholder="Paste YouTube or Vimeo URL..."
+                          className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && handleEditVideoUrlSubmit()}
+                        />
+                        <button
+                          onClick={handleEditVideoUrlSubmit}
+                          className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <input
+                    ref={editImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleEditImageSelect}
+                    className="hidden"
+                  />
+                  <input
+                    ref={editVideoInputRef}
+                    type="file"
+                    accept="video/mp4,video/mov,video/webm,video/quicktime"
+                    onChange={handleEditVideoFileSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                <div className="mt-4 relative">
+                  <button
+                    onClick={() => setShowEditCategoryPicker(!showEditCategoryPicker)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    📁 {editCategory}
+                    <FiChevronDown size={14} />
+                  </button>
+                  {showEditCategoryPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 py-1 z-10 w-48 max-h-56 overflow-y-auto">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.name}
+                          onClick={() => { setEditCategory(cat.name); setShowEditCategoryPicker(false); }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            editCategory === cat.name
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                              : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+                          }`}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-zinc-200 dark:border-zinc-800">
+                <button
+                  onClick={() => setShowEdit(false)}
+                  disabled={savingEdit}
+                  className="px-5 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit || (!editText.trim() && editImages.length === 0 && newImageFiles.length === 0 && !editVideoUrl && !newVideoFile)}
+                  className="flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+                >
+                  {savingEdit ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {newImageFiles.length > 0 || newVideoFile ? 'Uploading...' : 'Saving...'}
+                    </span>
+                  ) : (
+                    'Save'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Delete Confirmation */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -806,6 +1396,17 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete }) {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+    {/* Media Lightbox (Facebook-style fullscreen viewer) */}
+      <AnimatePresence>
+        {(lightboxIndex !== null || lightboxVideo) && (
+          <MediaLightbox
+            images={post.images || []}
+            videoUrl={lightboxVideo}
+            initialIndex={lightboxIndex || 0}
+            onClose={() => { setLightboxIndex(null); setLightboxVideo(null); }}
+          />
         )}
       </AnimatePresence>
     </motion.div>

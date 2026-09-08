@@ -97,7 +97,7 @@ export async function POST(request) {
       videoUrl: videoUrl || '',
       category: validCategory,
       tags: validTags,
-      reactions: { like: [], dislike: [], angry: [], haha: [] },
+      reactions: { like: [], dislike: [], love: [], haha: [], wow: [], sad: [], angry: [] },
       commentCount: 0,
       shares: 0,
       createdAt: new Date().toISOString(),

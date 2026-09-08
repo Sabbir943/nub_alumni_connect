@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCollection, ObjectId } from '@/lib/mongodb';
 
-const VALID_TYPES = ['like', 'dislike', 'angry', 'haha'];
+const VALID_TYPES = ['like', 'dislike', 'love', 'haha', 'wow', 'sad', 'angry'];
 
 export async function POST(request, { params }) {
   try {
