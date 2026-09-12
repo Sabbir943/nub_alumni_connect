@@ -40,3 +40,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# unrelated project folders (desktop siblings accidentally placed here)
+/Basic/
+/javascript-prcatice/
+/Lab report Nub/
+/Linked_list/
+/mango/
+/nub_alumni/
+/nub_alumni_server/
+/online-course-client/
+/online-course-server/
+/pet-adoption-client/
+/sql-practice/
+/protfolio/
+/c++/
+/demo/
+/ts/
+*.txt
+*.lnk
+desktop.ini
