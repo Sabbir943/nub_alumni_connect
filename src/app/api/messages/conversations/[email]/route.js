@@ -61,10 +61,14 @@ export async function GET(request, { params }) {
     const profiles = await Promise.all(
       partnerEmails.map(async (e) => {
         const profile = await findProfileByEmail(e);
-        if (!profile) return null;
         const convo = conversations.get(e);
+        const base = profile || {
+          email: e,
+          fullName: e.split('@')[0],
+          profilePictureUrl: null,
+        };
         return {
-          ...profile,
+          ...base,
           lastMessage: convo.lastMessage,
           lastMessageAt: convo.lastMessageAt,
           lastMessageBy: convo.lastMessageBy,
@@ -74,7 +78,6 @@ export async function GET(request, { params }) {
 
     // Sort by last message time (most recent first)
     const validProfiles = profiles
-      .filter(Boolean)
       .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
 
     return NextResponse.json({ success: true, conversations: validProfiles });

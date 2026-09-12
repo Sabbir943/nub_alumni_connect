@@ -26,10 +26,18 @@ export async function GET(request, { params }) {
     );
 
     // Mark mutual follows so UI can distinguish
-    const validProfiles = profiles.filter(Boolean).map((p) => ({
-      ...p,
-      isMutual: iFollowEmails.has(p.email) && followMeEmails.has(p.email),
-    }));
+    const validProfiles = profiles.map((p, i) => {
+      const email = [...allEmails][i];
+      const base = p || {
+        email,
+        fullName: email.split('@')[0],
+        profilePictureUrl: null,
+      };
+      return {
+        ...base,
+        isMutual: iFollowEmails.has(email) && followMeEmails.has(email),
+      };
+    });
 
     return NextResponse.json({ success: true, following: validProfiles });
   } catch (error) {

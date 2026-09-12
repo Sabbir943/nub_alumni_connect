@@ -41,6 +41,18 @@ export async function findProfileByEmail(email) {
   const alumniDoc = await alumni.findOne({ email });
   if (alumniDoc) return { ...serializeId(alumniDoc), _source: 'alumni_directory' };
 
+  const userCol = await getCollection('user');
+  const user = await userCol.findOne({ email });
+  if (user) {
+    return {
+      _id: user._id?.toString?.() || user._id,
+      email: user.email,
+      fullName: user.name || email.split('@')[0],
+      profilePictureUrl: user.image || null,
+      _source: 'user',
+    };
+  }
+
   return null;
 }
 
