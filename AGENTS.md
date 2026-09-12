@@ -13,7 +13,7 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 - `npm run dev` — Next.js dev server (Turbopack)
 - `npm run build` / `npm run start` — production build and serve
 - `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`). **No** `next lint`.
-- `npm run socket-server` — standalone Socket.IO signaling server on port 3001. Must run alongside Next.js for calls/messaging/online-users. Loads `.env` via `--env-file=.env`.
+- `npm run socket-server` — standalone Socket.IO signaling server (default port 3001, configurable via `SOCKET_PORT` in `.env`). Must run alongside Next.js for calls/messaging/online-users. Loads `.env` via `--env-file=.env`.
 - There is **no test suite, no typecheck script, and no formatter config.**
 - There is **no combined server** — the socket server is standalone and must be run separately.
 
@@ -49,7 +49,7 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 
 ## Architecture
 
-- **Two server processes**: Next.js (port 3000) + Socket.IO (port 3001). The socket server handles WebRTC signaling, real-time messaging, call state, online-user tracking, and push notifications.
+- **Two server processes**: Next.js (port 3000) + Socket.IO (default port 3001, configurable via `SOCKET_PORT`). The socket server handles WebRTC signaling, real-time messaging, call state, online-user tracking, and push notifications.
 - **PWA**: Service worker (`/sw.js`) configured via `@ducanh2912/next-pwa`. Components: `ServiceWorkerRegistration.jsx`, `PWAInstallPrompt.jsx`, `PushNotificationManager.jsx`.
 - **Capacitor**: Native iOS/Android wrapper. Config in `capacitor.config.ts`. Components: `CapacitorInit.jsx`. Platform detection in `src/lib/platform.js`, `src/lib/capacitorCamera.js`, `src/lib/capacitorNetwork.js`, `src/lib/capacitorShare.js`, `src/lib/mobileMedia.js`.
 - **React Compiler** enabled (`reactCompiler: true`); `optimizePackageImports` covers `react-icons`/`lucide-react`.
