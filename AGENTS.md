@@ -6,23 +6,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # NUB Alumni Connect
 
-Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code lives in `src/`. Plain JS (`js`/`jsx`), no TypeScript; path alias `@/*` -> `src/*`.
+Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code lives in `src/`. Plain JS (`js`/`jsx`), no TypeScript; path alias `@/*` -> `src/*`. `CLAUDE.md` points here.
 
 ## Commands
 
 - `npm run dev` — Next.js dev server (Turbopack)
 - `npm run build` / `npm run start` — production build and serve
 - `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`). **No** `next lint`.
-- `npm run socket-server` — standalone Socket.IO signaling server (default port 3001, configurable via `SOCKET_PORT` in `.env`). Must run alongside Next.js for calls/messaging/online-users. Loads `.env` via `--env-file=.env`.
+- `npm run socket-server` — standalone Socket.IO signaling server (default port 3001, configurable via `SOCKET_PORT` in `.env`). **Must run alongside Next.js** for calls/messaging/online-users. Loads `.env` via `--env-file=.env`.
 - There is **no test suite, no typecheck script, and no formatter config.**
 - There is **no combined server** — the socket server is standalone and must be run separately.
-
-### Capacitor (mobile)
-
-- `npm run cap:sync` — sync web assets to native projects
-- `npm run cap:android` / `npm run cap:ios` — open native IDE
-- `npm run cap:run:android` / `npm run cap:run:ios` — run on device/emulator
-- The Capacitor app (`com.nub.alumni`) loads from the deployed Vercel URL (`NEXT_PUBLIC_DEPLOYED_URL`), not a local static export. `build:capacitor` is a no-op echo.
 
 ## Data layer
 
@@ -51,7 +44,6 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 
 - **Two server processes**: Next.js (port 3000) + Socket.IO (default port 3001, configurable via `SOCKET_PORT`). The socket server handles WebRTC signaling, real-time messaging, call state, online-user tracking, and push notifications.
 - **PWA**: Service worker (`/sw.js`) configured via `@ducanh2912/next-pwa`. Components: `ServiceWorkerRegistration.jsx`, `PWAInstallPrompt.jsx`, `PushNotificationManager.jsx`.
-- **Capacitor**: Native iOS/Android wrapper. Config in `capacitor.config.ts`. Components: `CapacitorInit.jsx`. Platform detection in `src/lib/platform.js`, `src/lib/capacitorCamera.js`, `src/lib/capacitorNetwork.js`, `src/lib/capacitorShare.js`, `src/lib/mobileMedia.js`.
 - **React Compiler** enabled (`reactCompiler: true`); `optimizePackageImports` covers `react-icons`/`lucide-react`.
 
 ## Quirks

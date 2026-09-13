@@ -61,6 +61,10 @@ function ensureIndexes() {
           database.collection('notifications').createIndex({ recipientEmail: 1, type: 1, actorEmail: 1, read: 1 }),
           database.collection('students').createIndex({ email: 1 }),
           database.collection('alumni_directory').createIndex({ email: 1 }),
+          database.collection('group_conversations').createIndex({ 'participants.email': 1 }),
+          database.collection('group_conversations').createIndex({ lastMessageAt: -1 }),
+          database.collection('group_messages').createIndex({ groupId: 1, createdAt: -1 }),
+          database.collection('group_messages').createIndex({ 'readBy.email': 1, groupId: 1 }),
         ]);
         console.log('[Socket.IO] Database indexes ready');
       } catch (err) {
@@ -153,6 +157,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const activeCalls = new Map();
+const activeGroupCalls = new Map(); // groupId -> { callType, participants: Set<email>, createdBy, createdAt }
 const onlineUsers = new Map(); // email -> active socket count (multi-tab safe)
 
 const PROFILE_CACHE_TTL = 60000;
@@ -541,6 +546,221 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ==================== GROUP CHAT EVENTS ====================
+  socket.on('join-group', ({ groupId }) => {
+    if (!groupId) return;
+    socket.join(`group:${groupId}`);
+    console.log(`[Socket.IO] User joined group room: group:${groupId} (${socket.id})`);
+  });
+
+  socket.on('leave-group', ({ groupId }) => {
+    if (!groupId) return;
+    socket.leave(`group:${groupId}`);
+    console.log(`[Socket.IO] User left group room: group:${groupId} (${socket.id})`);
+  });
+
+  socket.on('send-group-message', async ({ groupId, senderEmail, text }) => {
+    if (!groupId || !senderEmail || !text) return;
+    const trimmed = text.trim();
+    if (trimmed.length === 0 || trimmed.length > 2000) return;
+
+    try {
+      const database = await connectDB();
+      const group = await database.collection('group_conversations').findOne({
+        _id: new (require('mongodb').ObjectId)(groupId),
+      });
+      if (!group || !group.participants.some((p) => p.email === senderEmail)) return;
+
+      const messageDoc = {
+        groupId: new (require('mongodb').ObjectId)(groupId),
+        senderEmail,
+        text: trimmed,
+        type: 'text',
+        readBy: [{ email: senderEmail, readAt: new Date() }],
+        createdAt: new Date(),
+      };
+
+      const result = await database.collection('group_messages').insertOne(messageDoc);
+
+      await database.collection('group_conversations').updateOne(
+        { _id: new (require('mongodb').ObjectId)(groupId) },
+        {
+          $set: {
+            lastMessage: trimmed.substring(0, 100),
+            lastMessageAt: new Date(),
+            lastMessageBy: senderEmail,
+          },
+        }
+      );
+
+      let senderProfile = null;
+      try {
+        const students = database.collection('students');
+        const alumni = database.collection('alumni_directory');
+        senderProfile = await students.findOne({ email: senderEmail });
+        if (!senderProfile) senderProfile = await alumni.findOne({ email: senderEmail });
+      } catch (e) {}
+
+      const message = {
+        _id: result.insertedId.toString(),
+        groupId,
+        senderEmail,
+        text: trimmed,
+        type: 'text',
+        readBy: [{ email: senderEmail, readAt: new Date().toISOString() }],
+        createdAt: messageDoc.createdAt.toISOString(),
+        senderName: senderProfile?.fullName || senderEmail.split('@')[0],
+        senderAvatar: senderProfile?.profilePictureUrl || null,
+      };
+
+      io.to(`group:${groupId}`).emit('group-message-received', { groupId, message });
+
+      for (const p of group.participants) {
+        if (p.email !== senderEmail) {
+          const unreadMessages = database.collection('group_messages');
+          const hasUnread = await unreadMessages.findOne({
+            groupId: new (require('mongodb').ObjectId)(groupId),
+            senderEmail: senderEmail,
+            'readBy.email': { $ne: p.email },
+            createdAt: { $gt: new Date(Date.now() - 60000) },
+          });
+          if (!hasUnread) {
+            try {
+              const profile = senderProfile;
+              await database.collection('notifications').insertOne({
+                recipientEmail: p.email,
+                type: 'group_message',
+                actorEmail: senderEmail,
+                actorName: profile?.fullName || senderEmail.split('@')[0],
+                message: `New message in ${group.name}`,
+                link: `/dashboard`,
+                read: false,
+                createdAt: new Date(),
+              });
+            } catch (e) {}
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Socket.IO] Group message error:', err.message);
+    }
+  });
+
+  socket.on('group-typing', ({ groupId, email }) => {
+    if (!groupId || !email) return;
+    socket.to(`group:${groupId}`).emit('group-user-typing', { groupId, email });
+  });
+
+  socket.on('group-stop-typing', ({ groupId, email }) => {
+    if (!groupId || !email) return;
+    socket.to(`group:${groupId}`).emit('group-user-stopped-typing', { groupId, email });
+  });
+
+  // ==================== GROUP CALL EVENTS ====================
+  socket.on('group-call-start', async ({ groupId, callType }) => {
+    const email = socket.data.email;
+    if (!groupId || !email) return;
+
+    const existing = activeGroupCalls.get(groupId);
+    if (existing) {
+      socket.emit('group-call-error', { error: 'A call is already active in this group' });
+      return;
+    }
+
+    try {
+      const database = await connectDB();
+      const group = await database.collection('group_conversations').findOne({
+        _id: new (require('mongodb').ObjectId)(groupId),
+      });
+      if (!group) return;
+
+      activeGroupCalls.set(groupId, {
+        callType: callType || 'video',
+        participants: new Set([email]),
+        createdBy: email,
+        createdAt: new Date(),
+      });
+
+      for (const p of group.participants) {
+        if (p.email !== email) {
+          io.to(p.email).emit('group-call-invited', {
+            groupId,
+            callType: callType || 'video',
+            inviterEmail: email,
+            groupName: group.name,
+          });
+        }
+      }
+
+      io.to(`group:${groupId}`).emit('group-call-user-joined', { groupId, email });
+    } catch (err) {
+      console.error('[Socket.IO] Group call start error:', err.message);
+    }
+  });
+
+  socket.on('group-call-join', ({ groupId }) => {
+    const email = socket.data.email;
+    if (!groupId || !email) return;
+
+    const call = activeGroupCalls.get(groupId);
+    if (!call) {
+      socket.emit('group-call-error', { error: 'No active call in this group' });
+      return;
+    }
+
+    call.participants.add(email);
+    io.to(`group:${groupId}`).emit('group-call-user-joined', { groupId, email });
+    socket.emit('group-call-participants', {
+      groupId,
+      participants: [...call.participants],
+      callType: call.callType,
+    });
+  });
+
+  socket.on('group-call-leave', ({ groupId }) => {
+    const email = socket.data.email;
+    if (!groupId || !email) return;
+
+    const call = activeGroupCalls.get(groupId);
+    if (call) {
+      call.participants.delete(email);
+      if (call.participants.size === 0) {
+        activeGroupCalls.delete(groupId);
+      }
+    }
+
+    io.to(`group:${groupId}`).emit('group-call-user-left', { groupId, email });
+  });
+
+  socket.on('group-call-end', ({ groupId }) => {
+    const email = socket.data.email;
+    if (!groupId) return;
+
+    const call = activeGroupCalls.get(groupId);
+    if (call && call.createdBy === email) {
+      activeGroupCalls.delete(groupId);
+      io.to(`group:${groupId}`).emit('group-call-ended', { groupId });
+    }
+  });
+
+  socket.on('group-call-offer', ({ groupId, toEmail, offer }) => {
+    const fromEmail = socket.data.email;
+    if (!groupId || !fromEmail || !toEmail || !offer) return;
+    io.to(toEmail).emit('group-call-offer', { groupId, fromEmail, offer });
+  });
+
+  socket.on('group-call-answer', ({ groupId, toEmail, answer }) => {
+    const fromEmail = socket.data.email;
+    if (!groupId || !fromEmail || !toEmail || !answer) return;
+    io.to(toEmail).emit('group-call-answer', { groupId, fromEmail, answer });
+  });
+
+  socket.on('group-call-ice', ({ groupId, toEmail, candidate }) => {
+    const fromEmail = socket.data.email;
+    if (!groupId || !fromEmail || !toEmail || !candidate) return;
+    io.to(toEmail).emit('group-call-ice', { groupId, fromEmail, candidate });
+  });
+
   socket.on('disconnect', async () => {
     const email = socket.data.email;
     if (!email) return;
@@ -571,6 +791,17 @@ io.on('connection', (socket) => {
 
         io.to(call.callerSocketId).emit('call-ended', { endedBy: email });
         activeCalls.delete(callerEmail);
+      }
+    }
+
+    // Clean up group calls on disconnect
+    for (const [groupId, call] of activeGroupCalls) {
+      if (call.participants.has(email)) {
+        call.participants.delete(email);
+        io.to(`group:${groupId}`).emit('group-call-user-left', { groupId, email });
+        if (call.participants.size === 0) {
+          activeGroupCalls.delete(groupId);
+        }
       }
     }
 

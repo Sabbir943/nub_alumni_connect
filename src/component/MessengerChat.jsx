@@ -24,12 +24,20 @@ import {
   User,
   BellOff,
   Trash2,
+  Users,
+  Plus,
+  Folder,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { uploadImage } from '@/lib/upload';
 import { useCall } from '@/component/CallContext';
 import { useSocket } from '@/lib/useSocket';
+import { useGroupSocket } from '@/lib/useGroupSocket';
 import CallOverlay from '@/component/CallOverlay';
+import GroupChat from '@/component/GroupChat';
+import CreateGroupModal from '@/component/CreateGroupModal';
+import GroupInfoModal from '@/component/GroupInfoModal';
+import GroupCallOverlay from '@/component/GroupCallOverlay';
 
 const EMOJIS = [
   '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊',
@@ -99,6 +107,15 @@ export default function MessengerChat({ role = 'alumni' }) {
   const typingTimeoutRef = useRef(null);
   const lastTypingEmitRef = useRef(0);
 
+  const [activeTab, setActiveTab] = useState('chats');
+  const [groups, setGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [groupCallActive, setGroupCallActive] = useState(null);
+  const [pendingGroupCall, setPendingGroupCall] = useState(null);
+
   const {
     incomingCall, callState, callFailed, callUser, answerCall, declineCall, endCall,
     localStream, remoteStream, audioEnabled, videoEnabled, toggleAudio, toggleVideo, callType,
@@ -116,6 +133,35 @@ export default function MessengerChat({ role = 'alumni' }) {
     clearNewMessage,
     clearReadReceipt,
   } = useSocket(currentUserEmail);
+
+  const {
+    newGroupMessage,
+    groupCallInvite,
+    groupCallUserJoined,
+    groupCallUserLeft,
+    groupCallEnded,
+    groupCallParticipants,
+    groupCallOffer,
+    groupCallAnswer,
+    groupCallIce,
+    joinGroupRoom,
+    leaveGroupRoom,
+    startGroupCall,
+    clearGroupCallInvite,
+    clearGroupCallUserJoined,
+    clearGroupCallUserLeft,
+    clearGroupCallEnded,
+    clearGroupCallParticipants,
+    clearGroupCallOffer,
+    clearGroupCallAnswer,
+    clearGroupCallIce,
+    joinGroupCall,
+    leaveGroupCall,
+    endGroupCall,
+    sendGroupCallOffer,
+    sendGroupCallAnswer,
+    sendGroupCallIce,
+  } = useGroupSocket(currentUserEmail);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -219,6 +265,38 @@ export default function MessengerChat({ role = 'alumni' }) {
     fetchFriendsAndUnread();
     return () => { isMounted = false; };
   }, [currentUserEmail, targetChatEmail]);
+
+  // Fetch groups
+  useEffect(() => {
+    if (!currentUserEmail) return;
+    let isMounted = true;
+
+    const fetchGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        const data = await apiFetch(`/api/groups?email=${encodeURIComponent(currentUserEmail)}`);
+        if (isMounted && data.success) {
+          setGroups(data.groups || []);
+        }
+      } catch {
+        // Silent fail
+      } finally {
+        if (isMounted) setLoadingGroups(false);
+      }
+    };
+
+    fetchGroups();
+    return () => { isMounted = false; };
+  }, [currentUserEmail]);
+
+  // Join group rooms on socket connect
+  useEffect(() => {
+    if (!currentUserEmail || groups.length === 0) return;
+    groups.forEach((g) => joinGroupRoom(g._id));
+    return () => {
+      groups.forEach((g) => leaveGroupRoom(g._id));
+    };
+  }, [currentUserEmail, groups, joinGroupRoom, leaveGroupRoom]);
 
   const fetchConversation = useCallback(async (friendEmail, showLoading = false) => {
     if (!currentUserEmail || !friendEmail) return;
@@ -411,11 +489,32 @@ export default function MessengerChat({ role = 'alumni' }) {
 
   const handleSelectFriend = (friend) => {
     setActiveFriend(friend);
+    setSelectedGroup(null);
     setShowMobileSidebar(false);
     setFetchError(null);
     setShowEmojiPicker(false);
     setShowMoreMenu(false);
     if (friend.email) markRead(friend.email);
+  };
+
+  const handleSelectGroup = (group) => {
+    setSelectedGroup(group);
+    setActiveFriend(null);
+    setShowMobileSidebar(false);
+    setFetchError(null);
+  };
+
+  const handleGroupCreated = (newGroup) => {
+    setGroups((prev) => [newGroup, ...prev]);
+    setSelectedGroup(newGroup);
+    setActiveFriend(null);
+    setShowMobileSidebar(false);
+  };
+
+  const handleBackToSidebar = () => {
+    setSelectedGroup(null);
+    setActiveFriend(null);
+    setShowMobileSidebar(true);
   };
 
   const handleInputChange = (e) => {
@@ -514,12 +613,50 @@ export default function MessengerChat({ role = 'alumni' }) {
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
+              {activeTab === 'groups' && (
+                <button
+                  onClick={() => setShowCreateGroup(true)}
+                  className="p-2 rounded-full hover:bg-gray-100 text-[#0084ff] transition-colors"
+                  title="Create Group"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            {/* Tab Switcher */}
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-3">
+              <button
+                onClick={() => setActiveTab('chats')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'chats'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <MessageSquare className="w-4 h-4" />
+                  Chats
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('groups')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'groups'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <Users className="w-4 h-4" />
+                  Groups
+                </div>
+              </button>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search Messenger"
+                placeholder={activeTab === 'chats' ? 'Search Messenger' : 'Search groups...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-[#f0f2f5] rounded-full text-sm placeholder:text-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#0084ff]/20 focus:border-[#0084ff] border border-transparent transition-all"
@@ -528,81 +665,172 @@ export default function MessengerChat({ role = 'alumni' }) {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {loadingFriends ? (
-              <div className="p-10 text-center">
-                <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
-                <p className="text-xs text-gray-400">Loading contacts...</p>
-              </div>
-            ) : sortedFriends.length === 0 ? (
-              <div className="p-10 text-center">
-                <UserX className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-gray-500">No contacts found</p>
-                <p className="text-xs text-gray-400 mt-1">{config.emptyContactsText}</p>
-              </div>
-            ) : (
-              sortedFriends.map((friend) => {
-                const isSelected = activeFriend?.email === friend.email;
-                const unread = unreadCounts[friend.email] || 0;
-                return (
-                  <button
-                    key={friend._id || friend.email}
-                    onClick={() => handleSelectFriend(friend)}
-                    className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-gray-100 ${isSelected ? 'bg-gray-100' : ''}`}
-                  >
-                    <div className="relative flex-shrink-0">
-                      {friend.profilePictureUrl ? (
-                        <img src={friend.profilePictureUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-base font-bold text-white">
-                          {getInitials(friend.fullName)}
-                        </div>
-                      )}
-                      {friend.isMutual && (
-                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
-                      <div className="flex items-center justify-between">
-                        <p className={`text-[15px] truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
-                          {friend.fullName}
-                        </p>
-                        {friend.lastMessageAt && (
-                          <span className="ml-2 flex-shrink-0 text-[11px] text-gray-400">
-                            {formatTime(friend.lastMessageAt)}
-                          </span>
+            {activeTab === 'chats' ? (
+              loadingFriends ? (
+                <div className="p-10 text-center">
+                  <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-gray-400">Loading contacts...</p>
+                </div>
+              ) : sortedFriends.length === 0 ? (
+                <div className="p-10 text-center">
+                  <UserX className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-500">No contacts found</p>
+                  <p className="text-xs text-gray-400 mt-1">{config.emptyContactsText}</p>
+                </div>
+              ) : (
+                sortedFriends.map((friend) => {
+                  const isSelected = activeFriend?.email === friend.email;
+                  const unread = unreadCounts[friend.email] || 0;
+                  return (
+                    <button
+                      key={friend._id || friend.email}
+                      onClick={() => handleSelectFriend(friend)}
+                      className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-gray-100 ${isSelected ? 'bg-gray-100' : ''}`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        {friend.profilePictureUrl ? (
+                          <img src={friend.profilePictureUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-base font-bold text-white">
+                            {getInitials(friend.fullName)}
+                          </div>
+                        )}
+                        {friend.isMutual && (
+                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <p className={`text-[13px] truncate max-w-[200px] ${unread > 0 ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
-                          {friend.lastMessage
-                            ? (friend.lastMessageBy === currentUserEmail ? 'You: ' : '') + friend.lastMessage
-                            : config.getSubtitle(friend)
-                          }
-                        </p>
-                        <div className="flex items-center gap-1.5">
-                          {unread > 0 && (
-                            <span className="flex-shrink-0 bg-[#0084ff] text-white text-[11px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">
-                              {unread}
-                            </span>
-                          )}
-                          {!friend.isMutual && !friend.lastMessage && (
-                            <span className="flex-shrink-0 text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                              <UserPlus className="w-2.5 h-2.5" /> Follows you
+                      <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
+                        <div className="flex items-center justify-between">
+                          <p className={`text-[15px] truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                            {friend.fullName}
+                          </p>
+                          {friend.lastMessageAt && (
+                            <span className="ml-2 flex-shrink-0 text-[11px] text-gray-400">
+                              {formatTime(friend.lastMessageAt)}
                             </span>
                           )}
                         </div>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <p className={`text-[13px] truncate max-w-[200px] ${unread > 0 ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
+                            {friend.lastMessage
+                              ? (friend.lastMessageBy === currentUserEmail ? 'You: ' : '') + friend.lastMessage
+                              : config.getSubtitle(friend)
+                            }
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            {unread > 0 && (
+                              <span className="flex-shrink-0 bg-[#0084ff] text-white text-[11px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">
+                                {unread}
+                              </span>
+                            )}
+                            {!friend.isMutual && !friend.lastMessage && (
+                              <span className="flex-shrink-0 text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                <UserPlus className="w-2.5 h-2.5" /> Follows you
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </button>
+                  );
+                })
+              )
+            ) : (
+              /* Groups Tab */
+              loadingGroups ? (
+                <div className="p-10 text-center">
+                  <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-gray-400">Loading groups...</p>
+                </div>
+              ) : groups.length === 0 ? (
+                <div className="p-10 text-center">
+                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-500">No groups yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Create a group to start chatting</p>
+                  <button
+                    onClick={() => setShowCreateGroup(true)}
+                    className="mt-3 px-4 py-2 bg-[#0084ff] text-white rounded-xl text-xs font-bold hover:bg-[#0073e6] transition-colors"
+                  >
+                    Create Group
                   </button>
-                );
-              })
+                </div>
+              ) : (
+                groups
+                  .filter((g) => {
+                    const q = searchTerm.toLowerCase();
+                    return !q || (g.name?.toLowerCase() || '').includes(q);
+                  })
+                  .map((group) => {
+                    const isSelected = selectedGroup?._id === group._id;
+                    const unread = group.unreadCount || 0;
+                    return (
+                      <button
+                        key={group._id}
+                        onClick={() => handleSelectGroup(group)}
+                        className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-gray-100 ${isSelected ? 'bg-gray-100' : ''}`}
+                      >
+                        <div className="relative flex-shrink-0">
+                          {group.avatar ? (
+                            <img src={group.avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#0084ff] to-[#0066cc] flex items-center justify-center">
+                              <Users className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                          <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-[8px] font-bold text-gray-600 border-2 border-white">
+                            {group.participantCount || group.participants?.length || 0}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0 border-b border-gray-100 pb-3">
+                          <div className="flex items-center justify-between">
+                            <p className={`text-[15px] truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                              {group.name}
+                            </p>
+                            {group.lastMessageAt && (
+                              <span className="ml-2 flex-shrink-0 text-[11px] text-gray-400">
+                                {formatTime(group.lastMessageAt)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-0.5">
+                            <p className={`text-[13px] truncate max-w-[200px] ${unread > 0 ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
+                              {group.lastMessage
+                                ? (group.lastMessageBy === currentUserEmail ? 'You: ' : '') + group.lastMessage
+                                : `${group.participantCount || group.participants?.length || 0} members`
+                              }
+                            </p>
+                            {unread > 0 && (
+                              <span className="flex-shrink-0 bg-[#0084ff] text-white text-[11px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">
+                                {unread}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+              )
             )}
           </div>
         </div>
 
         {/* ===== CHAT AREA ===== */}
         <div className={`flex-1 flex flex-col bg-white ${showMobileSidebar ? 'hidden md:flex' : 'flex'}`}>
-          {activeFriend ? (
+          {selectedGroup ? (
+            <div className="flex-1 flex flex-col h-full">
+              <GroupChat
+                group={selectedGroup}
+                currentUserEmail={currentUserEmail}
+                onBack={handleBackToSidebar}
+                onShowInfo={() => setShowGroupInfo(true)}
+                role={role}
+                onStartCall={(type) => {
+                  setPendingGroupCall({ groupId: selectedGroup._id, callType: type });
+                  startGroupCall(selectedGroup._id, type);
+                }}
+              />
+            </div>
+          ) : activeFriend ? (
             <>
               {/* Chat Header */}
               <div className="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
@@ -916,6 +1144,58 @@ export default function MessengerChat({ role = 'alumni' }) {
         onAccept={answerCall} onDecline={declineCall} onEndCall={endCall}
         onToggleAudio={toggleAudio} onToggleVideo={toggleVideo}
       />
+
+      <GroupCallOverlay
+        groupId={selectedGroup?._id}
+        currentUserEmail={currentUserEmail}
+        pendingGroupCall={pendingGroupCall}
+        clearPendingGroupCall={() => setPendingGroupCall(null)}
+        groupSocket={{
+          groupCallInvite,
+          groupCallUserJoined,
+          groupCallUserLeft,
+          groupCallEnded,
+          groupCallParticipants,
+          groupCallOffer,
+          groupCallAnswer,
+          groupCallIce,
+          clearGroupCallInvite,
+          clearGroupCallUserJoined,
+          clearGroupCallUserLeft,
+          clearGroupCallEnded,
+          clearGroupCallParticipants,
+          clearGroupCallOffer,
+          clearGroupCallAnswer,
+          clearGroupCallIce,
+          joinGroupCall,
+          leaveGroupCall,
+          endGroupCall,
+          sendGroupCallOffer,
+          sendGroupCallAnswer,
+          sendGroupCallIce,
+        }}
+      />
+
+      <CreateGroupModal
+        isOpen={showCreateGroup}
+        onClose={() => setShowCreateGroup(false)}
+        currentUserEmail={currentUserEmail}
+        contacts={friends}
+        onGroupCreated={handleGroupCreated}
+      />
+
+      {selectedGroup && (
+        <GroupInfoModal
+          isOpen={showGroupInfo}
+          onClose={() => setShowGroupInfo(false)}
+          group={selectedGroup}
+          currentUserEmail={currentUserEmail}
+          onGroupUpdated={(updated) => {
+            setSelectedGroup(updated);
+            setGroups((prev) => prev.map((g) => g._id === updated._id ? updated : g));
+          }}
+        />
+      )}
 
       {callFailed && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[110] bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold">
