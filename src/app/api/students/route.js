@@ -7,7 +7,8 @@ export async function POST(request) {
     const body = await request.json();
     const {
       fullName, email, studentId, department, semester, batch,
-      phone, profilePictureUrl, githubUrl, linkedinUrl, skills, bio, location
+      phone, profilePictureUrl, githubUrl, linkedinUrl, skills, bio, location,
+      resumeUrl
     } = body;
 
     if (!email || !fullName || !studentId) {
@@ -39,6 +40,7 @@ export async function POST(request) {
       skills: skills || "",
       bio: bio || "",
       location: location || "",
+      resumeUrl: resumeUrl || "",
       createdAt: now,
       updatedAt: now
     };

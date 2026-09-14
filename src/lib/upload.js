@@ -65,6 +65,45 @@ export async function uploadVideo(file) {
   };
 }
 
+export async function uploadResume(file) {
+  const timestamp = Math.round(Date.now() / 1000);
+  const folder = 'nub_alumni/resumes';
+
+  const signatureRes = await fetch('/api/upload/resume-sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ timestamp, folder }),
+  });
+
+  if (!signatureRes.ok) {
+    const err = await signatureRes.json();
+    throw new Error(err.error || 'Failed to generate upload signature');
+  }
+
+  const { signature, cloudName, apiKey } = await signatureRes.json();
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', apiKey);
+  formData.append('timestamp', timestamp);
+  formData.append('signature', signature);
+  formData.append('folder', folder);
+  formData.append('resource_type', 'auto');
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!data.secure_url) {
+    throw new Error(data.error?.message || 'Resume upload failed.');
+  }
+
+  return data.secure_url;
+}
+
 export function getVideoEmbedUrl(url) {
   if (!url) return null;
 

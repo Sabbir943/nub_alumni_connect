@@ -31,6 +31,7 @@ import {
   FiZap,
   FiCpu,
   FiStar,
+  FiDownload,
 } from "react-icons/fi";
 import { GraduationCap } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -370,6 +371,22 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {profile.resumeUrl && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Resume</h4>
+                  <a
+                    href={profile.resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-100 transition-colors group"
+                  >
+                    <FiFileText className="w-4 h-4 text-rose-600" />
+                    <span className="text-sm font-medium text-rose-700">View Resume</span>
+                    <FiDownload className="w-3 h-3 text-rose-400 ml-auto group-hover:text-rose-600 transition-colors" />
+                  </a>
                 </div>
               )}
 

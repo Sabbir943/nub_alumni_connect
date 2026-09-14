@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
-import { uploadImage } from '@/lib/upload';
+import { uploadImage, uploadResume } from '@/lib/upload';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   FaUser,
@@ -25,6 +25,8 @@ import {
   FaSyncAlt,
   FaTimes,
   FaEdit,
+  FaFilePdf,
+  FaDownload,
 } from 'react-icons/fa';
 
 function VerificationBadgeInline({ verification }) {
@@ -122,6 +124,7 @@ const INITIAL_FORM = {
   skills: '',
   bio: '',
   location: '',
+  resumeUrl: '',
 };
 
 function fieldClass(extra = '') {
@@ -138,7 +141,9 @@ export default function StudentProfileForm() {
   const [isExisting, setIsExisting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [resumeUploading, setResumeUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const resumeInputRef = useRef(null);
   const [reverifyLoading, setReverifyLoading] = useState(false);
 
   useEffect(() => {
@@ -200,6 +205,35 @@ export default function StudentProfileForm() {
   const handleRemoveImage = () => {
     setFormData((prev) => ({ ...prev, profilePictureUrl: '' }));
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleResumeChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Please select a PDF or Word document.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Resume must be less than 5MB.');
+      return;
+    }
+    setResumeUploading(true);
+    try {
+      const url = await uploadResume(file);
+      setFormData((prev) => ({ ...prev, resumeUrl: url }));
+      toast.success('Resume uploaded!');
+    } catch (err) {
+      toast.error(err.message || 'Upload failed.');
+    } finally {
+      setResumeUploading(false);
+    }
+  };
+
+  const handleRemoveResume = () => {
+    setFormData((prev) => ({ ...prev, resumeUrl: '' }));
+    if (resumeInputRef.current) resumeInputRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
@@ -347,6 +381,19 @@ export default function StudentProfileForm() {
                   </span>
                 ))}
               </div>
+            )}
+
+            {formData.resumeUrl && (
+              <a
+                href={formData.resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-xl border border-rose-200 transition-colors"
+              >
+                <FaFilePdf className="w-3.5 h-3.5" />
+                View Resume
+                <FaDownload className="w-3 h-3 opacity-50" />
+              </a>
             )}
 
             {formData.bio && (
@@ -673,6 +720,57 @@ export default function StudentProfileForm() {
               placeholder="Write a brief summary about your background, interests, and goals..."
               className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none dark:text-white resize-none transition-all"
             />
+          </div>
+
+          {/* Resume */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Resume (PDF or Word)</label>
+            <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60">
+              <div className="p-3 bg-rose-100 dark:bg-rose-900/30 rounded-xl shrink-0">
+                <FaFilePdf className="w-5 h-5 text-rose-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                {formData.resumeUrl ? (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={formData.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-800 truncate"
+                    >
+                      View Resume
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleRemoveResume}
+                      className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors shrink-0"
+                    >
+                      <FaTimes className="w-3.5 h-3.5 text-zinc-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => resumeInputRef.current?.click()}
+                    disabled={resumeUploading}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
+                  >
+                    <FaFilePdf className="w-4 h-4 text-zinc-400" />
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      {resumeUploading ? 'Uploading...' : 'Upload Resume'}
+                    </span>
+                  </button>
+                )}
+                <input
+                  ref={resumeInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleResumeChange}
+                  className="hidden"
+                />
+                <p className="text-[10px] text-zinc-400 mt-1">PDF, DOC, or DOCX — Max 5MB</p>
+              </div>
+            </div>
           </div>
 
           {/* Submit */}
