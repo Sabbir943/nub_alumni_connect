@@ -15,9 +15,10 @@ export async function POST(request) {
     const cloudName = cloudinaryUrl.split('@')[1];
     const apiKey = cloudinaryUrl.split('://')[1].split(':')[0];
 
+    const accessControl = JSON.stringify({ access_type: 'anonymous' });
     const signature = crypto
       .createHash('sha1')
-      .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
+      .update(`access_control=${accessControl}&folder=${folder}&resource_type=raw&timestamp=${timestamp}${apiSecret}`)
       .digest('hex');
 
     return NextResponse.json({ signature, cloudName, apiKey });

@@ -82,15 +82,17 @@ export async function uploadResume(file) {
 
   const { signature, cloudName, apiKey } = await signatureRes.json();
 
+  const accessControl = JSON.stringify({ access_type: 'anonymous' });
   const formData = new FormData();
   formData.append('file', file);
   formData.append('api_key', apiKey);
   formData.append('timestamp', timestamp);
   formData.append('signature', signature);
   formData.append('folder', folder);
-  formData.append('resource_type', 'auto');
+  formData.append('resource_type', 'raw');
+  formData.append('access_control', accessControl);
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
     method: 'POST',
     body: formData,
   });
