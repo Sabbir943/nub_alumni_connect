@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { useProfilePicture } from '@/lib/useProfilePicture';
 import { FiUsers, FiBriefcase, FiShield } from 'react-icons/fi';
 
 export default function DashboardPage() {
@@ -10,6 +11,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const user = session?.user;
   const role = user?.role?.toLowerCase();
+  const profilePictureUrl = useProfilePicture(user?.email);
+  const avatarUrl = profilePictureUrl || user?.image;
 
   useEffect(() => {
     if (isPending || !role) return;
@@ -45,9 +48,9 @@ export default function DashboardPage() {
     <div className="min-h-[70vh] flex items-center justify-center">
       <div className="flex flex-col items-center gap-6">
         <div className="relative">
-          {user?.image ? (
+          {avatarUrl ? (
             <img
-              src={user.image}
+              src={avatarUrl}
               alt={user.name}
               className="w-20 h-20 rounded-2xl object-cover shadow-2xl ring-4 ring-white dark:ring-zinc-800"
             />

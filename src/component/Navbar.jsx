@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import { GraduationCap, Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { useProfilePicture } from '@/lib/useProfilePicture';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
@@ -28,6 +29,8 @@ const Navbar = () => {
   } = authClient.useSession();
 
   const user = session?.user;
+  const profilePictureUrl = useProfilePicture(user?.email);
+  const avatarUrl = profilePictureUrl || user?.image;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -234,9 +237,9 @@ const Navbar = () => {
                     className="flex items-center gap-2.5 p-1.5 pl-1.5 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all duration-200 group"
                   >
                     <div className="relative">
-                      {user?.image ? (
+                      {avatarUrl ? (
                         <img
-                          src={user?.image}
+                          src={avatarUrl}
                           alt="Profile"
                           className="w-9 h-9 rounded-xl object-cover ring-2 ring-zinc-200 dark:ring-zinc-700 group-hover:ring-blue-400 dark:group-hover:ring-blue-500 group-hover:shadow-md group-hover:shadow-blue-500/20 transition-all duration-200"
                         />
@@ -269,8 +272,8 @@ const Navbar = () => {
                       >
                         <div className="px-4 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800/60 dark:to-zinc-900">
                           <div className="flex items-center gap-3">
-                            {user?.image ? (
-                              <img src={user?.image} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-zinc-700 shadow-md" />
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-zinc-700 shadow-md" />
                             ) : (
                               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/25 ring-2 ring-white dark:ring-zinc-700">
                                 <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase()}</span>

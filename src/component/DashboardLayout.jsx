@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import { Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { useProfilePicture } from '@/lib/useProfilePicture';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -36,6 +37,8 @@ const DashboardLayout = ({ children }) => {
   const user = session?.user;
   const email = user?.email;
   const role = user?.role?.toLowerCase();
+  const profilePictureUrl = useProfilePicture(email);
+  const avatarUrl = profilePictureUrl || user?.image;
 
   useEffect(() => {
     if (!email) return;
@@ -276,9 +279,9 @@ const DashboardLayout = ({ children }) => {
                   className="flex items-center gap-2.5 p-1 pr-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 group"
                 >
                   <div className="relative">
-                    {user?.image ? (
+                    {avatarUrl ? (
                       <img
-                        src={user.image}
+                        src={avatarUrl}
                         alt="Profile"
                         className="w-9 h-9 rounded-xl object-cover ring-2 ring-zinc-200 dark:ring-zinc-700 group-hover:ring-blue-400 dark:group-hover:ring-blue-500 transition-all duration-200"
                       />
@@ -311,8 +314,8 @@ const DashboardLayout = ({ children }) => {
                     >
                       <div className="px-4 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800/60 dark:to-zinc-900">
                         <div className="flex items-center gap-3">
-                          {user?.image ? (
-                            <img src={user.image} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-zinc-700 shadow-md" />
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-white dark:ring-zinc-700 shadow-md" />
                           ) : (
                             <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${accent} flex items-center justify-center shadow-md ring-2 ring-white dark:ring-zinc-700`}>
                               <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase()}</span>
@@ -383,8 +386,8 @@ const DashboardLayout = ({ children }) => {
             {/* Profile Card */}
             <div className="pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                {user?.image ? (
-                  <img src={user.image} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-zinc-200 dark:ring-zinc-700 shadow-md" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-11 h-11 rounded-xl object-cover ring-2 ring-zinc-200 dark:ring-zinc-700 shadow-md" />
                 ) : (
                   <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${accent} text-white font-bold flex items-center justify-center shadow-md`}>
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}

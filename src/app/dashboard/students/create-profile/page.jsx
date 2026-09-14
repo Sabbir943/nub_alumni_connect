@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api';
-import { uploadImage, uploadResume } from '@/lib/upload';
+import { uploadImage } from '@/lib/upload';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   FaUser,
@@ -221,8 +221,13 @@ export default function StudentProfileForm() {
     }
     setResumeUploading(true);
     try {
-      const url = await uploadResume(file);
-      setFormData((prev) => ({ ...prev, resumeUrl: url }));
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('email', userEmail);
+      const res = await fetch('/api/resume/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      setFormData((prev) => ({ ...prev, resumeUrl: data.resumeUrl }));
       toast.success('Resume uploaded!');
     } catch (err) {
       toast.error(err.message || 'Upload failed.');
