@@ -25,12 +25,8 @@ export async function POST(request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64 = btoa(binary);
+    const nodeBuffer = Buffer.from(arrayBuffer);
+    const base64 = nodeBuffer.toString('base64');
 
     const collection = await getCollection('resumes');
 

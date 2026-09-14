@@ -17,6 +17,7 @@ import {
   FiBookOpen,
 } from "react-icons/fi";
 import { apiFetch } from "@/lib/api";
+import FilterDropdown from "@/component/FilterDropdown";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -275,34 +276,28 @@ export default function StudentJobPortalPage() {
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
               <div className="flex flex-wrap gap-3 pt-2">
-                <select
+                <FilterDropdown
+                  icon={<FiBriefcase className="w-4 h-4" />}
+                  options={["Full-time", "Part-time", "Contract", "Internship"]}
                   value={jobType}
-                  onChange={(e) => setJobType(e.target.value)}
-                  className="px-3 py-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-                >
-                  <option value="All">All Job Types</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Internship">Internship</option>
-                </select>
-                <select
+                  onChange={setJobType}
+                  placeholder="Job Type"
+                  color="blue"
+                />
+                <FilterDropdown
+                  icon={<FiMapPin className="w-4 h-4" />}
+                  options={["On-site", "Remote", "Hybrid"]}
                   value={workplaceType}
-                  onChange={(e) => setWorkplaceType(e.target.value)}
-                  className="px-3 py-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-                >
-                  <option value="All">All Workplaces</option>
-                  <option value="On-site">On-site</option>
-                  <option value="Remote">Remote</option>
-                  <option value="Hybrid">Hybrid</option>
-                </select>
+                  onChange={setWorkplaceType}
+                  placeholder="Workplace"
+                  color="blue"
+                />
               </div>
             </motion.div>
           )}

@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import FilterDropdown from "@/component/FilterDropdown";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -69,70 +70,6 @@ function SkeletonCard() {
           <div className="h-5 bg-zinc-100 rounded w-12" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function FilterDropdown({ icon, options, value, onChange, placeholder }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = React.useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
-          value !== "All"
-            ? "bg-blue-50 border-blue-300 text-blue-700"
-            : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50"
-        }`}
-      >
-        <span className="text-zinc-400">{icon}</span>
-        <span className="truncate max-w-[120px]">{value === "All" ? placeholder : value}</span>
-        <FiChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 mt-2 w-56 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 overflow-hidden"
-          >
-            <div className="p-2 max-h-60 overflow-y-auto">
-              <button
-                onClick={() => { onChange("All"); setIsOpen(false); }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  value === "All" ? "bg-blue-50 text-blue-700 font-medium" : "text-zinc-600 hover:bg-zinc-50"
-                }`}
-              >
-                All {placeholder}
-              </button>
-              {options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => { onChange(opt); setIsOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    value === opt ? "bg-blue-50 text-blue-700 font-medium" : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -606,11 +543,10 @@ export default function JobPortalPage() {
           <AnimatePresence>
             {showFilters && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
               >
                 <div className="flex flex-wrap gap-3 pt-2">
                   <FilterDropdown
@@ -619,6 +555,7 @@ export default function JobPortalPage() {
                     value={jobType}
                     onChange={setJobType}
                     placeholder="Job Type"
+                    color="blue"
                   />
                   <FilterDropdown
                     icon={<FiMapPin className="w-4 h-4" />}
@@ -626,6 +563,7 @@ export default function JobPortalPage() {
                     value={workplaceType}
                     onChange={setWorkplaceType}
                     placeholder="Workplace"
+                    color="blue"
                   />
                   <FilterDropdown
                     icon={<FiClock className="w-4 h-4" />}
@@ -633,6 +571,7 @@ export default function JobPortalPage() {
                     value={postedDateFilter}
                     onChange={setPostedDateFilter}
                     placeholder="Posted Date"
+                    color="blue"
                   />
                 </div>
               </motion.div>

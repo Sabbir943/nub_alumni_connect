@@ -37,6 +37,7 @@ import { GraduationCap } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
+import FilterDropdown from "@/component/FilterDropdown";
 
 const DEPARTMENT_OPTIONS = [
   "CSE",
@@ -463,84 +464,6 @@ function SkeletonCard() {
           <div className="h-9 bg-zinc-100 rounded-xl w-full" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function FilterDropdown({ label, icon, options, value, onChange, placeholder }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = React.useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
-          value
-            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-            : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50"
-        }`}
-      >
-        <span className="text-zinc-400">{icon}</span>
-        <span className="truncate max-w-[120px]">{value || placeholder}</span>
-        <FiChevronDown
-          className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 mt-2 w-56 sm:w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 overflow-hidden"
-          >
-            <div className="p-2 max-h-60 overflow-y-auto">
-              <button
-                onClick={() => {
-                  onChange("");
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  !value
-                    ? "bg-emerald-50 text-emerald-700 font-medium"
-                    : "text-zinc-600 hover:bg-zinc-50"
-                }`}
-              >
-                All {placeholder}
-              </button>
-              {options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    onChange(opt);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    value === opt
-                      ? "bg-emerald-50 text-emerald-700 font-medium"
-                      : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -1047,39 +970,38 @@ export default function BrowseStudents() {
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
               <div className="mt-4 p-4 bg-white border border-zinc-200 rounded-2xl shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                   <FilterDropdown
-                    label="Department"
                     icon={<FiBookOpen className="w-4 h-4" />}
                     options={DEPARTMENT_OPTIONS}
                     value={department}
                     onChange={setDepartment}
                     placeholder="Department"
+                    color="emerald"
                   />
 
                   <FilterDropdown
-                    label="Year"
                     icon={<GraduationCap className="w-4 h-4" />}
                     options={yearOptions}
                     value={graduationYear}
                     onChange={setGraduationYear}
                     placeholder="Year"
+                    color="emerald"
                   />
 
                   <FilterDropdown
-                    label="Location"
                     icon={<FiMapPin className="w-4 h-4" />}
                     options={LOCATION_OPTIONS}
                     value={location}
                     onChange={setLocation}
                     placeholder="Location"
+                    color="emerald"
                   />
 
                   {hasActiveFilters && (

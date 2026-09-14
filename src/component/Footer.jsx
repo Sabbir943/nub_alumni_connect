@@ -86,7 +86,7 @@ const Footer = () => {
               Department of Computer Science & Engineering (CSE)
             </p>
             <div className="flex items-center gap-2 pt-1 text-xs text-zinc-500">
-              <FiGlobe className="w-4 h-4 text-zinc-600" />
+              <img src="/icons/Nub_icon.png" alt="NUB" className="w-4 h-4 rounded-sm object-contain" />
               <a href="https://nub.ac.bd" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-zinc-300">
                 Official NUB Portal
               </a>
