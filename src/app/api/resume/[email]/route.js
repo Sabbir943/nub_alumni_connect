@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 
+function detectContentType(buffer) {
+  const hex = buffer.slice(0, 8).toString('hex');
+  if (hex.startsWith('25504446')) return 'application/pdf';
+  if (hex.startsWith('d0cf11e0')) return 'application/msword';
+  if (hex.startsWith('504b0304')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  return '';
+}
+
 export async function GET(request, { params }) {
   try {
     const { email } = await params;
@@ -15,9 +23,6 @@ export async function GET(request, { params }) {
 
     if (resume.dataBase64) {
       buffer = Buffer.from(resume.dataBase64, 'base64');
-      console.log(`[Resume] email=${email} dataBase64.length=${resume.dataBase64.length} buffer.length=${buffer.length}`);
-      console.log(`[Resume] first 16 bytes (hex): ${buffer.slice(0, 16).toString('hex')}`);
-      console.log(`[Resume] first 16 bytes (ascii): ${buffer.slice(0, 16).toString('ascii')}`);
     } else if (resume.data) {
       const raw = resume.data;
       if (Buffer.isBuffer(raw)) {
@@ -29,22 +34,23 @@ export async function GET(request, { params }) {
       } else {
         buffer = Buffer.from(raw);
       }
-      console.log(`[Resume] legacy data path, buffer.length=${buffer.length}`);
     } else {
       return NextResponse.json({ message: 'Resume data empty' }, { status: 404 });
     }
 
-    const uint8 = new Uint8Array(buffer);
+    const contentType = detectContentType(buffer) || resume.contentType || 'application/pdf';
+    const filename = resume.filename || 'resume.pdf';
 
-    const headers = new Headers();
-    headers.set('Content-Type', resume.contentType || 'application/octet-stream');
-    headers.set('Content-Length', String(uint8.byteLength));
-    headers.set('Content-Disposition', `inline; filename="${resume.filename || 'resume'}"`);
-    headers.set('Cache-Control', 'no-store');
+    const blob = new Blob([buffer], { type: contentType });
 
-    return new Response(uint8, {
+    return new NextResponse(blob.stream(), {
       status: 200,
-      headers,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+        'Pragma': 'no-cache',
+      },
     });
   } catch (error) {
     console.error('Resume fetch error:', error);

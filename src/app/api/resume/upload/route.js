@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 
+function detectContentType(buffer) {
+  const hex = buffer.slice(0, 8).toString('hex');
+  const ascii = buffer.slice(0, 8).toString('ascii');
+  if (hex.startsWith('25504446')) return 'application/pdf';
+  if (hex.startsWith('d0cf11e0')) return 'application/msword';
+  if (hex.startsWith('504b0304')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  return '';
+}
+
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -27,6 +36,7 @@ export async function POST(request) {
     const arrayBuffer = await file.arrayBuffer();
     const nodeBuffer = Buffer.from(arrayBuffer);
     const base64 = nodeBuffer.toString('base64');
+    const contentType = detectContentType(nodeBuffer) || file.type || 'application/pdf';
 
     const collection = await getCollection('resumes');
 
@@ -36,7 +46,7 @@ export async function POST(request) {
         $set: {
           email,
           filename: file.name,
-          contentType: file.type,
+          contentType,
           dataBase64: base64,
           size: file.size,
           updatedAt: new Date(),
@@ -55,6 +65,6 @@ export async function POST(request) {
     }, { status: 200 });
   } catch (error) {
     console.error('Resume upload error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
   }
 }
