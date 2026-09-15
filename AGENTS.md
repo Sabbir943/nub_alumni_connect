@@ -48,10 +48,9 @@ Next.js 16 App Router + MongoDB (native driver) alumni networking app. All code 
 
 ## Quirks
 
-- Dashboard route folders **mix casing** on disk (e.g. `alumni/jobPost`, `alumni/mentorshipHub` are camelCase, while `students/text-box`, `students/my-mentorship` use kebab-case). Case-sensitive on disk — be precise when referencing paths. Note: README.md incorrectly references `alumni/Profile` (capital P) but the actual folder is `alumni/profile` (lowercase).
+- Dashboard route folders **mix casing** on disk (e.g. `alumni/jobPost`, `alumni/mentorshipHub` are camelCase, `alumni/Profile` has capital P, while `students/text-box`, `students/my-mentorship` use kebab-case). Case-sensitive on disk — be precise when referencing paths.
 - `mintest.js` — throwaway minimal Socket.IO server on port 5099 for debugging socket connectivity; not part of the app.
 - `socket-package.json` — standalone package manifest for deploying only `socket-server.js` (Node >= 18) to a separate host; the Next.js app and socket server are deployed independently.
 - `socket-server.js` creates its own MongoDB indexes at startup (`messages`, `notifications`, `students`, `alumni_directory`).
 - `src/lib/ringtone.js` — client-side WebRTC call audio (ringing, connect, decline sounds). Used by call UI components.
 - `src/lib/useSocket.js` and `src/lib/useWebRTC.js` — client hooks for real-time features.
-- `SocketReconnectHandler.jsx` — handles socket reconnection logic on the client.

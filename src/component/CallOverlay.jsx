@@ -378,6 +378,7 @@ export default function CallOverlay({
   onToggleAudio,
   onToggleVideo,
 }) {
+  const [isPipDragging, setIsPipDragging] = useState(false);
   const isConnecting = callState && callState !== "connected";
 
   const displayName = incomingCall?.callerName || calleeName || "Unknown";

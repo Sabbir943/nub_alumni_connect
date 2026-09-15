@@ -3,14 +3,20 @@ const { MongoClient, ObjectId } = require('mongodb');
 const http = require('http');
 const { initFirebaseAdmin, sendPushToUser } = require('./socket-push');
 
-const PORT = process.env.SOCKET_PORT || 3001;
+const PORT = process.env.PORT || process.env.SOCKET_PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'nub_alumni';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 const allowedOrigins = CORS_ORIGIN === '*'
   ? ['*']
-  : CORS_ORIGIN.split(',').map((o) => o.trim());
+  : [
+      ...CORS_ORIGIN.split(',').map((o) => o.trim()),
+      // Always allow localhost for development
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+    ];
 
 function isLocalhostOrigin(origin) {
   try {
@@ -65,6 +71,8 @@ function ensureIndexes() {
           database.collection('group_conversations').createIndex({ lastMessageAt: -1 }),
           database.collection('group_messages').createIndex({ groupId: 1, createdAt: -1 }),
           database.collection('group_messages').createIndex({ 'readBy.email': 1, groupId: 1 }),
+          database.collection('calls').createIndex({ calleeEmail: 1, status: 1, updatedAt: -1 }),
+          database.collection('calls').createIndex({ callerEmail: 1, status: 1, updatedAt: -1 }),
         ]);
         console.log('[Socket.IO] Database indexes ready');
       } catch (err) {
@@ -155,6 +163,25 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[Socket.IO] Unhandled rejection:', reason);
 });
+
+// Graceful shutdown for production (Railway, etc.)
+function gracefulShutdown(signal) {
+  console.log(`[Socket.IO] ${signal} received — shutting down gracefully`);
+  // Notify all connected users
+  io.emit('server-shutdown', { message: 'Server restarting...' });
+  // Stop accepting new connections
+  httpServer.close(() => {
+    console.log('[Socket.IO] HTTP server closed');
+    process.exit(0);
+  });
+  // Force close after 10s
+  setTimeout(() => {
+    console.error('[Socket.IO] Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 const activeCalls = new Map();
 const activeGroupCalls = new Map(); // groupId -> { callType, participants: Set<email>, createdBy, createdAt }
@@ -323,7 +350,7 @@ io.on('connection', (socket) => {
         sendPushToUser(database, calleeEmail, {
           title: `Incoming ${callType} call`,
           body: `${callerDisplayName} is calling you`,
-          url: `/dashboard/alumni/text?chatWith=${callerEmail}`,
+          url: `${messagingPath}?chatWith=${callerEmail}`,
           data: { type: 'call', callerEmail, callType },
         });
       } catch (e) {

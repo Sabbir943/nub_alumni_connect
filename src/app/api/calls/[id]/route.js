@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCollection, ObjectId } from "@/lib/mongodb";
 
+export const dynamic = "force-dynamic";
+
 // PATCH /api/calls/[id] - Update call status (answer, decline, end, signaling)
 export async function PATCH(request, { params }) {
   try {

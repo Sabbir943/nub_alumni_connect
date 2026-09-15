@@ -8,7 +8,25 @@ const ICE_SERVERS = {
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
+    // Free TURN relay servers (Open Relay / metered.ca) for NAT traversal
+    // These relay media when direct peer-to-peer fails (symmetric NAT, firewalls)
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function useWebRTC({

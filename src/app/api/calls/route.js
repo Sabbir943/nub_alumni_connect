@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCollection, ObjectId } from "@/lib/mongodb";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/calls - Initiate a call
 export async function POST(request) {
   try {
@@ -60,6 +62,18 @@ export async function POST(request) {
     // Create notifications for BOTH users
     try {
       const notifications = await getCollection("notifications");
+      const students = await getCollection("students");
+
+      // Determine messaging path based on recipient role
+      const calleeStudent = await students.findOne({ email: calleeEmail }, { projection: { _id: 1 } });
+      const calleeMessagingPath = calleeStudent
+        ? '/dashboard/students/text-box'
+        : '/dashboard/alumni/text';
+
+      const callerStudent = await students.findOne({ email: callerEmail }, { projection: { _id: 1 } });
+      const callerMessagingPath = callerStudent
+        ? '/dashboard/students/text-box'
+        : '/dashboard/alumni/text';
 
       // Notification for callee (incoming call)
       await notifications.insertOne({
@@ -70,7 +84,7 @@ export async function POST(request) {
         callType: callType || "video",
         message: `${callerEmail.split("@")[0]} is calling you (${callType || "video"})`,
         callId: result.insertedId.toString(),
-        link: `/dashboard/alumni/text?chatWith=${callerEmail}`,
+        link: `${calleeMessagingPath}?chatWith=${callerEmail}`,
         read: false,
         callStatus: "ringing",
         createdAt: new Date(),
@@ -85,7 +99,7 @@ export async function POST(request) {
         callType: callType || "video",
         message: `Calling ${calleeEmail.split("@")[0]} (${callType || "video"})`,
         callId: result.insertedId.toString(),
-        link: `/dashboard/alumni/text?chatWith=${calleeEmail}`,
+        link: `${callerMessagingPath}?chatWith=${calleeEmail}`,
         read: true,
         callStatus: "ringing",
         createdAt: new Date(),

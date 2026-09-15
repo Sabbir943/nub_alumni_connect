@@ -20,7 +20,24 @@ const ICE_SERVERS = {
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
+    // Free TURN relay servers (Open Relay / metered.ca) for NAT traversal
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function CallProvider({ children, email }) {
@@ -106,9 +123,31 @@ export function CallProvider({ children, email }) {
       if (state === "connected" || state === "completed") {
         setCallState("connected");
         playConnectSound();
-      } else if (state === "disconnected" || state === "failed") {
+      } else if (state === "disconnected") {
+        // Peer temporarily unreachable — wait for reconnection
+        setCallFailed("Connection unstable, waiting...");
+        setTimeout(() => setCallFailed(null), 5000);
+      } else if (state === "failed") {
+        // Connection unrecoverable — end the call
         setCallState(null);
         playEndSound();
+        setCallFailed("Call connection lost");
+        setTimeout(() => setCallFailed(null), 5000);
+        // Clean up resources
+        if (peerConnectionRef.current) {
+          peerConnectionRef.current.close();
+          peerConnectionRef.current = null;
+        }
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach((t) => t.stop());
+          setLocalStream(null);
+          localStreamRef.current = null;
+        }
+        setRemoteStream(null);
+        callIdRef.current = null;
+        setCurrentCallId(null);
+      } else if (state === "closed") {
+        setCallState(null);
       }
     };
 
