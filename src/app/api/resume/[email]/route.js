@@ -38,18 +38,23 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Resume data empty' }, { status: 404 });
     }
 
+    if (!buffer || buffer.length === 0) {
+      return NextResponse.json({ message: 'Resume data is empty' }, { status: 404 });
+    }
+
     const contentType = detectContentType(buffer) || resume.contentType || 'application/pdf';
     const filename = resume.filename || 'resume.pdf';
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
-    const blob = new Blob([buffer], { type: contentType });
-
-    return new NextResponse(blob.stream(), {
+    return new Response(arrayBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
+        'Content-Length': String(buffer.length),
         'Content-Disposition': `inline; filename="${filename}"`,
         'Cache-Control': 'no-store',
         'Pragma': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

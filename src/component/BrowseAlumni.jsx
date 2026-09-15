@@ -3,10 +3,9 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
-  FiFilter,
-  FiChevronDown,
-  FiChevronLeft,
-  FiChevronRight,
+   FiFilter,
+   FiChevronLeft,
+   FiChevronRight,
   FiMapPin,
   FiBriefcase,
   FiCalendar,

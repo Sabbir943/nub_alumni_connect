@@ -12,9 +12,8 @@ import {
   FiExternalLink,
   FiFilter,
   FiX,
-  FiRefreshCw,
-  FiChevronDown,
-  FiBookOpen,
+   FiRefreshCw,
+   FiBookOpen,
 } from "react-icons/fi";
 import { apiFetch } from "@/lib/api";
 import FilterDropdown from "@/component/FilterDropdown";

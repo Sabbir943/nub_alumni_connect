@@ -10,7 +10,7 @@ import MediaLightbox from './MediaLightbox';
 import toast from 'react-hot-toast';
 
 const REACTIONS = [
-  { type: 'like', emoji: '👍', label: 'Like', color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
+  { type: 'like', emoji: '👍', label: 'Like', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' },
   { type: 'love', emoji: '❤️', label: 'Love', color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' },
   { type: 'haha', emoji: '😂', label: 'Haha', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30' },
   { type: 'wow', emoji: '😮', label: 'Wow', color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
@@ -55,7 +55,7 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
   return (
     <div className={depth > 0 ? 'ml-8 sm:ml-12' : ''}>
       <div className="flex gap-3 group">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shrink-0 overflow-hidden">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
           {comment.authorAvatar ? (
             <img src={comment.authorAvatar} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -63,7 +63,7 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5">
+          <div className="bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5">
             <p className="text-[11px] sm:text-xs font-semibold text-zinc-900 dark:text-white">{comment.authorName}</p>
             <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 break-words">{comment.text}</p>
           </div>
@@ -71,7 +71,7 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
             <span className="text-[10px] sm:text-xs text-zinc-400">{timeAgo(comment.createdAt)}</span>
             <button
               onClick={() => setShowReplyInput(!showReplyInput)}
-              className="text-[10px] sm:text-xs font-semibold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              className="text-[10px] sm:text-xs font-semibold text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
               Reply
             </button>
@@ -102,13 +102,13 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleReply()}
                 placeholder={`Reply to ${comment.authorName}...`}
-                className="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-indigo-500"
                 autoFocus
               />
               <button
                 onClick={handleReply}
                 disabled={submitting || !replyText.trim()}
-                className="p-2 bg-blue-600 text-white rounded-full disabled:opacity-50 hover:bg-blue-700 transition-colors shrink-0"
+                className="p-2 bg-indigo-600 text-white rounded-xl disabled:opacity-50 hover:bg-indigo-700 transition-colors shrink-0"
               >
                 <FiSend size={14} />
               </button>
@@ -545,58 +545,58 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200/60 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-shadow duration-200"
+      className="bg-white dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-zinc-100 dark:border-zinc-800/60 overflow-hidden hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-900/50 transition-all duration-300"
     >
-      <div className="p-4 sm:p-5 lg:p-6">
+      <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm overflow-hidden">
               {post.authorAvatar ? (
-                <img src={post.authorAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+                <img src={post.authorAvatar} alt="" className="w-full h-full object-cover" />
               ) : (
                 post.authorName?.charAt(0).toUpperCase()
               )}
             </div>
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{post.authorName}</p>
+                <p className="font-semibold text-sm text-zinc-900 dark:text-white">{post.authorName}</p>
                 {post.authorRole && (
                   <span
                     className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${
                       post.authorRole === 'Admin'
                         ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                         : post.authorRole === 'Alumni'
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
                     {post.authorRole}
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-400">
                 {timeAgo(post.createdAt)}
                 {post.updatedAt && post.updatedAt !== post.createdAt && (
-                  <span className="text-zinc-400 dark:text-zinc-500"> · Edited</span>
+                  <span> · Edited</span>
                 )}
               </p>
             </div>
           </div>
           {currentUserEmail === post.authorEmail && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={openEdit}
                 title="Edit post"
-                className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
+                className="p-2 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors"
               >
-                <FiEdit2 size={18} />
+                <FiEdit2 size={16} />
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 title="Delete post"
                 className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
-                <FiTrash2 size={18} />
+                <FiTrash2 size={16} />
               </button>
             </div>
           )}
@@ -604,11 +604,11 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
 
         {post.category && post.category !== 'General' && (
           <div className="mb-3 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px] font-semibold">
+            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[11px] font-semibold">
               {post.category}
             </span>
             {(post.tags || []).map((tag) => (
-              <span key={tag} className="inline-flex items-center px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md text-[10px] font-medium">
+              <span key={tag} className="inline-flex items-center px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 rounded-md text-[10px] font-medium">
                 #{tag}
               </span>
             ))}
@@ -628,7 +628,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
             {isLongText && (
               <button
                 onClick={() => setTextExpanded(!textExpanded)}
-                className="text-sm font-semibold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1 transition-colors"
+                className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 mt-1 transition-colors"
               >
                 {textExpanded ? 'See less' : 'See more'}
               </button>
@@ -637,7 +637,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
         )}
 
         {post.images && post.images.length > 0 && (
-          <div className={`grid gap-1.5 sm:gap-2 rounded-xl overflow-hidden ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          <div className={`grid gap-1.5 rounded-xl overflow-hidden ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {post.images.map((url, i) => (
               <button
                 key={i}
@@ -649,7 +649,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                   src={url}
                   alt=""
                   loading="lazy"
-                  className={`w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
+                  className={`w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${
                     post.images.length === 1
                       ? 'h-auto max-h-[520px] cursor-zoom-in'
                       : post.images.length === 3 && i === 0
@@ -657,8 +657,8 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                       : 'h-48 sm:h-56 lg:h-64 cursor-zoom-in'
                   }`}
                 />
-                <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                <span className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/45 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                <span className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <FiZoomIn className="w-4 h-4" />
                 </span>
               </button>
@@ -669,7 +669,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
         {post.videoUrl && (
           <button
             onClick={() => { setLightboxIndex(null); setLightboxVideo(post.videoUrl); }}
-            className="group relative block w-full rounded-xl overflow-hidden bg-black mt-1.5 sm:mt-2"
+            className="group relative block w-full rounded-xl overflow-hidden bg-zinc-900 mt-1"
             title="Click to view"
           >
             {getVideoEmbedUrl(post.videoUrl)?.includes('youtube.com/embed') || getVideoEmbedUrl(post.videoUrl)?.includes('player.vimeo.com') ? (
@@ -687,23 +687,24 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                 preload="metadata"
               />
             )}
-            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
-            <span className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+            <span className="absolute bottom-3 right-3 p-2 rounded-lg bg-black/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <FiZoomIn className="w-4 h-4" />
             </span>
           </button>
         )}
       </div>
 
-      <div className="px-4 sm:px-5 lg:px-6 py-2.5 flex items-center justify-between text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800">
+      {/* Reaction stats */}
+      <div className="px-4 sm:px-5 py-2 flex items-center justify-between text-xs text-zinc-400">
         {totalReactions > 0 ? (
           <div
-            className="relative flex items-center"
+            className="relative flex items-center cursor-pointer"
             onMouseEnter={() => { setShowReactionPopover(true); loadReactionPeople(); }}
             onMouseLeave={() => setShowReactionPopover(false)}
           >
-            <button className="flex items-center gap-1.5 group">
-              <span className="flex -space-x-1.5">
+            <div className="flex items-center gap-1.5 group">
+              <span className="flex -space-x-1">
                 {usedReactions.slice(0, 4).map((r) => (
                   <span
                     key={r.type}
@@ -714,26 +715,25 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                   </span>
                 ))}
               </span>
-              <span className="font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 underline-offset-2 group-hover:underline transition-colors">
+              <span className="font-medium group-hover:underline underline-offset-2">
                 {totalReactions}
               </span>
-            </button>
+            </div>
 
-            {/* Who reacted popover */}
             <AnimatePresence>
               {showReactionPopover && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  transition={{ duration: 0.15 }}
                   onMouseEnter={() => { setShowReactionPopover(true); loadReactionPeople(); }}
                   onMouseLeave={() => setShowReactionPopover(false)}
-                  className="absolute bottom-full left-0 mb-2 w-60 sm:w-72 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl shadow-black/15 border border-zinc-200 dark:border-zinc-700 z-30 overflow-hidden"
+                  className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl shadow-black/15 border border-zinc-200 dark:border-zinc-700 z-30 overflow-hidden"
                 >
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 bg-gradient-to-r from-zinc-50 to-zinc-100 dark:from-zinc-800/50 dark:to-zinc-800/50">
-                    <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Reactions</h4>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+                    <h4 className="text-sm font-semibold text-zinc-900 dark:text-white">Reactions</h4>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">
                       {totalReactions}
                     </span>
                   </div>
@@ -743,7 +743,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                         {[1, 2, 3].map((i) => (
                           <div key={i} className="flex items-center gap-3 animate-pulse">
                             <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-                            <div className="flex-1 h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-2/3" />
+                            <div className="flex-1 h-3 bg-zinc-200 dark:bg-zinc-700 rounded-full w-2/3" />
                           </div>
                         ))}
                       </div>
@@ -753,9 +753,9 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                       reactionPeople.map((p) => (
                         <div
                           key={p.email}
-                          className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                          className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
                             {p.avatar ? (
                               <img src={p.avatar} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -789,26 +789,26 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 lg:px-5 py-1 flex items-center border-t border-zinc-100 dark:border-zinc-800">
+      {/* Action buttons */}
+      <div className="px-3 sm:px-4 py-1 flex items-center border-t border-zinc-100 dark:border-zinc-800/60">
         <div className="relative flex-1" onMouseLeave={() => setShowReactions(false)}>
           <button
             onClick={() => handleReaction(activeReaction?.type || 'like')}
             onMouseEnter={() => setShowReactions(true)}
-            className={`flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-xl transition-colors ${
+            className={`flex items-center justify-center gap-2 w-full py-2.5 text-sm font-medium rounded-xl transition-colors ${
               activeReaction
                 ? `${activeReaction.color}`
-                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80'
             }`}
           >
             {activeReaction ? (
               <span className="text-lg">{activeReaction.emoji}</span>
             ) : (
-              <FiThumbsUp size={20} />
+              <FiThumbsUp size={18} />
             )}
             <span>{activeReaction ? activeReaction.label : 'Like'}</span>
           </button>
 
-          {/* Facebook-style reaction picker */}
           <AnimatePresence>
             {showReactions && (
               <motion.div
@@ -845,32 +845,33 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
 
         <button
           onClick={loadComments}
-          className="flex items-center justify-center gap-2 flex-1 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 flex-1 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 rounded-xl transition-colors"
         >
-          <FiMessageCircle size={20} />
+          <FiMessageCircle size={18} />
           <span>Comments</span>
         </button>
 
         <button
           onClick={() => setShowShareModal(true)}
-          className="flex items-center justify-center gap-2 flex-1 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 flex-1 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 rounded-xl transition-colors"
         >
-          <FiShare2 size={20} />
+          <FiShare2 size={18} />
           <span>Share</span>
         </button>
       </div>
 
+      {/* Comments Section */}
       <AnimatePresence>
         {showComments && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-zinc-100 dark:border-zinc-800 overflow-hidden"
+            className="border-t border-zinc-100 dark:border-zinc-800/60 overflow-hidden"
           >
             <div className="p-4 sm:p-5">
               <div className="flex gap-3 mb-4">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {currentUserEmail?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 flex gap-2">
@@ -880,12 +881,12 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     onChange={(e) => setCommentText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleComment()}
                     placeholder="Write a comment..."
-                    className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-sm sm:text-base text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+                    className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
                   />
                   <button
                     onClick={handleComment}
                     disabled={submittingComment || !commentText.trim()}
-                    className="p-2.5 sm:p-3 bg-blue-600 text-white rounded-full disabled:opacity-50 hover:bg-blue-700 transition-colors shadow-sm"
+                    className="p-2.5 bg-indigo-600 text-white rounded-xl disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-sm"
                   >
                     <FiSend size={16} />
                   </button>
@@ -898,8 +899,8 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     <div key={i} className="flex gap-3 animate-pulse">
                       <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700" />
                       <div className="flex-1 space-y-2">
-                        <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-1/4" />
-                        <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
+                        <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded-full w-1/4" />
+                        <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded-full w-3/4" />
                       </div>
                     </div>
                   ))}
@@ -932,7 +933,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm sm:p-4"
             onClick={() => { setShowShareModal(false); setShareMessage(''); }}
           >
             <motion.div
@@ -943,21 +944,19 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-bold text-lg text-zinc-900 dark:text-white">Share to...</h3>
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg text-zinc-900 dark:text-white">Share to...</h3>
                 <button
                   onClick={() => { setShowShareModal(false); setShareMessage(''); }}
-                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                  className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors"
                 >
                   <FiX size={20} />
                 </button>
               </div>
 
-              {/* User input */}
               <div className="p-4 sm:p-5">
                 <div className="flex gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                     {currentUserEmail?.charAt(0).toUpperCase()}
                   </div>
                   <textarea
@@ -968,10 +967,9 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                   />
                 </div>
 
-                {/* Post preview */}
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3 sm:p-4 border border-zinc-200 dark:border-zinc-700">
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3 sm:p-4 border border-zinc-200 dark:border-zinc-700/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden">
                       {post.authorAvatar ? (
                         <img src={post.authorAvatar} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -993,71 +991,70 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                 </div>
               </div>
 
-              {/* Share buttons */}
-              <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-2">
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-1.5">
                 <button
                   onClick={handleFacebookShare}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#1877F2] flex items-center justify-center text-white font-bold text-lg shrink-0">
                     f
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Facebook</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">Facebook</p>
                     <p className="text-[11px] text-zinc-400">Share on your timeline</p>
                   </div>
                 </button>
 
                 <button
                   onClick={handleTwitterShare}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold text-base shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-white font-bold text-base shrink-0">
                     𝕏
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Twitter</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">Twitter</p>
                     <p className="text-[11px] text-zinc-400">Post a tweet</p>
                   </div>
                 </button>
 
                 <button
                   onClick={handleWhatsappShare}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center text-white font-bold text-lg shrink-0">
                     💬
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">WhatsApp</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">WhatsApp</p>
                     <p className="text-[11px] text-zinc-400">Send to chat</p>
                   </div>
                 </button>
 
                 <button
                   onClick={handleLinkedinShare}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#0A66C2] flex items-center justify-center text-white font-bold text-lg shrink-0">
                     in
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">LinkedIn</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">LinkedIn</p>
                     <p className="text-[11px] text-zinc-400">Share on your feed</p>
                   </div>
                 </button>
 
-                <div className="border-t border-zinc-200 dark:border-zinc-700 my-2" />
+                <div className="border-t border-zinc-200 dark:border-zinc-700/50 my-2" />
 
                 <button
                   onClick={handleCopyLink}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
                     <FiLink size={18} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">Copy Link</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">Copy Link</p>
                     <p className="text-[11px] text-zinc-400">Copy to clipboard</p>
                   </div>
                 </button>
@@ -1074,7 +1071,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm sm:p-4"
             onClick={() => setShowEdit(false)}
           >
             <motion.div
@@ -1085,19 +1082,19 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-bold text-lg sm:text-xl text-zinc-900 dark:text-white">Edit Post</h3>
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg text-zinc-900 dark:text-white">Edit Post</h3>
                 <button
                   onClick={() => setShowEdit(false)}
-                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                  className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors"
                 >
-                  <FiX size={22} />
+                  <FiX size={20} />
                 </button>
               </div>
 
               <div className="p-4 sm:p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-sm overflow-hidden">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm overflow-hidden">
                     {post.authorAvatar ? (
                       <img src={post.authorAvatar} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1105,7 +1102,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{post.authorName}</p>
+                    <p className="font-semibold text-sm text-zinc-900 dark:text-white">{post.authorName}</p>
                     <p className="text-xs text-zinc-400">
                       {post.category} · Edited just now
                     </p>
@@ -1120,17 +1117,15 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                   autoFocus
                 />
 
-                {/* Media editor */}
                 <div className="mt-4">
-                  {/* Existing + new images */}
                   {(editImages.length > 0 || newImagePreviews.length > 0) && (
-                    <div className={`grid gap-1.5 sm:gap-2 ${editImages.length + newImagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    <div className={`grid gap-1.5 ${editImages.length + newImagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                       {editImages.map((url, i) => (
-                        <div key={`e-${i}`} className="relative group">
-                          <img src={url} alt="" className="w-full h-24 sm:h-28 object-cover rounded-lg" />
+                        <div key={`e-${i}`} className="relative group rounded-xl overflow-hidden">
+                          <img src={url} alt="" className="w-full h-24 sm:h-28 object-cover" />
                           <button
                             onClick={() => removeEditImage(i)}
-                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Remove image"
                           >
                             <FiX size={13} />
@@ -1138,11 +1133,11 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                         </div>
                       ))}
                       {newImagePreviews.map((src, i) => (
-                        <div key={`n-${i}`} className="relative group">
-                          <img src={src} alt="" className="w-full h-24 sm:h-28 object-cover rounded-lg" />
+                        <div key={`n-${i}`} className="relative group rounded-xl overflow-hidden">
+                          <img src={src} alt="" className="w-full h-24 sm:h-28 object-cover" />
                           <button
                             onClick={() => removeNewImage(i)}
-                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1.5 right-1.5 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Remove image"
                           >
                             <FiX size={13} />
@@ -1152,27 +1147,24 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     </div>
                   )}
 
-                  {/* Current / new video */}
                   {(editVideoUrl || (newVideoFile && newVideoPreview)) && (
-                    <div className="relative mt-2">
-                      <div className="rounded-xl overflow-hidden bg-black">
-                        {newVideoFile ? (
-                          <video src={newVideoPreview} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
-                        ) : editVideoUrl.includes('youtube.com/embed') || editVideoUrl.includes('player.vimeo.com') ? (
-                          <iframe
-                            src={editVideoUrl}
-                            className="w-full h-44 sm:h-52 pointer-events-none"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        ) : (
-                          <video src={editVideoUrl} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
-                        )}
-                      </div>
+                    <div className="relative mt-2 rounded-xl overflow-hidden bg-zinc-900">
+                      {newVideoFile ? (
+                        <video src={newVideoPreview} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
+                      ) : editVideoUrl.includes('youtube.com/embed') || editVideoUrl.includes('player.vimeo.com') ? (
+                        <iframe
+                          src={editVideoUrl}
+                          className="w-full h-44 sm:h-52 pointer-events-none"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={editVideoUrl} className="w-full h-44 sm:h-52 object-cover pointer-events-none" />
+                      )}
                       <button
                         onClick={removeEditVideo}
-                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white hover:bg-black/70 transition-colors"
                         title="Remove video"
                       >
                         <FiX size={13} />
@@ -1180,20 +1172,18 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     </div>
                   )}
 
-                  {/* Add / replace media */}
                   {!editVideoUrl && !newVideoFile && (
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         onClick={() => setEditMediaPicker(editMediaPicker ? false : 'menu')}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                       >
-                        <FiImage size={15} className="text-green-500" />
+                        <FiImage size={15} className="text-emerald-500" />
                         Add Photo/Video
                       </button>
                     </div>
                   )}
 
-                  {/* Edit media picker */}
                   <AnimatePresence>
                     {editMediaPicker === 'menu' && (
                       <motion.div
@@ -1214,8 +1204,8 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                            <FiImage size={16} className="text-green-600 dark:text-green-400" />
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <FiImage size={16} className="text-emerald-600 dark:text-emerald-400" />
                           </div>
                           <div className="text-left text-xs">
                             <p className="font-semibold">Image</p>
@@ -1229,8 +1219,8 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                           }}
                           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <FiLink size={16} className="text-blue-600 dark:text-blue-400" />
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <FiLink size={16} className="text-indigo-600 dark:text-indigo-400" />
                           </div>
                           <div className="text-left text-xs">
                             <p className="font-semibold">Paste Video URL</p>
@@ -1266,13 +1256,13 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                           value={editVideoUrl}
                           onChange={(e) => setEditVideoUrl(e.target.value)}
                           placeholder="Paste YouTube or Vimeo URL..."
-                          className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-indigo-500"
                           autoFocus
                           onKeyDown={(e) => e.key === 'Enter' && handleEditVideoUrlSubmit()}
                         />
                         <button
                           onClick={handleEditVideoUrlSubmit}
-                          className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                          className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
                         >
                           Add
                         </button>
@@ -1313,7 +1303,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                           onClick={() => { setEditCategory(cat.name); setShowEditCategoryPicker(false); }}
                           className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                             editCategory === cat.name
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-semibold'
                               : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700'
                           }`}
                         >
@@ -1325,18 +1315,18 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   onClick={() => setShowEdit(false)}
                   disabled={savingEdit}
-                  className="px-5 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
+                  className="px-5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={savingEdit || (!editText.trim() && editImages.length === 0 && newImageFiles.length === 0 && !editVideoUrl && !newVideoFile)}
-                  className="flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+                  className="flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all shadow-sm"
                 >
                   {savingEdit ? (
                     <span className="flex items-center gap-2">
@@ -1360,7 +1350,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
@@ -1370,17 +1360,17 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 text-center"
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
                 <FiAlertTriangle className="text-red-500" size={28} />
               </div>
-              <h3 className="font-bold text-lg text-zinc-900 dark:text-white mb-2">Delete Post?</h3>
+              <h3 className="font-semibold text-lg text-zinc-900 dark:text-white mb-2">Delete Post?</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
                 Are you sure you want to delete this post? This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-2.5 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
+                  className="flex-1 py-2.5 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
@@ -1389,7 +1379,7 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                     setShowDeleteConfirm(false);
                     onDelete?.(post._id);
                   }}
-                  className="flex-1 py-2.5 px-4 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors shadow-sm"
+                  className="flex-1 py-2.5 px-4 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors shadow-sm"
                 >
                   Delete
                 </button>
@@ -1398,7 +1388,8 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
           </motion.div>
         )}
       </AnimatePresence>
-    {/* Media Lightbox (Facebook-style fullscreen viewer) */}
+
+      {/* Media Lightbox */}
       <AnimatePresence>
         {(lightboxIndex !== null || lightboxVideo) && (
           <MediaLightbox

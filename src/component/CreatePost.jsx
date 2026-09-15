@@ -21,6 +21,7 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [fullName, setFullName] = useState(null);
   const [category, setCategory] = useState('General');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const imageInputRef = useRef(null);
@@ -28,21 +29,26 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
   const textareaRef = useRef(null);
   const videoUrlRef = useRef(null);
 
-  const displayName = authorEmail ? authorEmail.split('@')[0] : '';
-
   useEffect(() => {
     if (!authorEmail) return;
     apiFetch(`/api/alumni-directory/check/${encodeURIComponent(authorEmail)}`)
       .then((data) => {
-        if (data.profile?.profilePictureUrl) {
+        if (data?.profile?.profilePictureUrl) {
           setProfileImage(data.profile.profilePictureUrl);
-        } else {
+        }
+        if (data?.profile?.fullName) {
+          setFullName(data.profile.fullName);
+        }
+        if (!data?.profile?.fullName) {
           return apiFetch(`/api/students/check/${encodeURIComponent(authorEmail)}`);
         }
       })
       .then((data) => {
         if (data?.profile?.profilePictureUrl) {
           setProfileImage(data.profile.profilePictureUrl);
+        }
+        if (data?.profile?.fullName) {
+          setFullName(data.profile.fullName);
         }
       })
       .catch(() => {});
@@ -102,7 +108,7 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
     if (!file) return;
 
     if (images.length > 0) {
-      toast.error('Remove images first to add a video');
+      toast.error('Remove images first to add video');
       e.target.value = '';
       return;
     }
@@ -185,42 +191,26 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
     }
   };
 
-  const avatar = (size = 'normal') => {
-    const sizeClass = size === 'small'
-      ? 'w-10 h-10 sm:w-11 sm:h-11'
-      : 'w-11 h-11 sm:w-12 sm:h-12';
-
-    if (profileImage) {
-      return (
-        <img
-          src={profileImage}
-          alt=""
-          className={`${sizeClass} rounded-full object-cover shadow-sm shrink-0`}
-        />
-      );
-    }
-    return (
-      <div className={`${sizeClass} rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm`}>
-        {authorEmail?.charAt(0).toUpperCase()}
-      </div>
-    );
-  };
-
+  const displayName = fullName ?? authorEmail?.split('@')[0];
   const hasMedia = images.length > 0 || videoUrl || videoFile;
 
   return (
     <>
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200/60 dark:border-zinc-800 overflow-hidden">
-        <div className="p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            {avatar('small')}
-            <button
-              onClick={() => setIsOpen(true)}
-              className="flex-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full px-4 py-2.5 sm:py-3 text-left text-zinc-500 dark:text-zinc-400 text-sm sm:text-base transition-colors"
-            >
-              What&apos;s on your mind, {displayName}?
-            </button>
+      <div className="bg-white dark:bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-zinc-100 dark:border-zinc-800/60 p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm overflow-hidden">
+            {profileImage ? (
+              <img src={profileImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              displayName?.charAt(0).toUpperCase()
+            )}
           </div>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="flex-1 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-150 dark:hover:bg-zinc-700/80 rounded-xl px-4 py-2.5 text-left text-zinc-500 dark:text-zinc-400 text-sm transition-colors"
+          >
+            What&apos;s on your mind, {displayName}?
+          </button>
         </div>
       </div>
 
@@ -230,32 +220,38 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm sm:p-4"
             onClick={() => setIsOpen(false)}
           >
             <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
+              initial={{ y: 100, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 100, opacity: 0, scale: 0.96 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-bold text-lg sm:text-xl text-zinc-900 dark:text-white">Create Post</h3>
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg text-zinc-900 dark:text-white">Create Post</h3>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                  className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors"
                 >
-                  <FiX size={22} />
+                  <FiX size={20} />
                 </button>
               </div>
 
               <div className="p-4 sm:p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  {avatar()}
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm overflow-hidden">
+                    {profileImage ? (
+                      <img src={profileImage} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      displayName?.charAt(0).toUpperCase()
+                    )}
+                  </div>
                   <div>
-                    <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">{displayName}</p>
+                    <p className="font-semibold text-sm text-zinc-900 dark:text-white">{displayName}</p>
                     <p className="text-xs text-zinc-400">Posting publicly</p>
                   </div>
                 </div>
@@ -285,7 +281,7 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                           onClick={() => { setCategory(cat); setShowCategoryPicker(false); }}
                           className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                             category === cat
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-semibold'
                               : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700'
                           }`}
                         >
@@ -300,11 +296,11 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                 {previews.length > 0 && (
                   <div className={`grid gap-2 mt-4 ${previews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                     {previews.map((src, i) => (
-                      <div key={i} className="relative group">
-                        <img src={src} alt="" className="w-full h-36 sm:h-44 object-cover rounded-xl" />
+                      <div key={i} className="relative group rounded-xl overflow-hidden">
+                        <img src={src} alt="" className="w-full h-36 sm:h-44 object-cover" />
                         <button
                           onClick={() => removeImage(i)}
-                          className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <FiX size={14} />
                         </button>
@@ -315,23 +311,21 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
 
                 {/* Video URL Preview */}
                 {videoUrl && !videoFile && (
-                  <div className="mt-4 relative">
-                    <div className="rounded-xl overflow-hidden bg-black">
-                      {videoUrl.includes('youtube.com/embed') || videoUrl.includes('player.vimeo.com') ? (
-                        <iframe
-                          src={videoUrl}
-                          className="w-full h-48 sm:h-56"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <video src={videoUrl} controls className="w-full h-48 sm:h-56 object-cover" />
-                      )}
-                    </div>
+                  <div className="mt-4 relative rounded-xl overflow-hidden bg-zinc-900">
+                    {videoUrl.includes('youtube.com/embed') || videoUrl.includes('player.vimeo.com') ? (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-48 sm:h-56"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video src={videoUrl} controls className="w-full h-48 sm:h-56 object-cover" />
+                    )}
                     <button
                       onClick={removeVideo}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white hover:bg-black/70 transition-colors"
                     >
                       <FiX size={14} />
                     </button>
@@ -340,16 +334,14 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
 
                 {/* Video File Preview */}
                 {videoFile && videoPreview && (
-                  <div className="mt-4 relative">
-                    <div className="rounded-xl overflow-hidden bg-black">
-                      <video src={videoPreview} controls className="w-full h-48 sm:h-56 object-cover" />
-                    </div>
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded-lg text-white text-[10px]">
+                  <div className="mt-4 relative rounded-xl overflow-hidden bg-zinc-900">
+                    <video src={videoPreview} controls className="w-full h-48 sm:h-56 object-cover" />
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-lg text-white text-[10px] font-medium">
                       {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
                     </div>
                     <button
                       onClick={removeVideo}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white hover:bg-black/70 transition-colors"
                     >
                       <FiX size={14} />
                     </button>
@@ -365,13 +357,13 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                       value={videoUrl}
                       onChange={(e) => setVideoUrl(e.target.value)}
                       placeholder="Paste YouTube or Vimeo URL..."
-                      className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-indigo-500"
                       autoFocus
                       onKeyDown={(e) => e.key === 'Enter' && handleVideoUrlSubmit()}
                     />
                     <button
                       onClick={handleVideoUrlSubmit}
-                      className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
                     >
                       Add
                     </button>
@@ -380,18 +372,16 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
               </div>
 
               {/* Bottom Bar */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-t border-zinc-200 dark:border-zinc-800">
-                {/* Media Picker Button */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="relative">
                   <button
                     onClick={() => setMediaPickerOpen(mediaPickerOpen ? false : 'menu')}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
                   >
-                    <FiImage size={20} className="text-green-500" />
+                    <FiImage size={20} className="text-emerald-500" />
                     <span className="hidden sm:inline">Photo/Video</span>
                   </button>
 
-                  {/* Media Picker Dropdown */}
                   <AnimatePresence>
                     {mediaPickerOpen === 'menu' && (
                       <motion.div
@@ -412,8 +402,8 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
                         >
-                          <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                            <FiImage size={18} className="text-green-600 dark:text-green-400" />
+                          <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <FiImage size={18} className="text-emerald-600 dark:text-emerald-400" />
                           </div>
                           <div className="text-left">
                             <p className="font-semibold">Image</p>
@@ -432,8 +422,8 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
                         >
-                          <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <FiLink size={18} className="text-blue-600 dark:text-blue-400" />
+                          <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <FiLink size={18} className="text-indigo-600 dark:text-indigo-400" />
                           </div>
                           <div className="text-left">
                             <p className="font-semibold">Paste Video URL</p>
@@ -465,7 +455,6 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                   </AnimatePresence>
                 </div>
 
-                {/* Hidden File Inputs */}
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -482,11 +471,10 @@ export default function CreatePost({ authorEmail, onPostCreated }) {
                   className="hidden"
                 />
 
-                {/* Post Button */}
                 <button
                   onClick={handleSubmit}
                   disabled={posting || (!text.trim() && !hasMedia)}
-                  className="flex items-center gap-2 px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all shadow-sm"
                 >
                   {posting ? (
                     <span className="flex items-center gap-2">

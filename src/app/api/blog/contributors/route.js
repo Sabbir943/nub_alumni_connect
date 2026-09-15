@@ -45,7 +45,7 @@ export async function GET(request) {
         const profile = await findProfileByEmail(stat.email);
         return {
           ...stat,
-          name: profile?.name || stat.email.split('@')[0],
+          name: profile?.fullName || stat.email.split('@')[0],
           avatar: profile?.profilePictureUrl || null,
           score: stat.postCount + stat.commentCount,
         };
