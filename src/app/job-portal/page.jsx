@@ -46,27 +46,27 @@ const heroVariants = {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden animate-pulse">
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 overflow-hidden animate-pulse">
       <div className="p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-zinc-200" />
+          <div className="w-11 h-11 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
           <div className="space-y-2 flex-1">
-            <div className="h-4 bg-zinc-200 rounded w-3/4" />
-            <div className="h-3 bg-zinc-100 rounded w-1/2" />
+            <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
+            <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-1/2" />
           </div>
         </div>
         <div className="flex gap-2">
-          <div className="h-6 bg-zinc-100 rounded-md w-16" />
-          <div className="h-6 bg-zinc-100 rounded-md w-20" />
+          <div className="h-6 bg-zinc-100 dark:bg-zinc-800 rounded-md w-16" />
+          <div className="h-6 bg-zinc-100 dark:bg-zinc-800 rounded-md w-20" />
         </div>
         <div className="space-y-2">
-          <div className="h-3 bg-zinc-100 rounded w-full" />
-          <div className="h-3 bg-zinc-100 rounded w-2/3" />
+          <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-full" />
+          <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-2/3" />
         </div>
         <div className="flex gap-1.5">
-          <div className="h-5 bg-zinc-100 rounded w-14" />
-          <div className="h-5 bg-zinc-100 rounded w-16" />
-          <div className="h-5 bg-zinc-100 rounded w-12" />
+          <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded w-14" />
+          <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded w-16" />
+          <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded w-12" />
         </div>
       </div>
     </div>
@@ -118,7 +118,7 @@ function DeadlineCountdown({ deadline }) {
           {timeLeft.text}
         </span>
       </div>
-      <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${timeLeft.percent}%` }}
@@ -159,9 +159,9 @@ function TrustScoreRing({ score, size = 32 }) {
 function JobVerificationBadge({ verification }) {
   if (!verification) {
     return (
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-50 border border-zinc-200 border-dashed">
-        <FiShield className="w-3 h-3 text-zinc-400" />
-        <span className="text-[10px] font-semibold text-zinc-400">Not verified</span>
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 border-dashed">
+        <FiShield className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
+        <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">Not verified</span>
       </div>
     );
   }
@@ -250,14 +250,14 @@ function JobCard({ job, onVerified, isLoggedIn }) {
     <motion.div
       variants={cardVariants}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-xl hover:shadow-zinc-200/50 transition-shadow duration-300 flex flex-col"
+      className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 overflow-hidden hover:shadow-xl hover:shadow-zinc-200/50 transition-shadow duration-300 flex flex-col"
     >
       {/* AI Verification Strip */}
       <div className={`px-4 py-2 flex items-center justify-between ${
         verification?.badge === 'Verified' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
         verification?.badge === 'Suspicious' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
         verification?.badge === 'Unverified' ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
-        'bg-gradient-to-r from-zinc-100 to-zinc-200'
+        'bg-gradient-to-r from-zinc-100 to-zinc-200 dark:from-zinc-700 dark:to-zinc-800'
       }`}>
         <div className="flex items-center gap-1.5">
           {verification ? (
@@ -271,8 +271,8 @@ function JobCard({ job, onVerified, isLoggedIn }) {
             </>
           ) : (
             <>
-              <FiShield className="w-3.5 h-3.5 text-zinc-500" />
-              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Click to AI Verify</span>
+              <FiShield className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+              <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Click to AI Verify</span>
             </>
           )}
         </div>
@@ -288,8 +288,8 @@ function JobCard({ job, onVerified, isLoggedIn }) {
             <FiBriefcase className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-zinc-900 truncate">{job.title}</h3>
-            <p className="text-xs text-zinc-500 font-medium truncate">{job.company}</p>
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{job.title}</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate">{job.company}</p>
           </div>
         </div>
 
@@ -310,13 +310,13 @@ function JobCard({ job, onVerified, isLoggedIn }) {
         </div>
 
         {/* Details */}
-        <div className="mt-3 space-y-1.5 text-xs text-zinc-500">
+        <div className="mt-3 space-y-1.5 text-xs text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-2">
-            <FiMapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <FiMapPin className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
             <span className="truncate">{job.location}</span>
           </div>
           <div className="flex items-center gap-2">
-            <FiCalendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <FiCalendar className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
             <span>Deadline: {formatDate(job.applicationDeadline)}</span>
           </div>
           <DeadlineCountdown deadline={job.applicationDeadline} />
@@ -326,12 +326,12 @@ function JobCard({ job, onVerified, isLoggedIn }) {
         {job.skills && job.skills.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
             {job.skills.slice(0, 4).map((skill, i) => (
-              <span key={i} className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 text-[10px] font-medium">
+              <span key={i} className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium">
                 {skill}
               </span>
             ))}
             {job.skills.length > 4 && (
-              <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500 text-[10px] font-medium">
+              <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-medium">
                 +{job.skills.length - 4} more
               </span>
             )}
@@ -342,9 +342,9 @@ function JobCard({ job, onVerified, isLoggedIn }) {
         <div className="flex-1" />
 
         {/* Footer */}
-        <div className="mt-4 pt-3 border-t border-zinc-100">
+        <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1 text-[11px] text-zinc-400">
+            <div className="flex items-center gap-1 text-[11px] text-zinc-400 dark:text-zinc-500">
               <FiClock className="w-3 h-3" />
               <span>{timeAgo(job.createdAt)}</span>
             </div>
@@ -465,7 +465,7 @@ export default function JobPortalPage() {
   const hasActiveFilters = jobType !== "All" || workplaceType !== "All" || postedDateFilter !== "all";
 
   return (
-    <div className="min-h-screen bg-zinc-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Hero */}
         <motion.div variants={heroVariants} initial="hidden" animate="visible" className="text-center">
@@ -473,37 +473,37 @@ export default function JobPortalPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide uppercase mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase mb-4"
           >
             <FiBriefcase className="w-3.5 h-3.5" />
             Career Portal
           </motion.div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
             Alumni{" "}
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               Job Portal
             </span>
           </h1>
-          <p className="mt-3 text-zinc-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-3 text-zinc-500 dark:text-zinc-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
             Discover opportunities posted directly by fellow alumni and network members.
           </p>
         </motion.div>
 
         {/* Search & Filters */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-zinc-200 space-y-4">
+        <div className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700/60 space-y-4">
           <div className="relative">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search by title, company, or skills..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
               >
                 <FiX className="w-4 h-4" />
               </button>
@@ -516,7 +516,7 @@ export default function JobPortalPage() {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
                 showFilters || hasActiveFilters
                   ? "bg-blue-50 border-blue-300 text-blue-700"
-                  : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
+                  : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
               }`}
             >
               <FiFilter className="w-4 h-4" />
@@ -580,7 +580,7 @@ export default function JobPortalPage() {
 
         {/* Results Count */}
         {!loading && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {filteredJobs.length === 0
               ? "No jobs found"
               : `Showing ${filteredJobs.length} job${filteredJobs.length !== 1 ? "s" : ""}`}
@@ -601,13 +601,13 @@ export default function JobPortalPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20 bg-white rounded-2xl border border-rose-200"
+            className="text-center py-20 bg-white dark:bg-zinc-900 rounded-2xl border border-rose-200 dark:border-rose-800/50"
           >
-            <div className="w-20 h-20 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 rounded-full bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center mx-auto mb-4">
               <FiRefreshCw className="w-10 h-10 text-rose-400" />
             </div>
-            <h3 className="text-lg font-semibold text-zinc-700 mb-1">Connection Error</h3>
-            <p className="text-sm text-zinc-500 mb-4 max-w-md mx-auto">{error}</p>
+            <h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Connection Error</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 max-w-md mx-auto">{error}</p>
             <button
               onClick={fetchJobs}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
@@ -622,13 +622,13 @@ export default function JobPortalPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20 bg-white rounded-2xl border border-zinc-200"
+            className="text-center py-20 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700/60"
           >
-            <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-4">
-              <FiBriefcase className="w-10 h-10 text-zinc-300" />
+            <div className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <FiBriefcase className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
             </div>
-            <h3 className="text-lg font-semibold text-zinc-700 mb-1">No jobs found</h3>
-            <p className="text-sm text-zinc-400 mb-4">Try adjusting your search or filters</p>
+            <h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-300 mb-1">No jobs found</h3>
+            <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-4">Try adjusting your search or filters</p>
             <button
               onClick={() => { setSearchTerm(""); setJobType("All"); setWorkplaceType("All"); setPostedDateFilter("all"); }}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"

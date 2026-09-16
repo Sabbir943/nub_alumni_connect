@@ -13,6 +13,7 @@ import {
 import { GraduationCap, Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { useProfilePicture } from '@/lib/useProfilePicture';
+import ThemeToggle from '@/component/ThemeToggle';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
@@ -228,6 +229,8 @@ const Navbar = () => {
                   <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-950 animate-pulse" />
                 </Link>
 
+                <ThemeToggle />
+
                 <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
 
                 {/* Profile Dropdown */}
@@ -332,6 +335,7 @@ const Navbar = () => {
 
           {/* MOBILE MENU TOGGLE */}
           <div className="lg:hidden flex items-center gap-2">
+            <ThemeToggle />
             {user && (
               <Link href="/dashboard/alumni/notifications" className="relative flex items-center justify-center w-9 h-9 rounded-xl text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
                 <FiBell className="w-5 h-5" />

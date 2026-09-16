@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/component/Navbar";
 import ClientScripts from "@/component/ClientScripts";
+import ThemeProvider from "@/component/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +38,10 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#4f46e5",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#4f46e5" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({ children }) {
@@ -45,6 +49,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -54,9 +59,11 @@ export default function RootLayout({ children }) {
         <meta name="msapplication-TileColor" content="#4f46e5" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
-      <body className="min-h-full flex flex-col">
-        <Navbar/>
-        {children}
+      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 transition-colors duration-300">
+        <ThemeProvider>
+          <Navbar/>
+          {children}
+        </ThemeProvider>
         <ClientScripts />
       </body>
     </html>

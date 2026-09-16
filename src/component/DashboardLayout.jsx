@@ -14,6 +14,7 @@ import { Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { useProfilePicture } from '@/lib/useProfilePicture';
 import { apiFetch } from '@/lib/api';
+import ThemeToggle from '@/component/ThemeToggle';
 import toast from 'react-hot-toast';
 
 const CallProvider = dynamic(() => import('@/component/CallContext').then(m => m.CallProvider), { ssr: false });
@@ -279,6 +280,8 @@ const DashboardLayout = ({ children }) => {
 
               <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
 
+              <ThemeToggle />
+
               {/* Profile dropdown */}
               <div className="relative" ref={profileRef}>
                 <button
@@ -448,8 +451,11 @@ const DashboardLayout = ({ children }) => {
               ))}
             </nav>
 
-            {/* Logout */}
-            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4">
+            {/* Theme & Logout */}
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4 space-y-1">
+              <div className="px-3.5 py-2">
+                <ThemeToggle variant="pill" />
+              </div>
               <Link
                 href="/"
                 onClick={() => setIsMobileOpen(false)}

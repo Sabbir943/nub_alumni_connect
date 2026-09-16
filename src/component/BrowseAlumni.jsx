@@ -109,7 +109,7 @@ const heroVariants = {
 function VerificationBadge({ verification, size = "sm" }) {
   if (!verification) {
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 text-[10px] font-semibold border border-zinc-200`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-semibold border border-zinc-200 dark:border-zinc-700/60`}>
         <FiShield className="w-3 h-3" />
         Not Verified
       </span>
@@ -145,10 +145,10 @@ function VerificationDetails({ verification }) {
   const barColor = trustScore >= 70 ? 'bg-emerald-500' : trustScore >= 40 ? 'bg-amber-500' : 'bg-red-500';
 
   return (
-    <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+    <div className="mt-4 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-100 dark:border-zinc-800">
       <div className="flex items-center gap-2 mb-3">
-        <FiShield className="w-4 h-4 text-slate-400" />
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Verification</h4>
+        <FiShield className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
+        <h4 className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">AI Verification</h4>
       </div>
 
       <div className="flex items-center gap-3 mb-3">
@@ -156,22 +156,22 @@ function VerificationDetails({ verification }) {
       </div>
 
       <div className="mb-3">
-        <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+        <div className="flex justify-between text-[10px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">
           <span>Trust Score</span>
           <span className="flex items-center gap-1">
             <FiStar className="w-3 h-3 text-amber-400" />
             {(trustScore / 20).toFixed(1)}/5
-            <span className="text-slate-400">({trustScore}/100)</span>
+            <span className="text-slate-400 dark:text-zinc-500">({trustScore}/100)</span>
           </span>
         </div>
-        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-slate-200 dark:bg-zinc-700 rounded-full overflow-hidden">
           <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${trustScore}%` }} />
         </div>
       </div>
 
       {linkValidation && linkValidation.length > 0 && (
-        <div className="mb-3 p-3 bg-white rounded-lg border border-slate-100">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Link Status</p>
+        <div className="mb-3 p-3 bg-white dark:bg-zinc-900 rounded-lg border border-slate-100 dark:border-zinc-800">
+          <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Link Status</p>
           <div className="space-y-1.5">
             {linkValidation.map((link, i) => (
               <div key={i} className="flex items-center justify-between text-[10px]">
@@ -189,7 +189,7 @@ function VerificationDetails({ verification }) {
                       <FiAlertTriangle className="w-2.5 h-2.5 text-zinc-400" />
                     </span>
                   )}
-                  <span className="font-semibold text-slate-600">{link.label}</span>
+                  <span className="font-semibold text-slate-600 dark:text-zinc-300">{link.label}</span>
                 </div>
                 <span className={`font-medium ${link.valid ? 'text-emerald-600' : link.url ? 'text-red-600' : 'text-zinc-400'}`}>
                   {link.valid ? 'Valid' : link.url ? `Error ${link.status || ''}` : 'Not provided'}
@@ -203,7 +203,7 @@ function VerificationDetails({ verification }) {
       {breakdown && (
         <div className="grid grid-cols-2 gap-2 mb-3">
           {Object.entries(breakdown).map(([key, val]) => (
-            <div key={key} className="flex justify-between text-[10px] text-slate-500">
+            <div key={key} className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400">
               <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
               <span className="font-semibold">{val}/25</span>
             </div>
@@ -212,7 +212,7 @@ function VerificationDetails({ verification }) {
       )}
 
       {analysis && (
-        <p className="text-xs text-slate-600 leading-relaxed mb-2">{analysis}</p>
+        <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed mb-2">{analysis}</p>
       )}
 
       {flags && flags.length > 0 && (
@@ -230,7 +230,7 @@ function VerificationDetails({ verification }) {
       )}
 
       {verifiedAt && (
-        <p className="text-[9px] text-slate-400 mt-2">
+        <p className="text-[9px] text-slate-400 dark:text-zinc-500 mt-2">
           Verified: {new Date(verifiedAt).toLocaleDateString()}
         </p>
       )}
@@ -264,7 +264,7 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden"
+            className="relative bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden"
           >
             {/* Header Banner */}
             <div className="relative h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 overflow-hidden">
@@ -287,10 +287,10 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                   <img
                     src={profile.profilePictureUrl}
                     alt={profile.fullName}
-                    className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-xl"
+                    className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 object-cover shadow-xl"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full border-4 border-white bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl">
+                    <div className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl">
                     <span className="text-3xl font-bold text-white">
                       {profile.fullName?.charAt(0) || "?"}
                     </span>
@@ -300,13 +300,13 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
 
               {/* Name & Title */}
               <div className="mt-4 text-center">
-                <h2 className="text-xl font-extrabold text-slate-900">{profile.fullName}</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-zinc-100">{profile.fullName}</h2>
                 {profile.jobTitle && (
                   <p className="text-sm text-blue-600 font-semibold mt-1">{profile.jobTitle}</p>
                 )}
                 {profile.organization && (
-                  <p className="text-sm text-slate-500 flex items-center justify-center gap-1 mt-1">
-                    <FiBriefcase className="w-3.5 h-3.5 text-slate-400" />
+                  <p className="text-sm text-slate-500 dark:text-zinc-400 flex items-center justify-center gap-1 mt-1">
+                    <FiBriefcase className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
                     {profile.organization}
                   </p>
                 )}
@@ -315,46 +315,46 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
               {/* Quick Info Cards */}
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {profile.graduationYear && (
-                  <div className="flex items-center gap-2.5 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                    <div className="p-2 bg-indigo-100 rounded-lg">
-                      <FiCalendar className="w-4 h-4 text-indigo-600" />
+                  <div className="flex items-center gap-2.5 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-800/40">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg">
+                      <FiCalendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-indigo-400 font-semibold uppercase">Graduation</p>
-                      <p className="text-sm font-bold text-indigo-700">Batch of {profile.graduationYear}</p>
+                      <p className="text-[10px] text-indigo-400 dark:text-indigo-500 font-semibold uppercase">Graduation</p>
+                      <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Batch of {profile.graduationYear}</p>
                     </div>
                   </div>
                 )}
                 {profile.degree && (
-                  <div className="flex items-center gap-2.5 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FiBookOpen className="w-4 h-4 text-blue-600" />
+                  <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800/40">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                      <FiBookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-blue-400 font-semibold uppercase">Degree</p>
-                      <p className="text-sm font-bold text-blue-700">{profile.degree}</p>
+                      <p className="text-[10px] text-blue-400 dark:text-blue-500 font-semibold uppercase">Degree</p>
+                      <p className="text-sm font-bold text-blue-700 dark:text-blue-300">{profile.degree}</p>
                     </div>
                   </div>
                 )}
                 {profile.studentId && (
-                  <div className="flex items-center gap-2.5 p-3 bg-violet-50 rounded-xl border border-violet-100">
-                    <div className="p-2 bg-violet-100 rounded-lg">
-                      <FiHash className="w-4 h-4 text-violet-600" />
+                  <div className="flex items-center gap-2.5 p-3 bg-violet-50 dark:bg-violet-950/30 rounded-xl border border-violet-100 dark:border-violet-800/40">
+                    <div className="p-2 bg-violet-100 dark:bg-violet-900/40 rounded-lg">
+                      <FiHash className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-violet-400 font-semibold uppercase">Student ID</p>
-                      <p className="text-sm font-bold text-violet-700">{profile.studentId}</p>
+                      <p className="text-[10px] text-violet-400 dark:text-violet-500 font-semibold uppercase">Student ID</p>
+                      <p className="text-sm font-bold text-violet-700 dark:text-violet-300">{profile.studentId}</p>
                     </div>
                   </div>
                 )}
                 {profile.currentLocation && (
-                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <FiMapPin className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-800/40">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
+                      <FiMapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-emerald-400 font-semibold uppercase">Location</p>
-                      <p className="text-sm font-bold text-emerald-700">{profile.currentLocation}</p>
+                      <p className="text-[10px] text-emerald-400 dark:text-emerald-500 font-semibold uppercase">Location</p>
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{profile.currentLocation}</p>
                     </div>
                   </div>
                 )}
@@ -362,12 +362,12 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
 
               {/* Bio */}
               {profile.bio && (
-                <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="mt-4 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-100 dark:border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
-                    <FiFileText className="w-4 h-4 text-slate-400" />
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">About</h4>
+                    <FiFileText className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">About</h4>
                   </div>
-                  <p className="text-sm text-slate-700 leading-relaxed">{profile.bio}</p>
+                  <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed">{profile.bio}</p>
                 </div>
               )}
 
@@ -377,7 +377,7 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
               {/* Skills */}
               {skills.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Skills</h4>
+                  <h4 className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Skills</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {skills.map((skill, i) => (
                       <span
@@ -393,14 +393,14 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
 
               {/* Contact Links */}
               <div className="mt-5 space-y-2">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Connect</h4>
+                <h4 className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Connect</h4>
                 <div className="grid grid-cols-1 gap-2">
                   {profile.linkedinUrl && (
                     <a
                       href={profile.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-2.5 bg-[#0A66C2]/5 hover:bg-[#0A66C2]/10 rounded-xl border border-[#0A66C2]/10 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-[#0A66C2]/5 dark:bg-[#0A66C2]/10 hover:bg-[#0A66C2]/10 rounded-xl border border-[#0A66C2]/10 transition-colors group"
                     >
                       <FiLinkedin className="w-4 h-4 text-[#0A66C2]" />
                       <span className="text-sm font-medium text-[#0A66C2]">LinkedIn Profile</span>
@@ -410,20 +410,20 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                   {profile.contactNumber && (
                     <a
                       href={`tel:${profile.contactNumber}`}
-                      className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-100 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 rounded-xl border border-emerald-100 dark:border-emerald-800/40 transition-colors group"
                     >
-                      <FiPhone className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-700">{profile.contactNumber}</span>
+                      <FiPhone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{profile.contactNumber}</span>
                       <FiExternalLink className="w-3 h-3 text-emerald-400 ml-auto group-hover:text-emerald-600 transition-colors" />
                     </a>
                   )}
                   {profile.email && (
                     <a
                       href={`mailto:${profile.email}`}
-                      className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 rounded-xl border border-blue-100 dark:border-blue-800/40 transition-colors group"
                     >
-                      <FiMail className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-700">{profile.email}</span>
+                      <FiMail className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{profile.email}</span>
                       <FiExternalLink className="w-3 h-3 text-blue-400 ml-auto group-hover:text-blue-600 transition-colors" />
                     </a>
                   )}
@@ -432,7 +432,7 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                       href={profile.facebookUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-2.5 bg-[#1877F2]/5 hover:bg-[#1877F2]/10 rounded-xl border border-[#1877F2]/10 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-[#1877F2]/5 dark:bg-[#1877F2]/10 hover:bg-[#1877F2]/10 rounded-xl border border-[#1877F2]/10 transition-colors group"
                     >
                       <FiGlobe className="w-4 h-4 text-[#1877F2]" />
                       <span className="text-sm font-medium text-[#1877F2]">Facebook</span>
@@ -444,10 +444,10 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
                       href={profile.twitterUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-2.5 bg-black/5 hover:bg-black/10 rounded-xl border border-black/10 transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 rounded-xl border border-black/10 dark:border-white/10 transition-colors group"
                     >
-                      <FiGlobe className="w-4 h-4 text-black" />
-                      <span className="text-sm font-medium text-black">Twitter / X</span>
+                      <FiGlobe className="w-4 h-4 text-black dark:text-white" />
+                      <span className="text-sm font-medium text-black dark:text-white">Twitter / X</span>
                       <FiExternalLink className="w-3 h-3 text-black/40 ml-auto group-hover:text-black transition-colors" />
                     </a>
                   )}
@@ -548,7 +548,7 @@ function FollowButton({ targetEmail, currentUserEmail }) {
     return (
       <button
         disabled
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 text-zinc-400 border border-zinc-200 rounded-xl text-xs font-semibold cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700/60 rounded-xl text-xs font-semibold cursor-not-allowed"
       >
         <FiUserPlus className="w-3.5 h-3.5" />
         Login to Follow
@@ -563,7 +563,7 @@ function FollowButton({ targetEmail, currentUserEmail }) {
       disabled={loading || checking}
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
         isFollowing
-          ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+          ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700 shadow-sm shadow-blue-600/10"
       } disabled:opacity-50`}
     >
@@ -636,7 +636,7 @@ function AIVerifyButton({ profile, type, onVerified }) {
           whileTap={{ scale: 0.97 }}
           onClick={handleVerify}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 border border-dashed border-blue-300 bg-blue-50/50 text-blue-600 hover:bg-blue-50 hover:border-blue-400 disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-50 hover:border-blue-400 disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -676,7 +676,7 @@ function AIVerifyButton({ profile, type, onVerified }) {
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className="w-full"
         >
-          <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-white">
+          <div className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900">
             {/* Gradient top bar */}
             <div className={`h-1 bg-gradient-to-r ${badgeColors[result?.badge] || "from-zinc-400 to-zinc-500"}`} />
 
@@ -731,7 +731,7 @@ function AIVerifyButton({ profile, type, onVerified }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="text-[10px] text-zinc-500 leading-relaxed line-clamp-2"
+                  className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2"
                 >
                   {result.analysis}
                 </motion.p>
@@ -743,11 +743,11 @@ function AIVerifyButton({ profile, type, onVerified }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45 }}
-                  className="mt-2 pt-2 border-t border-zinc-100 space-y-1"
+                  className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-1"
                 >
                   {result.linkValidation.map((link, i) => (
                     <div key={i} className="flex items-center justify-between text-[9px]">
-                      <span className="font-medium text-zinc-500">{link.label}</span>
+                      <span className="font-medium text-zinc-500 dark:text-zinc-400">{link.label}</span>
                       {link.valid ? (
                         <span className="flex items-center gap-0.5 text-emerald-600 font-semibold">
                           <FiCheck className="w-2.5 h-2.5" /> Valid
@@ -757,7 +757,7 @@ function AIVerifyButton({ profile, type, onVerified }) {
                           <FiAlertTriangle className="w-2.5 h-2.5" /> Unverified
                         </span>
                       ) : (
-                        <span className="text-zinc-400">N/A</span>
+                        <span className="text-zinc-400 dark:text-zinc-500">N/A</span>
                       )}
                     </div>
                   ))}
@@ -769,10 +769,10 @@ function AIVerifyButton({ profile, type, onVerified }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="flex items-center justify-center gap-1 mt-2 pt-2 border-t border-zinc-100"
+                className="flex items-center justify-center gap-1 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800"
               >
                 <FiZap className="w-2.5 h-2.5 text-blue-400" />
-                <span className="text-[9px] text-zinc-400 font-medium uppercase tracking-wider">
+                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
                   Verified by AI
                 </span>
               </motion.div>
@@ -837,7 +837,7 @@ function MentorshipRequestModal({ profile, isOpen, onClose, currentUserEmail }) 
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            className="relative bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
@@ -846,21 +846,21 @@ function MentorshipRequestModal({ profile, isOpen, onClose, currentUserEmail }) 
                     <FiBookOpen className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Request Mentorship</h3>
-                    <p className="text-xs text-slate-500">Connect with {profile.fullName}</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Request Mentorship</h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">Connect with {profile.fullName}</p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                 >
-                  <FiX className="w-5 h-5 text-slate-400" />
+                  <FiX className="w-5 h-5 text-slate-400 dark:text-zinc-500" />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5 block">
                     Area of Expertise
                   </label>
                   <input
@@ -868,11 +868,11 @@ function MentorshipRequestModal({ profile, isOpen, onClose, currentUserEmail }) 
                     value={expertise}
                     onChange={(e) => setExpertise(e.target.value)}
                     placeholder="e.g., Software Engineering, Career Advice"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5 block">
                     Message
                   </label>
                   <textarea
@@ -880,14 +880,14 @@ function MentorshipRequestModal({ profile, isOpen, onClose, currentUserEmail }) 
                     onChange={(e) => setMessage(e.target.value)}
                     rows="4"
                     placeholder="Tell the mentor why you'd like to connect..."
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-sm font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -1021,19 +1021,19 @@ export default function BrowseAlumni() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide uppercase mb-4"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase mb-4"
         >
           <FiUsers className="w-3.5 h-3.5" />
           Alumni Network
         </motion.div>
 
-        <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
           Browse{" "}
           <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Alumni Directory
           </span>
         </h1>
-        <p className="mt-3 text-zinc-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-3 text-zinc-500 dark:text-zinc-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
           Discover and connect with talented graduates from Northern University
           Bangladesh. Search by name, skill, company, or graduation year.
         </p>
@@ -1055,7 +1055,7 @@ export default function BrowseAlumni() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, job title, organization, or skills..."
-              className="w-full pl-12 pr-32 py-3.5 bg-white border border-zinc-200 rounded-2xl text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all shadow-sm"
+              className="w-full pl-12 pr-32 py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all shadow-sm"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
               {search && (
@@ -1065,7 +1065,7 @@ export default function BrowseAlumni() {
                     setSearch("");
                     setPage(1);
                   }}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+                  className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <FiX className="w-4 h-4" />
                 </button>
@@ -1086,8 +1086,8 @@ export default function BrowseAlumni() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
               showFilters || hasActiveFilters
-                ? "bg-blue-50 border-blue-300 text-blue-700"
-                : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
+                ? "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800/40 text-blue-700 dark:text-blue-300"
+                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
             <FiFilter className="w-4 h-4" />
@@ -1100,11 +1100,11 @@ export default function BrowseAlumni() {
           </button>
 
           <div className="flex items-center gap-2 ml-auto">
-            <span className="text-xs text-zinc-400 hidden sm:inline">Sort by:</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 hidden sm:inline">Sort by:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 cursor-pointer transition-all"
+              className="px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-xl text-sm text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 cursor-pointer transition-all"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -1124,7 +1124,7 @@ export default function BrowseAlumni() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="mt-4 p-4 bg-white border border-zinc-200 rounded-2xl shadow-sm">
+              <div className="mt-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                   <FilterDropdown
                     icon={<FiBookOpen className="w-4 h-4" />}
@@ -1178,7 +1178,7 @@ export default function BrowseAlumni() {
           animate={{ opacity: 1 }}
           className="flex items-center justify-between mb-6"
         >
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {pagination.total === 0
               ? "No alumni found"
               : `Showing ${profiles.length} of ${pagination.total} alumni`}
@@ -1222,13 +1222,13 @@ export default function BrowseAlumni() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center py-20"
         >
-          <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-4">
-            <FiUsers className="w-10 h-10 text-zinc-300" />
+          <div className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <FiUsers className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
           </div>
-          <h3 className="text-lg font-semibold text-zinc-700 mb-1">
+          <h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
             No alumni found
           </h3>
-          <p className="text-sm text-zinc-400 mb-4">
+          <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-4">
             Try adjusting your search or filter criteria
           </p>
           <button
@@ -1255,7 +1255,7 @@ export default function BrowseAlumni() {
                 key={profile._id}
                 variants={cardVariants}
                 layout
-                className="group bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-xl hover:shadow-blue-500/5 transition-shadow duration-300"
+                className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 overflow-hidden hover:shadow-xl hover:shadow-blue-500/5 transition-shadow duration-300"
               >
                 {/* Banner */}
                 <div className="relative h-24 bg-gradient-to-r from-blue-600 to-indigo-600 overflow-hidden">
@@ -1286,10 +1286,10 @@ export default function BrowseAlumni() {
                       <img
                         src={profile.profilePictureUrl}
                         alt={profile.fullName}
-                        className="w-20 h-20 rounded-full border-4 border-white object-cover shadow-md group-hover:scale-105 transition-transform duration-300"
+                        className="w-20 h-20 rounded-full border-4 border-white dark:border-zinc-900 object-cover shadow-md group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-full border-4 border-white bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                      <div className="w-20 h-20 rounded-full border-4 border-white dark:border-zinc-900 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
                         <span className="text-2xl font-bold text-white">
                           {profile.fullName?.charAt(0) || "?"}
                         </span>
@@ -1300,7 +1300,7 @@ export default function BrowseAlumni() {
                   {/* Info */}
                   <div className="mt-3 text-center">
                     <div className="flex items-center justify-center gap-1.5">
-                      <h3 className="text-base font-bold text-zinc-900 truncate">
+                      <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
                         {profile.fullName}
                       </h3>
                     </div>
@@ -1313,8 +1313,8 @@ export default function BrowseAlumni() {
                       </p>
                     )}
                     {profile.organization && (
-                      <p className="text-xs text-zinc-500 flex items-center justify-center gap-1 mt-1 truncate">
-                        <FiBriefcase className="w-3 h-3 text-zinc-400 flex-shrink-0" />
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1 mt-1 truncate">
+                        <FiBriefcase className="w-3 h-3 text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
                         {profile.organization}
                       </p>
                     )}
@@ -1323,12 +1323,12 @@ export default function BrowseAlumni() {
                   {/* Tags */}
                   <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                     {profile.degree && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-100">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 text-[10px] font-semibold border border-blue-100 dark:border-blue-800/40">
                         {profile.degree}
                       </span>
                     )}
                     {profile.currentLocation && (
-                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-100">
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold border border-emerald-100 dark:border-emerald-800/40">
                         <FiMapPin className="w-2.5 h-2.5" />
                         {profile.currentLocation}
                       </span>
@@ -1346,7 +1346,7 @@ export default function BrowseAlumni() {
                         .map((skill, i) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 text-[10px] font-medium"
+                            className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium"
                           >
                             {skill}
                           </span>
@@ -1354,7 +1354,7 @@ export default function BrowseAlumni() {
                       {(Array.isArray(profile.skills)
                         ? profile.skills.length
                         : profile.skills.split(",").length) > 3 && (
-                        <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500 text-[10px] font-medium">
+                        <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-medium">
                           +{(Array.isArray(profile.skills) ? profile.skills.length : profile.skills.split(",").length) - 3} more
                         </span>
                       )}
@@ -1404,7 +1404,7 @@ export default function BrowseAlumni() {
                   )}
                   {profile.isMentor && !currentUser?.email && (
                     <div className="mt-2">
-                      <span className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 text-zinc-400 border border-zinc-200 rounded-xl text-xs font-semibold cursor-not-allowed">
+                      <span className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700/60 rounded-xl text-xs font-semibold cursor-not-allowed">
                         <FiBookOpen className="w-3.5 h-3.5" />
                         Login to Request Mentorship
                       </span>
@@ -1434,7 +1434,7 @@ export default function BrowseAlumni() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={!pagination.hasPrevious}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-zinc-200 bg-white text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             <FiChevronLeft className="w-4 h-4" />
             Prev
@@ -1454,7 +1454,7 @@ export default function BrowseAlumni() {
             }, [])
             .map((item, i) =>
               item === "..." ? (
-                <span key={`ellipsis-${i}`} className="px-2 text-zinc-400 text-sm">
+                <span key={`ellipsis-${i}`} className="px-2 text-zinc-400 dark:text-zinc-500 text-sm">
                   ...
                 </span>
               ) : (
@@ -1464,7 +1464,7 @@ export default function BrowseAlumni() {
                   className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     pagination.currentPage === item
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                      : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                      : "border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                   }`}
                 >
                   {item}
@@ -1475,7 +1475,7 @@ export default function BrowseAlumni() {
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={!pagination.hasNext}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-zinc-200 bg-white text-sm font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             Next
             <FiChevronRight className="w-4 h-4" />
