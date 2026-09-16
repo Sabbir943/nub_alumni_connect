@@ -157,7 +157,7 @@ function VerificationDetails({ verification }) {
             <span className="text-slate-400 dark:text-zinc-500">({trustScore}/100)</span>
           </span>
         </div>
-        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-slate-200 dark:bg-zinc-700 rounded-full overflow-hidden">
           <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${trustScore}%` }} />
         </div>
       </div>
@@ -291,7 +291,7 @@ function ProfileDetailModal({ profile, isOpen, onClose }) {
               <div className="mt-4 text-center">
                 <h2 className="text-xl font-extrabold text-slate-900 dark:text-zinc-100">{profile.fullName}</h2>
                 {profile.studentId && (
-                  <p className="text-sm text-emerald-600 font-semibold mt-1 flex items-center justify-center gap-1">
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mt-1 flex items-center justify-center gap-1">
                     <FiHash className="w-3.5 h-3.5" />
                     {profile.studentId}
                   </p>
@@ -550,7 +550,7 @@ function FollowButton({ targetEmail, currentUserEmail }) {
       disabled={loading || checking}
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
         isFollowing
-          ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 shadow-sm shadow-emerald-600/10"
       } disabled:opacity-50`}
     >
@@ -696,7 +696,7 @@ function AIVerifyButton({ profile, type, onVerified }) {
                 </motion.span>
               </div>
 
-              <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-2">
+              <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${result?.trustScore || 0}%` }}
@@ -1149,7 +1149,7 @@ export default function BrowseStudents() {
                       <VerificationBadge verification={profile.verification} />
                     </div>
                     {profile.studentId && (
-                      <p className="text-xs text-emerald-600 font-medium truncate mt-0.5 flex items-center justify-center gap-1">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate mt-0.5 flex items-center justify-center gap-1">
                         <FiHash className="w-3 h-3" />
                         {profile.studentId}
                       </p>
