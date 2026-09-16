@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getCollection, findProfileByEmail } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function POST(request) {
   try {
-    const { senderEmail, receiverEmail, text } = await request.json();
-    if (!senderEmail || !receiverEmail || !text) {
-      return NextResponse.json({ success: false, message: "senderEmail, receiverEmail, and text are required" }, { status: 400 });
+    const { error, session } = await requireSession(request);
+    if (error) return error;
+
+    const { receiverEmail, text } = await request.json();
+    const senderEmail = session.user.email;
+
+    if (!receiverEmail || !text) {
+      return NextResponse.json({ success: false, message: "receiverEmail and text are required" }, { status: 400 });
     }
 
     const trimmedText = text.trim();
@@ -28,11 +34,6 @@ export async function POST(request) {
     try {
       const senderProfile = await findProfileByEmail(senderEmail);
       const senderName = senderProfile?.fullName || senderEmail.split('@')[0];
-      const receiverProfile = await findProfileByEmail(receiverEmail);
-      const receiverRole = receiverProfile?.role || receiverProfile?.userType || 'alumni';
-      const messagingPath = receiverRole.toLowerCase() === 'student' 
-        ? '/dashboard/students/text-box' 
-        : '/dashboard/alumni/text';
       const notifications = await getCollection('notifications');
       const recentFromSender = await notifications.findOne({
         recipientEmail: receiverEmail,
@@ -47,7 +48,7 @@ export async function POST(request) {
           actorEmail: senderEmail,
           actorName: senderName,
           message: `${senderName} sent you a message`,
-          link: `${messagingPath}?chatWith=${senderEmail}`,
+          link: `/dashboard`,
           read: false,
           createdAt: new Date(),
         });

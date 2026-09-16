@@ -1,20 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getCollection, findProfileByEmail } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function GET(request, { params }) {
   try {
+    const { error } = await requireSession(request);
+    if (error) return error;
+
     const { email } = await params;
     const collection = await getCollection('follows');
 
-    // Get people I follow
     const iFollowDocs = await collection.find({ followerEmail: email }).toArray();
     const iFollowEmails = new Set(iFollowDocs.map((d) => d.targetEmail));
 
-    // Get people who follow me
     const followMeDocs = await collection.find({ targetEmail: email }).toArray();
     const followMeEmails = new Set(followMeDocs.map((d) => d.followerEmail));
 
-    // Combine: people I follow + people who follow me (bidirectional discovery)
     const allEmails = new Set([...iFollowEmails, ...followMeEmails]);
 
     if (allEmails.size === 0) {
@@ -25,7 +26,6 @@ export async function GET(request, { params }) {
       [...allEmails].map((e) => findProfileByEmail(e))
     );
 
-    // Mark mutual follows so UI can distinguish
     const validProfiles = profiles.map((p, i) => {
       const email = [...allEmails][i];
       const base = p || {

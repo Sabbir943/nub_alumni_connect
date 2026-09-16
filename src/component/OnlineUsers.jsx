@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { FiUsers, FiWifiOff } from 'react-icons/fi';
+import { apiFetch } from '@/lib/api';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 const MAX_VISIBLE = 12;
+const POLL_INTERVAL = 15000;
 
 const ROLE_STYLES = {
   Admin: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
@@ -15,10 +17,12 @@ const ROLE_STYLES = {
 
 export default function OnlineUsers({ currentUserEmail, onUsersChange }) {
   const [users, setUsers] = useState([]);
-  const [status, setStatus] = useState('connecting'); // 'connecting' | 'online' | 'offline'
+  const [status, setStatus] = useState('connecting');
   const socketRef = useRef(null);
+  const modeRef = useRef(null); // 'socket' | 'poll' | null
+  const pollTimerRef = useRef(null);
+  const heartbeatRef = useRef(null);
 
-  // Everyone currently online (includes yourself when logged in).
   const self = currentUserEmail ? users.find((u) => u.email === currentUserEmail) : null;
   const others = users.filter((u) => u.email !== currentUserEmail);
   const total = users.length;
@@ -28,45 +32,119 @@ export default function OnlineUsers({ currentUserEmail, onUsersChange }) {
     onUsersChange?.(total);
   }, [total, onUsersChange]);
 
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }, []);
+
+  const fetchPresence = useCallback(async () => {
+    try {
+      const data = await apiFetch('/api/presence');
+      setUsers(data.users || []);
+      setStatus('online');
+    } catch {
+      setStatus('offline');
+    }
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (modeRef.current === 'poll') return;
+    modeRef.current = 'poll';
+    stopPolling();
+
+    fetchPresence();
+
+    heartbeatRef.current = setInterval(() => {
+      if (currentUserEmail) {
+        fetch('/api/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUserEmail }),
+        }).catch(() => {});
+      }
+    }, POLL_INTERVAL);
+
+    pollTimerRef.current = setInterval(fetchPresence, POLL_INTERVAL);
+  }, [currentUserEmail, fetchPresence, stopPolling]);
+
   useEffect(() => {
+    if (!currentUserEmail) return;
+
+    let destroyed = false;
+    let fallbackTimer = null;
+
     const socket = io(SOCKET_URL, {
       autoConnect: false,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 3,
       reconnectionDelay: 1000,
       transports: ['websocket'],
     });
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      // Only logged-in members are tracked in the presence list.
-      if (currentUserEmail) socket.emit('join', currentUserEmail);
+      if (destroyed) return;
+      if (modeRef.current === 'poll') return;
+      modeRef.current = 'socket';
+      stopPolling();
+      socket.emit('join', currentUserEmail);
       setStatus('online');
     });
 
     socket.on('connect_error', () => {
-      setStatus('offline');
+      if (destroyed) return;
+      if (modeRef.current === 'socket') {
+        modeRef.current = null;
+      }
     });
 
     socket.on('disconnect', () => {
-      setStatus('connecting');
+      if (destroyed) return;
+      if (modeRef.current === 'socket') {
+        setStatus('connecting');
+      }
     });
 
     socket.on('online-users', (list) => {
+      if (destroyed || modeRef.current !== 'socket') return;
       setUsers(Array.isArray(list) ? list : []);
     });
 
     socket.connect();
 
+    fallbackTimer = setTimeout(() => {
+      if (destroyed) return;
+      if (modeRef.current !== 'socket') {
+        socket.disconnect();
+        socket.off();
+        startPolling();
+      }
+    }, 4000);
+
     return () => {
+      destroyed = true;
+      clearTimeout(fallbackTimer);
       socket.off('connect');
       socket.off('connect_error');
       socket.off('disconnect');
       socket.off('online-users');
       socket.disconnect();
       socketRef.current = null;
+      modeRef.current = null;
+      stopPolling();
+      fetch('/api/presence', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUserEmail }),
+      }).catch(() => {});
     };
-  }, [currentUserEmail]);
+  }, [currentUserEmail, startPolling, stopPolling]);
 
   const visible = ordered.slice(0, MAX_VISIBLE);
   const extraCount = ordered.length - visible.length;

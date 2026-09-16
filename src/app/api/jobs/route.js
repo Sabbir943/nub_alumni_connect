@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection, serializeId } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function GET(request) {
   try {
@@ -42,11 +43,14 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const { error, session } = await requireSession(request);
+    if (error) return error;
+
     const body = await request.json();
     const {
       title, company, location, jobType, workplaceType,
       salaryRange, salary, applicationDeadline, applicationUrlOrEmail,
-      description, requirements, skills, postedBy
+      description, requirements, skills
     } = body;
 
     if (!title || !company) {
@@ -65,7 +69,7 @@ export async function POST(request) {
       description: description || '',
       requirements: requirements || '',
       skills: skills || [],
-      postedBy: postedBy || 'Anonymous',
+      postedBy: session.user.email,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireAdmin } from '@/lib/admin-auth';
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const events = await getCollection('events');
     const eventList = await events.find({})
       .sort({ date: -1 })
@@ -18,11 +22,17 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { title, description, date, location, type } = await request.json();
 
     if (!title || !date) {
       return NextResponse.json({ message: 'Title and date are required' }, { status: 400 });
     }
+
+    const validTypes = ['reunion', 'workshop', 'networking', 'seminar'];
+    const sanitizedType = validTypes.includes(type) ? type : 'reunion';
 
     const events = await getCollection('events');
     const event = {
@@ -30,7 +40,7 @@ export async function POST(request) {
       description: description || '',
       date,
       location: location || '',
-      type: type || 'reunion',
+      type: sanitizedType,
       createdAt: new Date().toISOString(),
     };
 

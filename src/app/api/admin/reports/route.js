@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
 
@@ -24,6 +28,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { reporterEmail, targetType, targetId, reason, description } = await request.json();
 
     if (!reporterEmail || !targetType || !targetId || !reason) {

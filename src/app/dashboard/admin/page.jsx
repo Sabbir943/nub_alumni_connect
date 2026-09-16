@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import {
   FiUsers, FiUserCheck, FiBriefcase, FiFileText, FiCalendar,
   FiAlertTriangle, FiShield, FiActivity, FiTrendingUp, FiArrowRight,
+  FiAward, FiMessageSquare,
 } from 'react-icons/fi';
 
 const fadeUp = {
@@ -72,9 +73,12 @@ export default function AdminOverview() {
 
   const quickActions = [
     { label: 'Manage Users', href: '/dashboard/admin/users', icon: FiUsers, color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-    { label: 'Add Notice', href: '/dashboard/admin/notices', icon: FiFileText, color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
-    { label: 'Reports', href: '/dashboard/admin/reports', icon: FiAlertTriangle, color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
-    { label: 'Events', href: '/dashboard/admin/reunion', icon: FiCalendar, color: 'bg-violet-50 text-violet-600 hover:bg-violet-100' },
+    { label: 'Blog Management', href: '/dashboard/admin/blog', icon: FiFileText, color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+    { label: 'Success Stories', href: '/dashboard/admin/success-stories', icon: FiAward, color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
+    { label: 'Messages', href: '/dashboard/admin/messages', icon: FiMessageSquare, color: 'bg-violet-50 text-violet-600 hover:bg-violet-100' },
+    { label: 'Add Notice', href: '/dashboard/admin/notices', icon: FiFileText, color: 'bg-rose-50 text-rose-600 hover:bg-rose-100' },
+    { label: 'Reports', href: '/dashboard/admin/reports', icon: FiAlertTriangle, color: 'bg-orange-50 text-orange-600 hover:bg-orange-100' },
+    { label: 'Events', href: '/dashboard/admin/reunion', icon: FiCalendar, color: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100' },
   ];
 
   return (

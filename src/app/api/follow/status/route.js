@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function GET(request) {
   try {
+    const { error } = await requireSession(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const followerEmail = searchParams.get('followerEmail');
     const targetEmail = searchParams.get('targetEmail');

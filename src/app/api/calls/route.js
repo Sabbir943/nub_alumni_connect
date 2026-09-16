@@ -1,28 +1,30 @@
 import { NextResponse } from "next/server";
 import { getCollection, ObjectId } from "@/lib/mongodb";
+import { requireSession } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/calls - Initiate a call
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { callerEmail, calleeEmail, callType } = body;
+    const { error, session } = await requireSession(request);
+    if (error) return error;
 
-    if (!callerEmail || !calleeEmail) {
-      return NextResponse.json({ message: "Missing emails" }, { status: 400 });
+    const body = await request.json();
+    const { calleeEmail, callType } = body;
+    const callerEmail = session.user.email;
+
+    if (!calleeEmail) {
+      return NextResponse.json({ message: "calleeEmail is required" }, { status: 400 });
     }
 
     const calls = await getCollection("calls");
 
-    // Auto-cleanup: Mark stale calls (older than 2 minutes) as ended
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
     await calls.updateMany(
       { status: { $in: ["ringing", "connecting"] }, updatedAt: { $lt: twoMinutesAgo } },
       { $set: { status: "ended", updatedAt: new Date() } }
     );
 
-    // Check if either user is in an ACTIVE call (only ringing/connecting/connected within last 2 min)
     const activeCallCheck = await calls.findOne({
       $or: [
         { calleeEmail, status: { $in: ["ringing", "connecting", "connected"] }, updatedAt: { $gte: twoMinutesAgo } },
@@ -59,48 +61,18 @@ export async function POST(request) {
 
     const result = await calls.insertOne(call);
 
-    // Create notifications for BOTH users
     try {
       const notifications = await getCollection("notifications");
-      const students = await getCollection("students");
-
-      // Determine messaging path based on recipient role
-      const calleeStudent = await students.findOne({ email: calleeEmail }, { projection: { _id: 1 } });
-      const calleeMessagingPath = calleeStudent
-        ? '/dashboard/students/text-box'
-        : '/dashboard/alumni/text';
-
-      const callerStudent = await students.findOne({ email: callerEmail }, { projection: { _id: 1 } });
-      const callerMessagingPath = callerStudent
-        ? '/dashboard/students/text-box'
-        : '/dashboard/alumni/text';
-
-      // Notification for callee (incoming call)
       await notifications.insertOne({
         recipientEmail: calleeEmail,
         type: "call_incoming",
         actorEmail: callerEmail,
-        actorName: callerEmail.split("@")[0],
+        actorName: session.user.name || callerEmail.split("@")[0],
         callType: callType || "video",
-        message: `${callerEmail.split("@")[0]} is calling you (${callType || "video"})`,
+        message: `${session.user.name || callerEmail.split("@")[0]} is calling you (${callType || "video"})`,
         callId: result.insertedId.toString(),
-        link: `${calleeMessagingPath}?chatWith=${callerEmail}`,
+        link: `/dashboard`,
         read: false,
-        callStatus: "ringing",
-        createdAt: new Date(),
-      });
-
-      // Notification for caller (outgoing call)
-      await notifications.insertOne({
-        recipientEmail: callerEmail,
-        type: "call_outgoing",
-        actorEmail: calleeEmail,
-        actorName: calleeEmail.split("@")[0],
-        callType: callType || "video",
-        message: `Calling ${calleeEmail.split("@")[0]} (${callType || "video"})`,
-        callId: result.insertedId.toString(),
-        link: `${callerMessagingPath}?chatWith=${calleeEmail}`,
-        read: true,
         callStatus: "ringing",
         createdAt: new Date(),
       });
@@ -118,25 +90,20 @@ export async function POST(request) {
   }
 }
 
-// GET /api/calls?email=xxx - Poll for incoming calls
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get("email");
+    const { error, session } = await requireSession(request);
+    if (error) return error;
 
-    if (!email) {
-      return NextResponse.json({ message: "Email required" }, { status: 400 });
-    }
+    const email = session.user.email;
 
     const calls = await getCollection("calls");
 
-    // Find active call where this user is the callee
     const incomingCall = await calls.findOne({
       calleeEmail: email,
       status: "ringing",
     });
 
-    // Find any active call involving this user
     const activeCall = await calls.findOne({
       $or: [
         { callerEmail: email, status: { $in: ["ringing", "connecting", "connected"] } },
@@ -144,13 +111,11 @@ export async function GET(request) {
       ],
     });
 
-    // Check for call answer (if user is caller and callee answered)
     const answeredCall = await calls.findOne({
       callerEmail: email,
       status: "connecting",
     });
 
-    // Check for call ended or declined
     const endedCall = await calls.findOne({
       $or: [
         { callerEmail: email, status: { $in: ["ended", "declined", "missed"] } },
@@ -160,30 +125,10 @@ export async function GET(request) {
     });
 
     return NextResponse.json({
-      incomingCall: incomingCall
-        ? {
-            ...incomingCall,
-            _id: incomingCall._id.toString(),
-          }
-        : null,
-      activeCall: activeCall
-        ? {
-            ...activeCall,
-            _id: activeCall._id.toString(),
-          }
-        : null,
-      answeredCall: answeredCall
-        ? {
-            ...answeredCall,
-            _id: answeredCall._id.toString(),
-          }
-        : null,
-      endedCall: endedCall
-        ? {
-            ...endedCall,
-            _id: endedCall._id.toString(),
-          }
-        : null,
+      incomingCall: incomingCall ? { ...incomingCall, _id: incomingCall._id.toString() } : null,
+      activeCall: activeCall ? { ...activeCall, _id: activeCall._id.toString() } : null,
+      answeredCall: answeredCall ? { ...answeredCall, _id: answeredCall._id.toString() } : null,
+      endedCall: endedCall ? { ...endedCall, _id: endedCall._id.toString() } : null,
     });
   } catch (error) {
     console.error("Poll calls error:", error);

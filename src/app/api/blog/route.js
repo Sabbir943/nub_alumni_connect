@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection, serializeId, findProfileByEmail } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function GET(request) {
   try {
@@ -19,7 +20,7 @@ export async function GET(request) {
     if (tag) filter.tags = tag;
 
     const [items, total] = await Promise.all([
-      posts.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      posts.find(filter).sort({ pinned: -1, createdAt: -1 }).skip(skip).limit(limit).toArray(),
       posts.countDocuments(filter),
     ]);
 
@@ -55,13 +56,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { authorEmail, text, images, videoUrl, category, tags } = await request.json();
+    const { error, session } = await requireSession(request);
+    if (error) return error;
+
+    const { text, images, videoUrl, category, tags } = await request.json();
+    const authorEmail = session.user.email;
 
     const hasMedia = (images && images.length > 0) || !!videoUrl;
-
-    if (!authorEmail) {
-      return NextResponse.json({ success: false, message: 'Author email is required.' }, { status: 400 });
-    }
 
     if (!text && !hasMedia) {
       return NextResponse.json({ success: false, message: 'Post must include text or media.' }, { status: 400 });

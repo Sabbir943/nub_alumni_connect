@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const pinned = searchParams.get('pinned');
 
@@ -24,18 +28,26 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { title, content, priority, audience } = await request.json();
 
     if (!title || !content) {
       return NextResponse.json({ message: 'Title and content are required' }, { status: 400 });
     }
 
+    const validPriorities = ['low', 'medium', 'high'];
+    const validAudiences = ['all', 'alumni', 'students'];
+    const sanitizedPriority = validPriorities.includes(priority) ? priority : 'medium';
+    const sanitizedAudience = validAudiences.includes(audience) ? audience : 'all';
+
     const notices = await getCollection('notices');
     const notice = {
       title,
       content,
-      priority: priority || 'medium',
-      audience: audience || 'all',
+      priority: sanitizedPriority,
+      audience: sanitizedAudience,
       pinned: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -47,8 +59,8 @@ export async function POST(request) {
       const notifications = await getCollection('notifications');
       const userCol = await getCollection('user');
       const filter = {};
-      if (audience === 'alumni') filter.role = 'Alumni';
-      else if (audience === 'students') filter.role = 'Student';
+      if (sanitizedAudience === 'alumni') filter.role = 'Alumni';
+      else if (sanitizedAudience === 'students') filter.role = 'Student';
 
       const users = await userCol.find(filter).project({ email: 1 }).toArray();
       if (users.length > 0) {

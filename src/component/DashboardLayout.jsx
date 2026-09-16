@@ -8,7 +8,7 @@ import {
   FiUserPlus, FiUsers, FiBriefcase, FiMessageSquare,
   FiFileText, FiShield, FiAlertTriangle,
   FiPlusCircle, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid, FiBookOpen,
-  FiBell, FiUser, FiHome, FiChevronDown, FiArrowUpRight
+  FiBell, FiUser, FiHome, FiChevronDown, FiArrowUpRight, FiAward
 } from 'react-icons/fi';
 import { Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
@@ -86,6 +86,7 @@ const DashboardLayout = ({ children }) => {
     { label: 'ChatBox', href: '/dashboard/alumni/text', icon: <FiMessageSquare /> },
     { label: 'Manage Jobs', href: '/dashboard/alumni/manage-job', icon: <FiBookOpen /> },
     { label: 'Mentorship Hub', href: '/dashboard/alumni/mentorshipHub', icon: <FiBookOpen /> },
+    { label: 'Notices', href: '/notice', icon: <FiFileText /> },
     { label: 'Blog', href: '/blog', icon: <FiFileText /> }
   ];
 
@@ -97,15 +98,19 @@ const DashboardLayout = ({ children }) => {
     { label: 'Create Profile', href: '/dashboard/students/create-profile', icon: <FiUserPlus /> },
     { label: 'ChatBox', href: '/dashboard/students/text-box', icon: <FiMessageSquare /> },
     { label: 'My Mentorship', href: '/dashboard/students/my-mentorship', icon: <FiBookOpen /> },
+    { label: 'Notices', href: '/notice', icon: <FiFileText /> },
     { label: 'Blog', href: '/blog', icon: <FiFileText /> }
   ];
 
   const adminLinks = [
     { label: 'Admin Dashboard', href: '/dashboard', icon: <FiGrid /> },
     { label: 'Manage Users', href: '/dashboard/admin/users', icon: <FiShield /> },
+    { label: 'Blog Management', href: '/dashboard/admin/blog', icon: <FiFileText /> },
+    { label: 'Success Stories', href: '/dashboard/admin/success-stories', icon: <FiAward /> },
+    { label: 'Messages', href: '/dashboard/admin/messages', icon: <FiMessageSquare /> },
     { label: 'Reported Content', href: '/dashboard/admin/reports', icon: <FiAlertTriangle /> },
     { label: 'Add Notices', href: '/dashboard/admin/notices', icon: <FiPlusCircle /> },
-    { label: 'Reunion & Events', href: '/dashboard/admin/reunion', icon: <FiCalendar /> }
+    { label: 'Reunion & Events', href: '/dashboard/admin/reunion', icon: <FiCalendar /> },
   ];
 
   const getNavLinks = () => {
@@ -124,7 +129,9 @@ const DashboardLayout = ({ children }) => {
     ? '/dashboard/alumni/notifications'
     : '/dashboard/students/notifications';
 
-  const chatHref = role === 'alumni'
+  const chatHref = role === 'admin'
+    ? '/dashboard/admin/messages'
+    : role === 'alumni'
     ? '/dashboard/alumni/text'
     : '/dashboard/students/text-box';
 
@@ -235,8 +242,8 @@ const DashboardLayout = ({ children }) => {
                 <span className="hidden lg:inline">Site</span>
               </Link>
 
-              {/* Chat shortcut (alumni/student) */}
-              {chatHref && role !== 'admin' && (
+              {/* Chat shortcut (all roles) */}
+              {chatHref && (
                 <Link
                   href={chatHref}
                   title="ChatBox"

@@ -29,7 +29,7 @@ function SkeletonCard() {
   );
 }
 
-export default function BlogFeed({ currentUserEmail }) {
+export default function BlogFeed({ currentUserEmail, currentUserRole }) {
   const [posts, setPosts] = useState([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [page, setPage] = useState(1);
@@ -270,6 +270,7 @@ export default function BlogFeed({ currentUserEmail }) {
                       key={post._id}
                       post={post}
                       currentUserEmail={currentUserEmail}
+                      currentUserRole={currentUserRole}
                       onDelete={handleDelete}
                       onEdit={handleEdit}
                     />

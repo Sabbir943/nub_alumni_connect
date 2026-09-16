@@ -57,7 +57,16 @@ export async function PATCH(request, { params }) {
     }
 
     const email = request.headers.get('x-user-email');
-    if (email !== post.authorEmail) {
+
+    // Check if user is admin
+    let isAdmin = false;
+    if (email) {
+      const userCol = await getCollection('user');
+      const userDoc = await userCol.findOne({ email });
+      isAdmin = userDoc?.role?.toLowerCase() === 'admin';
+    }
+
+    if (email !== post.authorEmail && !isAdmin) {
       return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 403 });
     }
 
@@ -80,6 +89,10 @@ export async function PATCH(request, { params }) {
 
     if (typeof body.videoUrl === 'string') {
       updates.videoUrl = body.videoUrl.trim();
+    }
+
+    if (typeof body.pinned === 'boolean' && isAdmin) {
+      updates.pinned = body.pinned;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -121,7 +134,16 @@ export async function DELETE(request, { params }) {
     }
 
     const email = request.headers.get('x-user-email');
-    if (email !== post.authorEmail) {
+
+    // Check if user is admin
+    let isAdmin = false;
+    if (email) {
+      const userCol = await getCollection('user');
+      const userDoc = await userCol.findOne({ email });
+      isAdmin = userDoc?.role?.toLowerCase() === 'admin';
+    }
+
+    if (email !== post.authorEmail && !isAdmin) {
       return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 403 });
     }
 

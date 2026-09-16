@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection, serializeId, findProfileByEmail } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function GET(request) {
   try {
@@ -56,10 +57,14 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { studentEmail, alumniEmail, expertise, message } = await request.json();
+    const { error, session } = await requireSession(request);
+    if (error) return error;
 
-    if (!studentEmail || !alumniEmail) {
-      return NextResponse.json({ success: false, message: "studentEmail and alumniEmail are required." }, { status: 400 });
+    const { alumniEmail, expertise, message } = await request.json();
+    const studentEmail = session.user.email;
+
+    if (!alumniEmail) {
+      return NextResponse.json({ success: false, message: "alumniEmail is required." }, { status: 400 });
     }
 
     if (studentEmail === alumniEmail) {

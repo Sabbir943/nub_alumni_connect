@@ -291,7 +291,10 @@ export default function ManageUsers() {
               </div>
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white text-center">Delete User</h3>
               <p className="text-sm text-zinc-500 text-center mt-2">
-                Are you sure you want to delete <strong>{deletingUser.name}</strong>? This action cannot be undone.
+                Are you sure you want to delete <strong>{deletingUser.name}</strong>?
+              </p>
+              <p className="text-xs text-red-500 text-center mt-2 font-semibold">
+                This will permanently remove their profile, posts, messages, and all related data. This action cannot be undone.
               </p>
               <div className="flex gap-3 mt-6">
                 <button

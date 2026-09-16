@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getCollection, findProfileByEmail } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth-helpers';
 
 export async function POST(request) {
   try {
-    const { followerEmail, targetEmail } = await request.json();
-    if (!followerEmail || !targetEmail) {
-      return NextResponse.json({ message: "followerEmail and targetEmail are required" }, { status: 400 });
+    const { error, session } = await requireSession(request);
+    if (error) return error;
+
+    const { targetEmail } = await request.json();
+    const followerEmail = session.user.email;
+
+    if (!targetEmail) {
+      return NextResponse.json({ message: "targetEmail is required" }, { status: 400 });
+    }
+
+    if (followerEmail === targetEmail) {
+      return NextResponse.json({ message: "Cannot follow yourself" }, { status: 400 });
     }
 
     const collection = await getCollection('follows');
@@ -43,7 +53,12 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    const { followerEmail, targetEmail } = await request.json();
+    const { error, session } = await requireSession(request);
+    if (error) return error;
+
+    const { targetEmail } = await request.json();
+    const followerEmail = session.user.email;
+
     const collection = await getCollection('follows');
     await collection.deleteOne({ followerEmail, targetEmail });
     return NextResponse.json({ message: "Unfollowed successfully" });

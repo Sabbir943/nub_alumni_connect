@@ -1,16 +1,38 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function PATCH(request, { params }) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { id } = await params;
-    const updates = await request.json();
+    const body = await request.json();
 
     const { ObjectId } = await import('mongodb');
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({ message: 'Invalid notice ID' }, { status: 400 });
+    }
+
     const notices = await getCollection('notices');
+    const existing = await notices.findOne({ _id: new ObjectId(id) });
+    if (!existing) {
+      return NextResponse.json({ message: 'Notice not found' }, { status: 404 });
+    }
+
+    const allowedFields = ['title', 'content', 'priority', 'audience', 'pinned'];
+    const updates = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updates[field] = body[field];
+      }
+    }
+    updates.updatedAt = new Date().toISOString();
+
     await notices.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { ...updates, updatedAt: new Date().toISOString() } }
+      { $set: updates }
     );
 
     return NextResponse.json({ message: 'Notice updated' });
@@ -22,11 +44,22 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { id } = await params;
 
     const { ObjectId } = await import('mongodb');
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({ message: 'Invalid notice ID' }, { status: 400 });
+    }
+
     const notices = await getCollection('notices');
-    await notices.deleteOne({ _id: new ObjectId(id) });
+    const result = await notices.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ message: 'Notice not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ message: 'Notice deleted' });
   } catch (error) {

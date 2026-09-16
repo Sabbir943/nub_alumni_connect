@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getCollection, ObjectId } from '@/lib/mongodb';
+import { requireOwnership } from '@/lib/auth-helpers';
 
 export async function GET(request, { params }) {
   try {
     const { email } = await params;
+    const { error } = await requireOwnership(request, email);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const unreadOnly = searchParams.get('unread') === 'true';
@@ -34,6 +38,9 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { email } = await params;
+    const { error } = await requireOwnership(request, email);
+    if (error) return error;
+
     const collection = await getCollection('notifications');
     await collection.updateMany(
       { recipientEmail: email, read: false },
@@ -49,6 +56,9 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { email } = await params;
+    const { error } = await requireOwnership(request, email);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(request) {
   try {
+    const { error } = await requireAdmin(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || '';
@@ -49,6 +53,9 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
+    const { error, session } = await requireAdmin(request);
+    if (error) return error;
+
     const { userId, role } = await request.json();
 
     if (!userId || !role) {
@@ -62,6 +69,12 @@ export async function PATCH(request) {
 
     const { ObjectId } = await import('mongodb');
     const users = await getCollection('user');
+
+    // Prevent admin from demoting themselves
+    if (session.user.id === userId && role !== 'Admin') {
+      return NextResponse.json({ message: 'Cannot change your own admin role' }, { status: 400 });
+    }
+
     await users.updateOne(
       { _id: new ObjectId(userId) },
       { $set: { role } }
@@ -76,6 +89,9 @@ export async function PATCH(request) {
 
 export async function DELETE(request) {
   try {
+    const { error, session } = await requireAdmin(request);
+    if (error) return error;
+
     const { userId } = await request.json();
 
     if (!userId) {
@@ -84,13 +100,50 @@ export async function DELETE(request) {
 
     const { ObjectId } = await import('mongodb');
     const users = await getCollection('user');
-    const result = await users.deleteOne({ _id: new ObjectId(userId) });
+    const userDoc = await users.findOne({ _id: new ObjectId(userId) });
 
-    if (result.deletedCount === 0) {
+    if (!userDoc) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'User deleted' });
+    // Prevent admin from deleting themselves
+    if (session.user.id === userId) {
+      return NextResponse.json({ message: 'Cannot delete your own account' }, { status: 400 });
+    }
+
+    const userEmail = userDoc.email;
+
+    // Cascade delete: remove user data from all related collections
+    const collectionsToClean = [
+      { name: 'alumni_directory', query: { email: userEmail } },
+      { name: 'students', query: { email: userEmail } },
+      { name: 'session', query: { userId: userId } },
+      { name: 'account', query: { userId: userId } },
+      { name: 'blog_posts', query: { authorEmail: userEmail } },
+      { name: 'blog_comments', query: { authorEmail: userEmail } },
+      { name: 'jobs', query: { postedBy: userEmail } },
+      { name: 'follows', query: { $or: [{ followerEmail: userEmail }, { followingEmail: userEmail }] } },
+      { name: 'messages', query: { $or: [{ senderEmail: userEmail }, { receiverEmail: userEmail }] } },
+      { name: 'notifications', query: { userEmail: userEmail } },
+      { name: 'calls', query: { $or: [{ callerEmail: userEmail }, { receiverEmail: userEmail }] } },
+      { name: 'mentorships', query: { $or: [{ studentEmail: userEmail }, { alumniEmail: userEmail }] } },
+      { name: 'contacts', query: { email: userEmail } },
+      { name: 'reports', query: { $or: [{ reporterEmail: userEmail }, { targetEmail: userEmail }] } },
+    ];
+
+    for (const { name, query } of collectionsToClean) {
+      try {
+        const col = await getCollection(name);
+        await col.deleteMany(query);
+      } catch (e) {
+        console.error(`Cascade delete failed for collection ${name}:`, e);
+      }
+    }
+
+    // Finally delete the user record itself
+    await users.deleteOne({ _id: new ObjectId(userId) });
+
+    return NextResponse.json({ message: 'User and all related data deleted' });
   } catch (error) {
     console.error('Admin user delete error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

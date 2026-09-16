@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX, FiVideo, FiZoomIn, FiEdit2, FiChevronDown, FiImage } from 'react-icons/fi';
+import { FiThumbsUp, FiMessageCircle, FiShare2, FiTrash2, FiSend, FiAlertTriangle, FiLink, FiX, FiVideo, FiZoomIn, FiEdit2, FiChevronDown, FiImage, FiMapPin } from 'react-icons/fi';
 import { apiFetch } from '@/lib/api';
 import { getVideoEmbedUrl, uploadImage, uploadVideo } from '@/lib/upload';
 import { CATEGORIES } from './BlogSidebar';
@@ -135,11 +135,13 @@ function CommentItem({ comment, currentUserEmail, onDelete, onReply, depth = 0 }
   );
 }
 
-export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit }) {
+export default function BlogPostCard({ post, currentUserEmail, currentUserRole, onDelete, onEdit }) {
   const [reactions, setReactions] = useState(post.reactions || {});
   const [userReactions, setUserReactions] = useState(post.userReactions || {});
   const [commentCount, setCommentCount] = useState(post.commentCount || 0);
   const [shares, setShares] = useState(post.shares || 0);
+  const [pinned, setPinned] = useState(post.pinned || false);
+  const [pinning, setPinning] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
@@ -172,6 +174,26 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
   const [editMediaPicker, setEditMediaPicker] = useState(false);
   const editImageInputRef = useRef(null);
   const editVideoInputRef = useRef(null);
+
+  const handlePin = async () => {
+    if (pinning) return;
+    setPinning(true);
+    try {
+      const newPinned = !pinned;
+      await apiFetch(`/api/blog/${post._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': currentUserEmail },
+        body: JSON.stringify({ pinned: newPinned }),
+      });
+      setPinned(newPinned);
+      onEdit?.(post._id, { pinned: newPinned });
+      toast.success(newPinned ? 'Post pinned' : 'Post unpinned');
+    } catch {
+      toast.error('Failed to update pin status');
+    } finally {
+      setPinning(false);
+    }
+  };
 
   const openEdit = () => {
     if (newVideoPreview) URL.revokeObjectURL(newVideoPreview);
@@ -600,6 +622,21 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
               </button>
             </div>
           )}
+
+          {currentUserRole?.toLowerCase() === 'admin' && (
+            <button
+              onClick={handlePin}
+              disabled={pinning}
+              title={pinned ? 'Unpin post' : 'Pin post'}
+              className={`p-2 rounded-xl transition-colors ${
+                pinned
+                  ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                  : 'text-zinc-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+              }`}
+            >
+              <FiMapPin size={16} />
+            </button>
+          )}
         </div>
 
         {post.category && post.category !== 'General' && (
@@ -612,6 +649,13 @@ export default function BlogPostCard({ post, currentUserEmail, onDelete, onEdit 
                 #{tag}
               </span>
             ))}
+          </div>
+        )}
+
+        {pinned && (
+          <div className="mb-3 flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg text-[11px] font-semibold w-fit">
+            <FiMapPin size={12} />
+            Pinned
           </div>
         )}
 
